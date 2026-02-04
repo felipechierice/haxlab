@@ -1,0 +1,27 @@
+{
+  "name": "ballers",
+  "version": "1.0.0",
+  "description": "HaxBall-like game with TypeScript",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "serve": "npx http-server -p 8080 -c-1",
+    "server": "node server/server.js",
+    "dev": "concurrently \"npm run watch\" \"npm run serve\" \"npm run server\"",
+    "start": "npm run dev"
+  },
+  "keywords": [
+    "game",
+    "haxball",
+    "typescript",
+    "canvas"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "http-server": "^14.1.1",
+    "typescript": "^5.3.3"
+  }
+}
