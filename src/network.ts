@@ -47,6 +47,8 @@ export class NetworkManager {
   private onChatMessageCallback: ((playerName: string, message: string, senderId: string) => void) | null = null;
   private onConsoleEventCallback: ((text: string, type: 'event' | 'chat') => void) | null = null;
   private onRoomsListCallback: ((rooms: any[]) => void) | null = null;
+  private onConfigUpdateCallback: ((config: any) => void) | null = null;
+  private onRoomClosedCallback: ((reason: string) => void) | null = null;
   private pendingPlayerInfo: { name: string, team: 'red' | 'blue' | 'spectator' } | null = null;
   private pings: Map<string, number> = new Map(); // peerId -> ping em ms
   private pingIntervals: Map<string, number> = new Map(); // peerId -> intervalId
@@ -166,6 +168,12 @@ export class NetworkManager {
         if (this.onServerPongCallback && message.timestamp) {
           const ping = Date.now() - message.timestamp;
           this.onServerPongCallback(ping);
+        }
+        break;
+
+      case 'room_closed':
+        if (this.onRoomClosedCallback) {
+          this.onRoomClosedCallback(message.reason || 'Room closed');
         }
         break;
     }
@@ -314,6 +322,12 @@ export class NetworkManager {
       case 'console_event':
         if (this.onConsoleEventCallback) {
           this.onConsoleEventCallback(message.text, message.eventType);
+        }
+        break;
+
+      case 'config_update':
+        if (this.onConfigUpdateCallback) {
+          this.onConfigUpdateCallback(message.config);
         }
         break;
 
@@ -652,6 +666,21 @@ export class NetworkManager {
     });
   }
 
+  broadcastConfigUpdate(config: any) {
+    if (!this.isHost) return;
+
+    const binaryMessage = BinaryProtocol.encode({
+      type: 'config_update',
+      config
+    });
+
+    this.peers.forEach(peer => {
+      if (peer.dataChannel && peer.dataChannel.readyState === 'open') {
+        peer.dataChannel.send(binaryMessage);
+      }
+    });
+  }
+
   onStateUpdate(callback: (state: any) => void) {
     this.onStateUpdateCallback = callback;
   }
@@ -698,6 +727,14 @@ export class NetworkManager {
 
   onConsoleEvent(callback: (text: string, type: 'event' | 'chat') => void) {
     this.onConsoleEventCallback = callback;
+  }
+
+  onConfigUpdate(callback: (config: any) => void) {
+    this.onConfigUpdateCallback = callback;
+  }
+
+  onRoomClosed(callback: (reason: string) => void) {
+    this.onRoomClosedCallback = callback;
   }
 
   onRoomsList(callback: (rooms: any[]) => void) {

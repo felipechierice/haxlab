@@ -149,24 +149,39 @@ wss.on('connection', (ws) => {
         case 'leave_room':
           const userRoom = rooms.get(clients.get(clientId).roomCode);
           if (userRoom) {
-            userRoom.clients = userRoom.clients.filter(id => id !== clientId);
-            
-            if (userRoom.clients.length === 0) {
-              rooms.delete(userRoom.code);
-            } else if (userRoom.hostId === clientId) {
-              userRoom.hostId = userRoom.clients[0];
+            console.log(`Client ${clientId} leaving room ${userRoom.code}`);
+            // Se o criador da sala sai, destruir a sala completamente
+            if (userRoom.hostId === clientId) {
+              console.log(`Host ${clientId} leaving, destroying room ${userRoom.code}`);
+              // Notificar todos os jogadores que a sala foi fechada
               broadcast(userRoom, {
-                type: 'new_host',
-                hostId: userRoom.hostId
+                type: 'room_closed',
+                reason: 'Host left the room'
               });
+              
+              // Limpar roomCode de todos os clientes
+              userRoom.clients.forEach(id => {
+                if (clients.has(id)) {
+                  clients.get(id).roomCode = null;
+                }
+              });
+              
+              // Deletar a sala
+              rooms.delete(userRoom.code);
+            } else {
+              // Jogador normal saindo
+              console.log(`Player ${clientId} leaving room ${userRoom.code}, broadcasting to ${userRoom.clients.length} clients`);
+              userRoom.clients = userRoom.clients.filter(id => id !== clientId);
+              
+              broadcast(userRoom, {
+                type: 'peer_left',
+                peerId: clientId
+              });
+              console.log(`Broadcasted peer_left for ${clientId}`);
+              
+              clients.get(clientId).roomCode = null;
             }
-            
-            broadcast(userRoom, {
-              type: 'peer_left',
-              peerId: clientId
-            });
           }
-          clients.get(clientId).roomCode = null;
           break;
       }
     } catch (err) {
@@ -175,26 +190,40 @@ wss.on('connection', (ws) => {
   });
 
   ws.on('close', () => {
+    console.log(`WebSocket closed for client ${clientId}`);
     const client = clients.get(clientId);
     if (client && client.roomCode) {
       const room = rooms.get(client.roomCode);
       if (room) {
-        room.clients = room.clients.filter(id => id !== clientId);
-        
-        if (room.clients.length === 0) {
-          rooms.delete(room.code);
-        } else if (room.hostId === clientId) {
-          room.hostId = room.clients[0];
+        console.log(`Client ${clientId} in room ${room.code} disconnected`);
+        // Se o criador da sala desconecta, destruir a sala completamente
+        if (room.hostId === clientId) {
+          // Notificar todos os jogadores que a sala foi fechada
           broadcast(room, {
-            type: 'new_host',
-            hostId: room.hostId
+            type: 'room_closed',
+            reason: 'Host disconnected'
           });
+          
+          // Limpar roomCode de todos os clientes
+          room.clients.forEach(id => {
+            if (clients.has(id)) {
+              clients.get(id).roomCode = null;
+            }
+          });
+          
+          // Deletar a sala
+          rooms.delete(room.code);
+        } else {
+          // Jogador normal desconectando
+          console.log(`Player ${clientId} disconnecting from room ${room.code}, broadcasting to ${room.clients.length} clients`);
+          room.clients = room.clients.filter(id => id !== clientId);
+          
+          broadcast(room, {
+            type: 'peer_left',
+            peerId: clientId
+          });
+          console.log(`Broadcasted peer_left for disconnected ${clientId}`);
         }
-        
-        broadcast(room, {
-          type: 'peer_left',
-          peerId: clientId
-        });
       }
     }
     clients.delete(clientId);

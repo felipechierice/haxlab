@@ -26,6 +26,7 @@ export class Game {
   
   // Room menu state
   private roomMenuVisible: boolean = false;
+  private settingsMenuVisible: boolean = false;
   private roomPlayers: RoomPlayer[] = [];
   private roomMenuElement: HTMLElement | null = null;
   private gameStarted: boolean = false;
@@ -125,7 +126,7 @@ export class Game {
       id,
       name,
       team,
-      circle: Physics.createCircle(spawn.x, spawn.y, 15, 10),
+      circle: Physics.createCircle(spawn.x, spawn.y, this.config.playerRadius, 10),
       input: { up: false, down: false, left: false, right: false, kick: false },
       kickCharge: 0,
       isChargingKick: false
@@ -541,8 +542,8 @@ export class Game {
         const invDist = 1 / dist;
         // Aplica a força baseada no carregamento (mínimo 20% se carregável, 100% se clássico)
         const kickStrength = this.config.kickMode === 'chargeable' 
-          ? Physics.KICK_STRENGTH * Math.max(0.2, chargeAmount)
-          : Physics.KICK_STRENGTH;
+          ? this.config.kickStrength * Math.max(0.2, chargeAmount)
+          : this.config.kickStrength;
         
         ball.vel.x += dx * invDist * kickStrength;
         ball.vel.y += dy * invDist * kickStrength;
@@ -565,8 +566,8 @@ export class Game {
         // Aplica força reduzida localmente - o host tem a autoridade real
         // Usamos força parcial para dar feedback visual sem exagerar
         const kickStrength = this.config.kickMode === 'chargeable' 
-          ? Physics.KICK_STRENGTH * Math.max(0.2, chargeAmount) * 0.7
-          : Physics.KICK_STRENGTH * 0.7;
+          ? this.config.kickStrength * Math.max(0.2, chargeAmount) * 0.7
+          : this.config.kickStrength * 0.7;
         
         ball.vel.x += dx * invDist * kickStrength;
         ball.vel.y += dy * invDist * kickStrength;
@@ -599,6 +600,9 @@ export class Game {
     this.state.ball.circle.pos.y = this.map.spawnPoints.ball.y;
     this.state.ball.circle.vel.x = 0;
     this.state.ball.circle.vel.y = 0;
+    
+    // Limpa rastro da bola
+    this.renderer.clearBallTrail();
 
     for (const player of this.state.players) {
       const spawnPoints = player.team === 'red' ? this.map.spawnPoints.red : this.map.spawnPoints.blue;
@@ -1096,6 +1100,16 @@ export class Game {
               margin: 5px;
             ">⏹ Stop Game</button>
           `}
+          <button id="btn-room-settings" style="
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+          ">⚙ Room Settings</button>
           <button id="btn-reset-teams" style="
             background: #95a5a6;
             color: white;
@@ -1200,6 +1214,229 @@ export class Game {
     resetBtn?.addEventListener('click', () => {
       this.resetAllToSpectators();
     });
+
+    // Room settings button
+    const settingsBtn = this.roomMenuElement?.querySelector('#btn-room-settings');
+    settingsBtn?.addEventListener('click', () => {
+      this.showSettingsModal();
+    });
+  }
+
+  private showSettingsModal(): void {
+    if (!this.isHost) return;
+    this.settingsMenuVisible = true;
+
+    if (!this.roomMenuElement) return;
+
+    const timeLimitMin = Math.floor(this.config.timeLimit / 60);
+
+    this.roomMenuElement.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0; color: #667eea;">⚙ Room Settings</h2>
+        <button id="btn-settings-back" style="background: none; border: 1px solid #888; color: #ccc; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">← Back</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+        <div>
+          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Players per Team</label>
+          <select id="cfg-players-per-team" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #555; background: #333; color: white; font-size: 14px;">
+            <option value="1" ${this.config.playersPerTeam === 1 ? 'selected' : ''}>1v1</option>
+            <option value="2" ${this.config.playersPerTeam === 2 ? 'selected' : ''}>2v2</option>
+            <option value="3" ${this.config.playersPerTeam === 3 ? 'selected' : ''}>3v3</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Kick Mode</label>
+          <select id="cfg-kick-mode" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #555; background: #333; color: white; font-size: 14px;">
+            <option value="classic" ${this.config.kickMode === 'classic' ? 'selected' : ''}>Classic (instant)</option>
+            <option value="chargeable" ${this.config.kickMode === 'chargeable' ? 'selected' : ''}>Chargeable (hold)</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Kick Strength: <span id="cfg-kick-strength-val">${this.config.kickStrength}</span></label>
+          <input type="range" id="cfg-kick-strength" min="200" max="1000" value="${this.config.kickStrength}" step="50" style="width: 100%;">
+        </div>
+        <div>
+          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Player Size: <span id="cfg-player-radius-val">${this.config.playerRadius}</span></label>
+          <input type="range" id="cfg-player-radius" min="10" max="25" value="${this.config.playerRadius}" step="1" style="width: 100%;">
+        </div>
+        <div>
+          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Score Limit</label>
+          <input type="number" id="cfg-score-limit" min="1" max="10" value="${this.config.scoreLimit}" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #555; background: #333; color: white; font-size: 14px; box-sizing: border-box;">
+        </div>
+        <div>
+          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Time Limit (minutes)</label>
+          <input type="number" id="cfg-time-limit" min="1" max="30" value="${timeLimitMin}" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #555; background: #333; color: white; font-size: 14px; box-sizing: border-box;">
+        </div>
+      </div>
+
+      <h3 style="color: #ccc; margin: 15px 0 10px; font-size: 15px;">⚽ Ball Settings</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+        <div>
+          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Ball Color</label>
+          <input type="color" id="cfg-ball-color" value="${this.config.ballConfig.color}" style="width: 100%; height: 35px; border: 1px solid #555; border-radius: 6px; background: #333; cursor: pointer;">
+        </div>
+        <div>
+          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Border Color</label>
+          <input type="color" id="cfg-ball-border-color" value="${this.config.ballConfig.borderColor}" style="width: 100%; height: 35px; border: 1px solid #555; border-radius: 6px; background: #333; cursor: pointer;">
+        </div>
+        <div>
+          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Radius: <span id="cfg-ball-radius-val">${this.config.ballConfig.radius}</span></label>
+          <input type="range" id="cfg-ball-radius" min="5" max="15" value="${this.config.ballConfig.radius}" step="0.5" style="width: 100%;">
+        </div>
+        <div>
+          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Mass: <span id="cfg-ball-mass-val">${this.config.ballConfig.mass}</span></label>
+          <input type="range" id="cfg-ball-mass" min="1" max="20" value="${this.config.ballConfig.mass}" step="0.5" style="width: 100%;">
+        </div>
+        <div style="grid-column: span 2;">
+          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Damping (friction): <span id="cfg-ball-damping-val">${this.config.ballConfig.damping}</span></label>
+          <input type="range" id="cfg-ball-damping" min="0.95" max="0.999" value="${this.config.ballConfig.damping}" step="0.001" style="width: 100%;">
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 10px;">
+        <button id="btn-save-settings" style="
+          background: #2ecc71;
+          color: white;
+          border: none;
+          padding: 12px 40px;
+          font-size: 16px;
+          border-radius: 8px;
+          cursor: pointer;
+          margin: 5px;
+        ">✓ Save Settings</button>
+        <button id="btn-cancel-settings" style="
+          background: #666;
+          color: white;
+          border: none;
+          padding: 12px 40px;
+          font-size: 16px;
+          border-radius: 8px;
+          cursor: pointer;
+          margin: 5px;
+        ">Cancel</button>
+      </div>
+    `;
+
+    // Slider value display listeners
+    const radiusInput = this.roomMenuElement.querySelector('#cfg-ball-radius') as HTMLInputElement;
+    const massInput = this.roomMenuElement.querySelector('#cfg-ball-mass') as HTMLInputElement;
+    const dampingInput = this.roomMenuElement.querySelector('#cfg-ball-damping') as HTMLInputElement;
+    const kickStrengthInput = this.roomMenuElement.querySelector('#cfg-kick-strength') as HTMLInputElement;
+    const playerRadiusInput = this.roomMenuElement.querySelector('#cfg-player-radius') as HTMLInputElement;
+
+    radiusInput?.addEventListener('input', () => {
+      const val = this.roomMenuElement?.querySelector('#cfg-ball-radius-val');
+      if (val) val.textContent = radiusInput.value;
+    });
+    massInput?.addEventListener('input', () => {
+      const val = this.roomMenuElement?.querySelector('#cfg-ball-mass-val');
+      if (val) val.textContent = massInput.value;
+    });
+    dampingInput?.addEventListener('input', () => {
+      const val = this.roomMenuElement?.querySelector('#cfg-ball-damping-val');
+      if (val) val.textContent = dampingInput.value;
+    });
+    kickStrengthInput?.addEventListener('input', () => {
+      const val = this.roomMenuElement?.querySelector('#cfg-kick-strength-val');
+      if (val) val.textContent = kickStrengthInput.value;
+    });
+    playerRadiusInput?.addEventListener('input', () => {
+      const val = this.roomMenuElement?.querySelector('#cfg-player-radius-val');
+      if (val) val.textContent = playerRadiusInput.value;
+    });
+
+    // Back button
+    this.roomMenuElement.querySelector('#btn-settings-back')?.addEventListener('click', () => {
+      this.settingsMenuVisible = false;
+      this.updateRoomMenuContent();
+    });
+
+    // Cancel button
+    this.roomMenuElement.querySelector('#btn-cancel-settings')?.addEventListener('click', () => {
+      this.settingsMenuVisible = false;
+      this.updateRoomMenuContent();
+    });
+
+    // Save button
+    this.roomMenuElement.querySelector('#btn-save-settings')?.addEventListener('click', () => {
+      this.saveSettings();
+    });
+  }
+
+  private saveSettings(): void {
+    if (!this.isHost || !this.roomMenuElement) return;
+
+    const playersPerTeam = parseInt((this.roomMenuElement.querySelector('#cfg-players-per-team') as HTMLSelectElement).value);
+    const kickMode = (this.roomMenuElement.querySelector('#cfg-kick-mode') as HTMLSelectElement).value as 'classic' | 'chargeable';
+    const scoreLimit = parseInt((this.roomMenuElement.querySelector('#cfg-score-limit') as HTMLInputElement).value);
+    const timeLimitMin = parseInt((this.roomMenuElement.querySelector('#cfg-time-limit') as HTMLInputElement).value);
+    const ballColor = (this.roomMenuElement.querySelector('#cfg-ball-color') as HTMLInputElement).value;
+    const ballBorderColor = (this.roomMenuElement.querySelector('#cfg-ball-border-color') as HTMLInputElement).value;
+    const ballRadius = parseFloat((this.roomMenuElement.querySelector('#cfg-ball-radius') as HTMLInputElement).value);
+    const ballMass = parseFloat((this.roomMenuElement.querySelector('#cfg-ball-mass') as HTMLInputElement).value);
+    const ballDamping = parseFloat((this.roomMenuElement.querySelector('#cfg-ball-damping') as HTMLInputElement).value);
+    const kickStrength = parseFloat((this.roomMenuElement.querySelector('#cfg-kick-strength') as HTMLInputElement).value);
+    const playerRadius = parseFloat((this.roomMenuElement.querySelector('#cfg-player-radius') as HTMLInputElement).value);
+
+    this.config.playersPerTeam = playersPerTeam;
+    this.config.kickMode = kickMode;
+    this.config.scoreLimit = scoreLimit;
+    this.config.timeLimit = timeLimitMin * 60;
+    this.config.kickStrength = kickStrength;
+    this.config.playerRadius = playerRadius;
+    this.config.ballConfig.color = ballColor;
+    this.config.ballConfig.borderColor = ballBorderColor;
+    this.config.ballConfig.radius = ballRadius;
+    this.config.ballConfig.mass = ballMass;
+    this.config.ballConfig.damping = ballDamping;
+
+    // Apply ball physics changes
+    this.state.ball.circle.radius = ballRadius;
+    this.state.ball.circle.mass = ballMass;
+    this.state.ball.circle.invMass = ballMass > 0 ? 1 / ballMass : 0;
+    this.state.ball.circle.damping = ballDamping;
+
+    // Broadcast to clients
+    if (this.networkManager) {
+      this.networkManager.broadcastConfigUpdate({
+        playersPerTeam,
+        kickMode,
+        scoreLimit,
+        timeLimit: timeLimitMin * 60,
+        kickStrength,
+        playerRadius,
+        ballConfig: this.config.ballConfig
+      });
+    }
+
+    // Log to console
+    this.console.addMessage('⚙ Room settings updated by host', 'event');
+    if (this.networkManager) {
+      this.networkManager.broadcastConsoleEvent('⚙ Room settings updated by host', 'event');
+    }
+
+    // Return to room menu
+    this.settingsMenuVisible = false;
+    this.updateRoomMenuContent();
+  }
+
+  applyConfigUpdate(config: any): void {
+    if (this.isHost) return;
+
+    if (config.playersPerTeam !== undefined) this.config.playersPerTeam = config.playersPerTeam;
+    if (config.kickMode !== undefined) this.config.kickMode = config.kickMode;
+    if (config.scoreLimit !== undefined) this.config.scoreLimit = config.scoreLimit;
+    if (config.timeLimit !== undefined) this.config.timeLimit = config.timeLimit;
+    if (config.kickStrength !== undefined) this.config.kickStrength = config.kickStrength;
+    if (config.playerRadius !== undefined) this.config.playerRadius = config.playerRadius;
+    if (config.ballConfig) {
+      this.config.ballConfig = { ...this.config.ballConfig, ...config.ballConfig };
+      this.state.ball.circle.radius = this.config.ballConfig.radius;
+      this.state.ball.circle.mass = this.config.ballConfig.mass;
+      this.state.ball.circle.invMass = this.config.ballConfig.mass > 0 ? 1 / this.config.ballConfig.mass : 0;
+      this.state.ball.circle.damping = this.config.ballConfig.damping;
+    }
   }
 
   movePlayerToTeam(playerId: string, team: 'red' | 'blue' | 'spectator'): void {
@@ -1240,7 +1477,7 @@ export class Game {
         id: playerId,
         name: roomPlayer.name,
         team,
-        circle: Physics.createCircle(spawn.x, spawn.y, 15, 10),
+        circle: Physics.createCircle(spawn.x, spawn.y, this.config.playerRadius, 10),
         input: { up: false, down: false, left: false, right: false, kick: false },
         kickCharge: 0,
         isChargingKick: false
@@ -1483,6 +1720,8 @@ export class Game {
       gameStarted: this.gameStarted,
       config: {
         kickMode: this.config.kickMode,
+        kickStrength: this.config.kickStrength,
+        playerRadius: this.config.playerRadius,
         ballConfig: this.config.ballConfig
       }
     };
@@ -1672,6 +1911,7 @@ export class Game {
       this.state.players = this.state.players.filter(p => p.id !== playerId);
       this.roomPlayers = this.roomPlayers.filter(p => p.id !== playerId);
       this.broadcastRoomUpdate();
+      this.updateRoomMenu(); // Atualizar UI da lista de jogadores
     });
 
     this.networkManager.onRoomUpdate((players) => {
@@ -1704,7 +1944,7 @@ export class Game {
               id: playerId,
               name: roomPlayer.name,
               team,
-              circle: Physics.createCircle(spawn.x, spawn.y, 15, 10),
+              circle: Physics.createCircle(spawn.x, spawn.y, this.config.playerRadius, 10),
               input: { up: false, down: false, left: false, right: false, kick: false },
               kickCharge: 0,
               isChargingKick: false
@@ -1785,6 +2025,20 @@ export class Game {
     this.networkManager.onConsoleEvent((text, type) => {
       // Client recebe eventos do console do host
       this.console.addMessage(text, type);
+    });
+
+    this.networkManager.onConfigUpdate((config) => {
+      this.applyConfigUpdate(config);
+    });
+
+    this.networkManager.onRoomClosed((reason) => {
+      // Sala foi fechada - voltar ao menu principal
+      alert(`Room closed: ${reason}`);
+      this.stop();
+      
+      // Importar showMainMenu do main.ts não é possível aqui
+      // Então vamos recarregar a página para voltar ao menu
+      window.location.reload();
     });
   }
 }

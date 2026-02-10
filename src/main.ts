@@ -108,11 +108,27 @@ function showMainMenu(): void {
   if (currentGame) {
     currentGame.stop();
   }
+  
+  // Desconectar da rede e destruir a sala
+  if (networkManager) {
+    networkManager.disconnect();
+    networkManager = null;
+  }
 }
 
 function showPlayMenu(): void {
   hideAllScreens();
   document.getElementById('play-menu')?.style.setProperty('display', 'block');
+  
+  // Desconectar da rede ao voltar para o menu de play
+  if (networkManager) {
+    networkManager.disconnect();
+    networkManager = null;
+  }
+  
+  if (currentGame) {
+    currentGame.stop();
+  }
 }
 
 function showHostMenu(): void {
@@ -214,6 +230,8 @@ async function joinRoomFromList(roomCode: string): Promise<void> {
       scoreLimit: 3,
       playersPerTeam: 2,
       kickMode: 'classic',
+      kickStrength: 500,
+      playerRadius: 15,
       ballConfig: {
         radius: 8,
         mass: 2,
@@ -349,6 +367,22 @@ function init(): void {
     });
   }
 
+  const kickStrengthInput = document.getElementById('kick-strength') as HTMLInputElement;
+  const kickStrengthValue = document.getElementById('kick-strength-value');
+  if (kickStrengthInput && kickStrengthValue) {
+    kickStrengthInput.addEventListener('input', () => {
+      kickStrengthValue.textContent = kickStrengthInput.value;
+    });
+  }
+
+  const playerRadiusInput = document.getElementById('player-radius') as HTMLInputElement;
+  const playerRadiusValue = document.getElementById('player-radius-value');
+  if (playerRadiusInput && playerRadiusValue) {
+    playerRadiusInput.addEventListener('input', () => {
+      playerRadiusValue.textContent = playerRadiusInput.value;
+    });
+  }
+
   if (btnHostRoom) {
     btnHostRoom.addEventListener('click', showHostMenu);
   }
@@ -370,6 +404,8 @@ function init(): void {
             scoreLimit: 3,
             playersPerTeam: 2,
             kickMode: 'classic',
+            kickStrength: 500,
+            playerRadius: 15,
             ballConfig: {
               radius: 8,
               mass: 2,
@@ -417,12 +453,16 @@ function init(): void {
       const ballRadius = parseFloat((document.getElementById('ball-radius') as HTMLInputElement).value);
       const ballMass = parseFloat((document.getElementById('ball-mass') as HTMLInputElement).value);
       const ballDamping = parseFloat((document.getElementById('ball-damping') as HTMLInputElement).value);
+      const kickStrength = parseFloat((document.getElementById('kick-strength') as HTMLInputElement).value);
+      const playerRadius = parseFloat((document.getElementById('player-radius') as HTMLInputElement).value);
       
       const config: GameConfig = {
         timeLimit: timeLimitMinutes * 60,
         scoreLimit: scoreLimit,
         playersPerTeam: playersPerTeam,
         kickMode: kickMode,
+        kickStrength: kickStrength,
+        playerRadius: playerRadius,
         ballConfig: {
           radius: ballRadius,
           mass: ballMass,

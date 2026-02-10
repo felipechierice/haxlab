@@ -8,8 +8,8 @@ export class Physics {
   static readonly FRICTION = 0.98;
   static readonly AIR_DAMPING = 0.985;
   static readonly PLAYER_ACCELERATION = 5;
-  static readonly PLAYER_MAX_SPEED = 180;
-  static readonly KICK_STRENGTH = 400;
+  static readonly PLAYER_MAX_SPEED = 200;
+  static readonly KICK_STRENGTH = 500;
   static readonly KICK_RADIUS = 35;
 
   static createVector(x: number = 0, y: number = 0): Vector2D {
@@ -56,6 +56,8 @@ export class Physics {
       invMass: mass > 0 ? 1 / mass : 0
     };
   }
+
+  
 
   static updateCircle(circle: Circle, dt: number): void {
     circle.pos.x += circle.vel.x * dt;

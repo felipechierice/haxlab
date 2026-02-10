@@ -10,6 +10,11 @@ export class Renderer {
   private readonly halfWidth: number;
   private readonly halfHeight: number;
   
+  // Rastro da bola
+  private ballTrail: Vector2D[] = [];
+  private readonly TRAIL_MAX_LENGTH = 25;
+  private readonly TRAIL_MIN_SPEED_SQ = 400; // velocidade mínima² para mostrar rastro (20²)
+  
   // Cache de cores
   private readonly colors = {
     background: '#1a1a2e',
@@ -89,6 +94,119 @@ export class Renderer {
     }
   }
 
+  private updateBallTrail(ball: Circle): void {
+    const speedSq = ball.vel.x * ball.vel.x + ball.vel.y * ball.vel.y;
+    
+    // Só adiciona ao rastro se a bola estiver em movimento
+    if (speedSq > this.TRAIL_MIN_SPEED_SQ) {
+      // Adiciona nova posição no início
+      this.ballTrail.unshift({ x: ball.pos.x, y: ball.pos.y });
+      
+      // Limita o tamanho do rastro
+      if (this.ballTrail.length > this.TRAIL_MAX_LENGTH) {
+        this.ballTrail.pop();
+      }
+    } else {
+      // Se a bola parou, vai apagando o rastro gradualmente
+      if (this.ballTrail.length > 0) {
+        this.ballTrail.pop();
+      }
+    }
+  }
+
+  private drawBallTrail(ballRadius: number): void {
+    if (this.ballTrail.length < 2) return;
+    
+    const ctx = this.ctx;
+    
+    ctx.save();
+    
+    // Desenha o rastro como um polígono que afina
+    ctx.beginPath();
+    
+    // Largura máxima na ponta (perto da bola) - um pouco menor que o raio da bola
+    const maxWidth = ballRadius;
+    
+    // Lado "direito" do rastro (indo da bola para a cauda)
+    for (let i = 0; i < this.ballTrail.length - 1; i++) {
+      const curr = this.ballTrail[i];
+      const next = this.ballTrail[i + 1];
+      
+      // Direção perpendicular ao movimento
+      const dx = next.x - curr.x;
+      const dy = next.y - curr.y;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      
+      if (len === 0) continue;
+      
+      // Normal perpendicular
+      const nx = -dy / len;
+      const ny = dx / len;
+      
+      // Largura diminui ao longo do rastro
+      const t = i / (this.ballTrail.length - 1);
+      const width = maxWidth * (1 - t);
+      
+      const px = curr.x + nx * width;
+      const py = curr.y + ny * width;
+      
+      if (i === 0) {
+        ctx.moveTo(px, py);
+      } else {
+        ctx.lineTo(px, py);
+      }
+    }
+    
+    // Ponta da cauda (ponto final)
+    const lastPoint = this.ballTrail[this.ballTrail.length - 1];
+    ctx.lineTo(lastPoint.x, lastPoint.y);
+    
+    // Lado "esquerdo" do rastro (voltando da cauda para a bola)
+    for (let i = this.ballTrail.length - 2; i >= 0; i--) {
+      const curr = this.ballTrail[i];
+      const next = this.ballTrail[i + 1];
+      
+      const dx = next.x - curr.x;
+      const dy = next.y - curr.y;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      
+      if (len === 0) continue;
+      
+      const nx = -dy / len;
+      const ny = dx / len;
+      
+      const t = i / (this.ballTrail.length - 1);
+      const width = maxWidth * (1 - t);
+      
+      const px = curr.x - nx * width;
+      const py = curr.y - ny * width;
+      
+      ctx.lineTo(px, py);
+    }
+    
+    ctx.closePath();
+    
+    // Gradiente de opacidade linear da bola até o fim do rastro
+    if (this.ballTrail.length > 0) {
+      const firstPoint = this.ballTrail[0];
+      const lastPoint = this.ballTrail[this.ballTrail.length - 1];
+      
+      const gradient = ctx.createLinearGradient(
+        firstPoint.x, firstPoint.y,
+        lastPoint.x, lastPoint.y
+      );
+      
+      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');    // Mais opaco perto da bola
+      gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');  // Meio do rastro
+      gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');      // Transparente no final
+      
+      ctx.fillStyle = gradient;
+      ctx.fill();
+    }
+    
+    ctx.restore();
+  }
+
   private drawBallWithConfig(x: number, y: number, radius: number, ballConfig: BallConfig): void {
     const ctx = this.ctx;
     ctx.fillStyle = ballConfig.color;
@@ -132,8 +250,12 @@ export class Renderer {
     this.clear();
     this.drawMap(map);
 
-    // Bola
+    // Atualiza e desenha o rastro da bola (antes da bola, para ficar atrás)
     const ball = state.ball.circle;
+    this.updateBallTrail(ball);
+    this.drawBallTrail(ball.radius);
+
+    // Bola
     if (ballConfig) {
       this.drawBallWithConfig(ball.pos.x, ball.pos.y, ball.radius, ballConfig);
     } else {
@@ -190,5 +312,9 @@ export class Renderer {
     ctx.fillText(name, x, y + yOffset);
     
     ctx.restore();
+  }
+
+  clearBallTrail(): void {
+    this.ballTrail = [];
   }
 }

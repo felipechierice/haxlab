@@ -89,5 +89,7 @@ export interface GameConfig {
   scoreLimit: number;
   playersPerTeam: number;
   kickMode: 'classic' | 'chargeable';
+  kickStrength: number;
+  playerRadius: number;
   ballConfig: BallConfig;
 }
