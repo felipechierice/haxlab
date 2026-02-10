@@ -1,0 +1,44 @@
+{
+  "kick": {
+    "type": "sine",
+    "frequency": 150,
+    "frequencyEnd": 40,
+    "duration": 0.15,
+    "volume": 0.4,
+    "attack": 0.001,
+    "release": 0.1
+  },
+  "goal": {
+    "type": "square",
+    "notes": [
+      { "frequency": 523, "startTime": 0, "duration": 0.15, "volume": 0.3 },
+      { "frequency": 659, "startTime": 0.08, "duration": 0.15, "volume": 0.3 },
+      { "frequency": 784, "startTime": 0.16, "duration": 0.25, "volume": 0.35 }
+    ],
+    "duration": 0.5,
+    "volume": 0.3,
+    "attack": 0.01,
+    "release": 0.15
+  },
+  "success": {
+    "type": "triangle",
+    "notes": [
+      { "frequency": 523, "startTime": 0, "duration": 0.1, "volume": 0.25 },
+      { "frequency": 659, "startTime": 0.06, "duration": 0.1, "volume": 0.25 },
+      { "frequency": 784, "startTime": 0.12, "duration": 0.15, "volume": 0.3 }
+    ],
+    "duration": 0.3,
+    "volume": 0.25,
+    "attack": 0.01,
+    "release": 0.08
+  },
+  "fail": {
+    "type": "sawtooth",
+    "frequency": 220,
+    "frequencyEnd": 110,
+    "duration": 0.25,
+    "volume": 0.25,
+    "attack": 0.01,
+    "release": 0.15
+  }
+}

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ballers - HaxBall Clone</title>
+    <title>HaxLab</title>
     <style>
         * {
             margin: 0;
@@ -18,6 +18,15 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
+            overflow-x: hidden;
+        }
+        body.game-active {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            background: #0a0a1a !important;
         }
         #app {
             width: 100%;
@@ -26,22 +35,26 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            background: transparent;
         }
-        #menu, #play-menu, #host-menu {
+        #menu, #game-modes-menu, #settings-menu {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
             padding: 40px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
         }
         #menu {
-            text-align: center;
             min-width: 400px;
         }
-        #play-menu, #host-menu, #rooms-list-menu {
-            text-align: center;
+        #game-modes-menu, #settings-menu {
             min-width: 500px;
             max-width: 600px;
-            display: none;
+        }
+        #settings-menu {
+            max-height: 90vh;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
         #rooms-container {
             margin: 20px 0;
@@ -243,25 +256,6 @@
             color: #333;
             align-items: center;
         }
-        #room-code-display {
-            background: #f0f0f0;
-            padding: 10px 20px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        #room-code-display code {
-            font-family: 'Courier New', monospace;
-            font-size: 18px;
-            color: #667eea;
-            font-weight: bold;
-        }
-        #btn-copy-code {
-            padding: 5px 15px;
-            font-size: 14px;
-            margin: 0;
-        }
         .score {
             padding: 10px 20px;
             background: #f0f0f0;
@@ -275,7 +269,7 @@
 <body>
     <div id="app">
         <div id="menu">
-            <h1 data-i18n="menu.title">⚽ Ballers</h1>
+            <h1 data-i18n="menu.title">HaxLab</h1>
             <div style="margin-bottom: 20px;">
                 <label style="display: block; margin-bottom: 10px; color: #667eea; font-weight: bold;" data-i18n="menu.language">Language</label>
                 <select id="language-select" style="padding: 10px; border-radius: 8px; border: 2px solid #667eea; font-size: 16px; cursor: pointer; min-width: 200px;">
@@ -286,175 +280,195 @@
             <button id="btn-play" data-i18n="menu.play">Play</button>
         </div>
 
-        <div id="play-menu">
-            <h2 data-i18n="play.title">⚽ Ballers</h2>
+        <div id="game-modes-menu" class="hidden" style="display: none;">
+            <h2 data-i18n="modes.title">⚽ Game Modes</h2>
+            
+            <button id="btn-free-training" data-i18n="modes.freeTraining">🎯 Free Training</button>
+            <button id="btn-playlists" data-i18n="modes.playlists">📋 Playlists</button>
+            <button class="secondary" id="btn-back-language" data-i18n="modes.back">Back</button>
+        </div>
+
+        <div id="playlists-menu" class="hidden" style="display: none;">
+            <h2 data-i18n="playlists.title">📋 Training Playlists</h2>
+            
+            <div id="playlists-list" style="margin: 20px 0;">
+                <!-- Playlists serão carregadas aqui -->
+            </div>
+            
+            <button class="secondary" id="btn-back-from-playlists" data-i18n="playlists.back">Back</button>
+        </div>
+
+        <div id="settings-menu" class="hidden" style="display: none;">
+            <h2 data-i18n="settings.title">⚙️ Match Settings</h2>
             
             <div class="form-group">
-                <label for="player-username" data-i18n="play.username">Your Username</label>
+                <label for="settings-map-select" data-i18n="settings.map">Map</label>
+                <select id="settings-map-select">
+                    <option value="default" data-i18n="settings.mapDefault">Default Stadium</option>
+                    <option value="classic" data-i18n="settings.mapClassic">Classic Arena</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="settings-score-limit" data-i18n="settings.scoreLimit">Score Limit</label>
+                <input type="number" id="settings-score-limit" min="1" max="10" value="3">
+            </div>
+
+            <div class="form-group">
+                <label for="settings-time-limit" data-i18n="settings.timeLimit">Time Limit (minutes)</label>
+                <input type="number" id="settings-time-limit" min="1" max="30" value="5">
+            </div>
+
+            <div class="form-group">
+                <label for="settings-kick-mode" data-i18n="settings.kickMode">Kick Mode</label>
+                <select id="settings-kick-mode">
+                    <option value="classic" data-i18n="settings.kickClassic">Classic (instant)</option>
+                    <option value="chargeable" data-i18n="settings.kickChargeable">Chargeable (hold to power up)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="settings-kick-strength">Kick Strength</label>
+                <input type="range" id="settings-kick-strength" min="200" max="1000" value="500" step="50">
+                <span id="settings-kick-strength-value">500</span>
+            </div>
+
+            <div class="form-group">
+                <label for="settings-player-radius">Player Size</label>
+                <input type="range" id="settings-player-radius" min="10" max="25" value="15" step="1">
+                <span id="settings-player-radius-value">15</span>
+            </div>
+
+            <div class="form-group">
+                <label for="settings-ball-color" data-i18n="settings.ballColor">Ball Color</label>
+                <input type="color" id="settings-ball-color" value="#ffff00">
+            </div>
+
+            <div class="form-group">
+                <label for="settings-ball-border-color" data-i18n="settings.ballBorderColor">Ball Border Color</label>
+                <input type="color" id="settings-ball-border-color" value="#000000">
+            </div>
+
+            <div class="form-group">
+                <label for="settings-ball-radius" data-i18n="settings.ballRadius">Ball Radius</label>
+                <input type="range" id="settings-ball-radius" min="5" max="15" value="8" step="0.5">
+                <span id="settings-ball-radius-value">8</span>
+            </div>
+
+            <div class="form-group">
+                <label for="settings-ball-mass" data-i18n="settings.ballMass">Ball Mass</label>
+                <input type="range" id="settings-ball-mass" min="1" max="20" value="3" step="0.5">
+                <span id="settings-ball-mass-value">3</span>
+            </div>
+
+            <div class="form-group">
+                <label for="settings-ball-damping" data-i18n="settings.ballDamping">Ball Damping (friction)</label>
+                <input type="range" id="settings-ball-damping" min="0.95" max="0.999" value="0.99" step="0.001">
+                <span id="settings-ball-damping-value">0.99</span>
+            </div>
+
+            <div class="form-group">
+                <label for="settings-kick-speed-multiplier">Movement Speed While Holding Kick</label>
+                <input type="range" id="settings-kick-speed-multiplier" min="0.3" max="1.0" value="0.5" step="0.05">
+                <span id="settings-kick-speed-multiplier-value">0.5</span>
+            </div>
+
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">⌨️ Key Bindings</h3>
+            
+            <div class="form-group">
+                <label>Move Up</label>
                 <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="text" id="player-username" placeholder="" value="" maxlength="20" style="flex: 1;">
-                    <button id="btn-random-name" style="padding: 10px 20px; margin: 0; white-space: nowrap;" data-i18n-title="play.randomName" title="Generate random name">🎲</button>
+                    <input type="text" id="keybind-up" readonly style="cursor: pointer; background: #f5f5f5;">
+                    <button class="secondary" onclick="configureKeybind('up')">Change</button>
                 </div>
             </div>
-            
-            <button id="btn-host-room" data-i18n="play.hostRoom">Host Room</button>
-            <button id="btn-join-code" data-i18n="play.joinCode">Join with Code</button>
-            <button id="btn-list-rooms" data-i18n="play.listRooms">List Rooms</button>
-            <button class="secondary" id="btn-back-main" data-i18n="play.back">Back</button>
-        </div>
 
-        <div id="rooms-list-menu">
-            <h2 data-i18n="rooms.title">Available Rooms</h2>
-            
             <div class="form-group">
-                <button id="btn-refresh-rooms" data-i18n="rooms.refresh">🔄 Refresh</button>
-            </div>
-            
-            <div id="rooms-container">
-                <p id="loading-rooms" data-i18n="rooms.loading">Loading rooms...</p>
-                <p id="no-rooms" class="hidden" data-i18n="rooms.noRooms">No public rooms available. Create one!</p>
-                <table id="rooms-table">
-                    <thead>
-                        <tr>
-                            <th data-i18n="rooms.tableCode">Room Code</th>
-                            <th data-i18n="rooms.tableName">Name</th>
-                            <th data-i18n="rooms.tablePlayers">Players</th>
-                            <th data-i18n="rooms.tableMode">Mode</th>
-                            <th data-i18n="rooms.tableKick">Kick</th>
-                            <th data-i18n="rooms.tableScore">Score</th>
-                            <th data-i18n="rooms.tableTime">Time</th>
-                            <th data-i18n="rooms.tablePing">Ping</th>
-                        </tr>
-                    </thead>
-                    <tbody id="rooms-list"></tbody>
-                </table>
-            </div>
-            
-            <button class="secondary" id="btn-back-play-from-list" data-i18n="rooms.back">Back</button>
-        </div>
-
-        <div id="host-menu">
-            <h2 data-i18n="host.title">Host Room</h2>
-            
-            <div class="form-group">
-                <label for="room-name" data-i18n="host.roomName">Room Name</label>
-                <input type="text" id="room-name" data-i18n-placeholder="host.roomNamePlaceholder" placeholder="My Room" value="">
+                <label>Move Down</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="keybind-down" readonly style="cursor: pointer; background: #f5f5f5;">
+                    <button class="secondary" onclick="configureKeybind('down')">Change</button>
+                </div>
             </div>
 
             <div class="form-group">
-                <label for="map-select" data-i18n="host.map">Map</label>
-                <select id="map-select">
-                    <option value="default" data-i18n="host.mapDefault">Default Stadium</option>
-                    <option value="classic" data-i18n="host.mapClassic">Classic Arena</option>
-                </select>
+                <label>Move Left</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="keybind-left" readonly style="cursor: pointer; background: #f5f5f5;">
+                    <button class="secondary" onclick="configureKeybind('left')">Change</button>
+                </div>
             </div>
 
             <div class="form-group">
-                <label for="players-per-team" data-i18n="host.playersPerTeam">Players per Team</label>
-                <select id="players-per-team">
-                    <option value="1">1v1</option>
-                    <option value="2" selected>2v2</option>
-                    <option value="3">3v3</option>
-                </select>
+                <label>Move Right</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="keybind-right" readonly style="cursor: pointer; background: #f5f5f5;">
+                    <button class="secondary" onclick="configureKeybind('right')">Change</button>
+                </div>
             </div>
 
             <div class="form-group">
-                <label for="score-limit" data-i18n="host.scoreLimit">Score Limit</label>
-                <input type="number" id="score-limit" min="1" max="10" value="3">
+                <label>Kick</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="keybind-kick" readonly style="cursor: pointer; background: #f5f5f5;">
+                    <button class="secondary" onclick="configureKeybind('kick')">Change</button>
+                </div>
             </div>
 
             <div class="form-group">
-                <label for="time-limit" data-i18n="host.timeLimit">Time Limit (minutes)</label>
-                <input type="number" id="time-limit" min="1" max="30" value="5">
+                <label>Switch Player</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="keybind-switchPlayer" readonly style="cursor: pointer; background: #f5f5f5;">
+                    <button class="secondary" onclick="configureKeybind('switchPlayer')">Change</button>
+                </div>
             </div>
 
             <div class="form-group">
-                <label for="kick-mode" data-i18n="host.kickMode">Kick Mode</label>
-                <select id="kick-mode">
-                    <option value="classic" data-i18n="host.kickClassic">Classic (instant)</option>
-                    <option value="chargeable" data-i18n="host.kickChargeable">Chargeable (hold to power up)</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="kick-strength">Kick Strength</label>
-                <input type="range" id="kick-strength" min="200" max="1000" value="500" step="50">
-                <span id="kick-strength-value">500</span>
-            </div>
-
-            <div class="form-group">
-                <label for="player-radius">Player Size</label>
-                <input type="range" id="player-radius" min="10" max="25" value="15" step="1">
-                <span id="player-radius-value">15</span>
-            </div>
-
-            <div class="form-group">
-                <label for="ball-color" data-i18n="host.ballColor">Ball Color</label>
-                <input type="color" id="ball-color" value="#ffff00">
-            </div>
-
-            <div class="form-group">
-                <label for="ball-border-color" data-i18n="host.ballBorderColor">Ball Border Color</label>
-                <input type="color" id="ball-border-color" value="#000000">
-            </div>
-
-            <div class="form-group">
-                <label for="ball-radius" data-i18n="host.ballRadius">Ball Radius</label>
-                <input type="range" id="ball-radius" min="5" max="15" value="8" step="0.5">
-                <span id="ball-radius-value">8</span>
-            </div>
-
-            <div class="form-group">
-                <label for="ball-mass" data-i18n="host.ballMass">Ball Mass</label>
-                <input type="range" id="ball-mass" min="1" max="20" value="3" step="0.5">
-                <span id="ball-mass-value">3</span>
-            </div>
-
-            <div class="form-group">
-                <label for="ball-damping" data-i18n="host.ballDamping">Ball Damping (friction)</label>
-                <input type="range" id="ball-damping" min="0.95" max="0.999" value="0.99" step="0.001">
-                <span id="ball-damping-value">0.99</span>
-            </div>
-
-            <div class="form-group">
-                <label for="room-password" data-i18n="host.password">Password (optional)</label>
-                <input type="password" id="room-password" data-i18n-placeholder="host.passwordPlaceholder" placeholder="Leave empty for public room">
+                <button class="secondary" onclick="resetKeybindings()" style="width: 100%;">Reset to Default</button>
             </div>
 
             <div class="button-group">
-                <button id="btn-create-room" data-i18n="host.create">Create & Start</button>
-                <button class="secondary" id="btn-back-play" data-i18n="host.back">Back</button>
+                <button id="btn-apply-settings" data-i18n="settings.apply">Apply & Restart</button>
+                <button class="secondary" id="btn-resume-game" data-i18n="settings.resume">Resume</button>
             </div>
         </div>
         
         <div id="game-container" class="hidden">
-            <div id="game-console">
+            <div id="game-console" style="display: none;">
                 <div id="console-messages"></div>
                 <div id="console-input-container">
                     <input type="text" id="console-input" data-i18n-placeholder="game.chatPlaceholder" placeholder="Press Enter to chat..." maxlength="200">
                 </div>
             </div>
+            
+            <!-- HUD para modo Playlist -->
+            <div id="playlist-hud" class="hidden" style="position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.8); color: white; padding: 15px; border-radius: 10px; font-family: Arial; z-index: 1000; min-width: 250px;">
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;" id="playlist-name">Playlist</div>
+                <div style="font-size: 14px; margin-bottom: 8px;" id="scenario-name">Cenário</div>
+                <div style="font-size: 12px; color: #aaa; margin-bottom: 15px;">
+                    <span id="scenario-progress">1/5</span> cenários
+                </div>
+                <div style="font-size: 16px; font-weight: bold; color: #ffff00; margin-bottom: 8px;">
+                    ⏱️ <span id="scenario-timer">30.0s</span>
+                </div>
+                <div style="font-size: 11px; color: #ccc; margin-top: 15px; border-top: 1px solid #555; padding-top: 10px;">
+                    <div>R - Resetar cenário</div>
+                    <div>N - Próximo cenário</div>
+                    <div>P - Cenário anterior</div>
+                    <div>ESC - Sair</div>
+                </div>
+            </div>
+            
+            <!-- Mensagem de feedback -->
+            <div id="playlist-feedback" class="hidden" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.9); color: white; padding: 30px 50px; border-radius: 15px; font-size: 24px; font-weight: bold; z-index: 2000; text-align: center;">
+                <div id="feedback-text">Texto</div>
+            </div>
+            
             <canvas id="game-canvas" width="1000" height="600"></canvas>
-            <div id="spectator-status" class="hidden" style="
-                position: absolute;
-                top: 10px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: rgba(0, 0, 0, 0.8);
-                color: #fff;
-                padding: 10px 20px;
-                border-radius: 8px;
-                font-size: 14px;
-                z-index: 100;
-            " data-i18n="game.spectating">👁️ Spectating - Press ESC to open Room Menu</div>
             <div id="game-info">
                 <div class="score red-team"><span data-i18n="game.red">Red</span>: <span id="red-score">0</span></div>
                 <div class="score"><span data-i18n="game.time">Time</span>: <span id="game-time">0:00</span></div>
                 <div class="score blue-team"><span data-i18n="game.blue">Blue</span>: <span id="blue-score">0</span></div>
-                <div id="room-code-display">
-                    <span data-i18n="game.room">Room</span>: <code id="room-code">XXXX</code>
-                    <button id="btn-copy-code" data-i18n="game.copy">Copy</button>
-                </div>
             </div>
             <button id="btn-menu" data-i18n="game.backToMenu">Back to Menu</button>
         </div>

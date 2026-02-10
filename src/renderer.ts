@@ -271,8 +271,9 @@ export class Renderer {
       
       this.drawCircle(circle.pos.x, circle.pos.y, circle.radius, color, true);
       
-      // Desenha indicador de força de chute se estiver carregando
-      if (player.kickCharge > 0) {
+      // Desenha círculo de carregamento de chute (só se não tiver chutado ainda ou se está no feedback visual)
+      const shouldShowKickIndicator = (player.isChargingKick && !player.hasKickedThisPress) || player.kickFeedbackTime > 0;
+      if (shouldShowKickIndicator) {
         this.drawKickChargeIndicator(circle.pos.x, circle.pos.y, circle.radius, player.kickCharge);
       }
       
@@ -287,14 +288,29 @@ export class Renderer {
 
   private drawKickChargeIndicator(x: number, y: number, playerRadius: number, charge: number): void {
     const ctx = this.ctx;
-    const chargeRadius = playerRadius * charge; // Cresce até o raio total do jogador
+    const ringRadius = playerRadius + 5; // Círculo ao redor do player (reduzido)
+    const lineWidth = 2.5; // Mais fino
     
     ctx.save();
-    ctx.globalAlpha = 0.5; // Semi-transparente
-    ctx.fillStyle = this.colors.white;
+    
+    // Círculo de fundo (opcional, mais discreto)
+    ctx.globalAlpha = 0.15;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = lineWidth;
     ctx.beginPath();
-    ctx.arc(x, y, chargeRadius, 0, this.PI2);
-    ctx.fill();
+    ctx.arc(x, y, ringRadius, 0, this.PI2);
+    ctx.stroke();
+    
+    // Círculo de progresso
+    const endAngle = -Math.PI / 2 + (charge * this.PI2); // Começa no topo e cresce
+    ctx.globalAlpha = 1.0; // Completamente opaco
+    ctx.strokeStyle = '#ffffff'; // Branco brilhante
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(x, y, ringRadius, -Math.PI / 2, endAngle);
+    ctx.stroke();
+    
     ctx.restore();
   }
 
@@ -316,5 +332,9 @@ export class Renderer {
 
   clearBallTrail(): void {
     this.ballTrail = [];
+  }
+  
+  getContext(): CanvasRenderingContext2D {
+    return this.ctx;
   }
 }

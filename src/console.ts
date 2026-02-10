@@ -12,7 +12,6 @@ export class GameConsole {
   private maxMessages: number = 100;
   private isInputActive: boolean = false;
   private onChatMessageCallback: ((message: string) => void) | null = null;
-  private onEventBroadcastCallback: ((text: string, type: 'event' | 'chat') => void) | null = null;
 
   constructor() {
     this.messagesElement = document.getElementById('console-messages')!;
@@ -74,7 +73,7 @@ export class GameConsole {
     }
   }
 
-  public addMessage(text: string, type: 'event' | 'chat' = 'event', broadcast: boolean = true): void {
+  public addMessage(text: string, type: 'event' | 'chat' = 'event'): void {
     const message: ConsoleMessage = {
       type,
       text,
@@ -90,12 +89,6 @@ export class GameConsole {
 
     this.renderMessage(message);
     this.scrollToBottom();
-    
-    // Notifica para broadcast (se for host e se broadcast=true)
-    // Chat messages não devem usar esse sistema (têm sistema próprio)
-    if (broadcast && type === 'event' && this.onEventBroadcastCallback) {
-      this.onEventBroadcastCallback(text, type);
-    }
   }
 
   private renderMessage(message: ConsoleMessage): void {
@@ -157,10 +150,6 @@ export class GameConsole {
     return this.isInputActive;
   }
 
-  public onEventBroadcast(callback: (text: string, type: 'event' | 'chat') => void): void {
-    this.onEventBroadcastCallback = callback;
-  }
-
   public onChatMessage(callback: (message: string) => void): void {
     this.onChatMessageCallback = callback;
   }
@@ -212,7 +201,6 @@ export class GameConsole {
   }
 
   public addChatMessage(playerName: string, message: string): void {
-    // Chat messages usam broadcast=false porque têm sistema próprio de network
-    this.addMessage(`^7${playerName}^7: ${message}`, 'chat', false);
+    this.addMessage(`^7${playerName}^7: ${message}`, 'chat');
   }
 }

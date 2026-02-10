@@ -1,8 +1,10 @@
-import { GameState, Player, GameMap, Goal, Vector2D, GameConfig, RoomPlayer } from './types.js';
+import { GameState, Player, GameMap, Goal, Vector2D, GameConfig, BotBehavior } from './types.js';
 import { Physics } from './physics.js';
 import { Renderer } from './renderer.js';
-import { NetworkManager } from './network.js';
 import { GameConsole } from './console.js';
+import { BotAI } from './botAI.js';
+import { audioManager } from './audio.js';
+import { keyBindings } from './keybindings.js';
 
 export class Game {
   private state: GameState;
@@ -13,23 +15,17 @@ export class Game {
   private animationId: number = 0;
   private keyState: { [key: string]: boolean } = {};
   private controlledPlayerId: string = 'local-0';
-  private localPlayerName: string = 'Player'; // Nome local do jogador
-  private networkManager: NetworkManager | null = null;
-  private isMultiplayer: boolean = false;
-  private isHost: boolean = false;
-  private lastInputSent: string = '';
-  private wasKickPressed: boolean = false;
-  private inputSendCounter: number = 0;
   private console: GameConsole;
   private lastBallToucher: { id: string, name: string, team: 'red' | 'blue' } | null = null;
-  private goalJustScored: boolean = false; // Flag para impedir múltiplos gols
-  
-  // Room menu state
-  private roomMenuVisible: boolean = false;
-  private settingsMenuVisible: boolean = false;
-  private roomPlayers: RoomPlayer[] = [];
-  private roomMenuElement: HTMLElement | null = null;
-  private gameStarted: boolean = false;
+  private goalJustScored: boolean = false;
+  private isPaused: boolean = false;
+  private customRenderCallback: ((ctx: CanvasRenderingContext2D) => void) | null = null;
+  private customUpdateCallback: (() => void) | null = null;
+  private customKickCallback: (() => void) | null = null;
+  private bots: Map<string, BotAI> = new Map();
+  private ballTouches: Map<string, number> = new Map(); // Rastreia toques na bola por bot/jogador
+  private customBallTouchCallback: ((playerId: string) => void) | null = null;
+  private customGoalCallback: ((team: 'red' | 'blue') => void) | null = null;
   
   // Cache de elementos DOM para evitar lookups repetidos
   private uiElements: {
@@ -43,43 +39,11 @@ export class Game {
   
   // Cache de estado anterior para evitar atualizações DOM desnecessárias
   private lastUIState = { redScore: -1, blueScore: -1, time: -1 };
-  
-  // Interpolação para client: estado alvo recebido do host
-  private targetState: {
-    players: Map<string, { x: number, y: number, vx: number, vy: number }>;
-    ball: { x: number, y: number, vx: number, vy: number };
-  } | null = null;
-  
-  // Buffer de estados para Entity Interpolation (mostra outros jogadores "no passado")
-  private stateBuffer: Array<{
-    timestamp: number;
-    players: Map<string, { x: number, y: number, vx: number, vy: number }>;
-    ball: { x: number, y: number, vx: number, vy: number };
-  }> = [];
-  private readonly STATE_BUFFER_SIZE = 3; // Mantém últimos 3 estados
-  private readonly INTERPOLATION_DELAY_MS = 100; // Renderiza 100ms no passado
-  private lastServerTimestamp: number = 0;
-  
-  // Constantes de interpolação/reconciliação
-  private readonly INTERPOLATION_SPEED = 0.2; // Fator de interpolação para outros jogadores
-  private readonly BALL_INTERPOLATION_SPEED = 0.25; // Fator de interpolação para a bola
-  
-  // Client-Side Prediction: permite que o peer tenha resposta imediata
-  private readonly CLIENT_PREDICTION_ENABLED = true;
-  private readonly RECONCILIATION_THRESHOLD = 100; // Distância máxima antes de snap (pixels)
-  private readonly RECONCILIATION_SPEED = 0.08; // Velocidade de correção
-  private newStateReceived: boolean = false; // Flag para saber quando reconciliar
-  
-  // Física local da bola para o peer (predição de colisão)
-  private localBallPhysicsEnabled: boolean = true;
 
-  constructor(canvas: HTMLCanvasElement, map: GameMap, config: GameConfig, networkManager?: NetworkManager) {
+  constructor(canvas: HTMLCanvasElement, map: GameMap, config: GameConfig) {
     this.renderer = new Renderer(canvas);
     this.map = map;
     this.config = config;
-    this.networkManager = networkManager || null;
-    this.isMultiplayer = !!networkManager;
-    this.isHost = networkManager?.getIsHost() || false;
     this.console = new GameConsole();
     
     this.state = {
@@ -104,20 +68,7 @@ export class Game {
     this.setupConsole();
   }
 
-  addPlayer(id: string, name: string, team: 'red' | 'blue' | 'spectator'): void {
-    // Adiciona ao roomPlayers para tracking
-    if (!this.roomPlayers.find(p => p.id === id)) {
-      this.roomPlayers.push({ id, name, team });
-      this.broadcastRoomUpdate();
-      // Log de entrada
-      this.console.logPlayerJoined(name);
-    }
-    
-    // Spectators não têm representação física no jogo
-    if (team === 'spectator') {
-      return;
-    }
-    
+  addPlayer(id: string, name: string, team: 'red' | 'blue'): void {
     const spawnPoints = team === 'red' ? this.map.spawnPoints.red : this.map.spawnPoints.blue;
     const spawnIndex = this.state.players.filter(p => p.team === team).length % spawnPoints.length;
     const spawn = spawnPoints[spawnIndex];
@@ -129,36 +80,57 @@ export class Game {
       circle: Physics.createCircle(spawn.x, spawn.y, this.config.playerRadius, 10),
       input: { up: false, down: false, left: false, right: false, kick: false },
       kickCharge: 0,
-      isChargingKick: false
+      isChargingKick: false,
+      hasKickedThisPress: false,
+      kickFeedbackTime: 0
     };
 
     this.state.players.push(player);
-  }
-  
-  addSpectator(id: string, name: string): void {
-    this.addPlayer(id, name, 'spectator');
-  }
-  
-  private broadcastRoomUpdate(): void {
-    if (this.isHost && this.networkManager) {
-      this.networkManager.broadcastRoomUpdate(this.roomPlayers);
-    }
-    this.updateRoomMenu();
+    this.ballTouches.set(id, 0);
   }
 
+  addBot(id: string, name: string, team: 'red' | 'blue', spawn: Vector2D, behavior: BotBehavior, initialVelocity?: Vector2D): void {
+    const bot: Player = {
+      id,
+      name,
+      team,
+      circle: Physics.createCircle(spawn.x, spawn.y, this.config.playerRadius, 10),
+      input: { up: false, down: false, left: false, right: false, kick: false },
+      kickCharge: 0,
+      isChargingKick: false,
+      hasKickedThisPress: false,
+      kickFeedbackTime: 0,
+      isBot: true,
+      botBehavior: behavior
+    };
+
+    if (initialVelocity) {
+      bot.circle.vel.x = initialVelocity.x;
+      bot.circle.vel.y = initialVelocity.y;
+    }
+
+    this.state.players.push(bot);
+    this.ballTouches.set(id, 0);
+    
+    // Criar IA para o bot
+    const botAI = new BotAI(bot, behavior);
+    this.bots.set(id, botAI);
+  }
+
+  removeAllBots(): void {
+    // Remove todos os bots do jogo
+    this.state.players = this.state.players.filter(p => !p.isBot);
+    this.bots.clear();
+  }
+  
   setControlledPlayer(playerId: string): void {
     this.controlledPlayerId = playerId;
   }
-  
-  setLocalPlayerName(name: string): void {
-    this.localPlayerName = name;
-  }
 
   initPlayers(): void {
-    for (let i = 0; i < this.config.playersPerTeam; i++) {
-      this.addPlayer(`local-${i}`, `Red ${i + 1}`, 'red');
-      this.addPlayer(`bot-${i}`, `Blue ${i + 1}`, 'blue');
-    }
+    // Single player - apenas 1 jogador no time red
+    // A implementação genérica de addPlayer permite adicionar bots futuramente
+    this.addPlayer('local-0', 'Player', 'red');
   }
 
   private setupControls(): void {
@@ -169,20 +141,16 @@ export class Game {
       // Evita key repeat
       if (e.repeat) return;
       
-      // ESC toggle room menu
-      if (e.key === 'Escape' && this.isMultiplayer) {
-        e.preventDefault();
-        this.toggleRoomMenu();
-        return;
-      }
-      
       this.keyState[e.key] = true;
-      if (e.key === ' ') {
+      
+      // Chute
+      if (keyBindings.isKeyBound(e.key, 'kick')) {
         e.preventDefault();
         this.handleKickInput();
       }
       
-      if (e.key === 'Tab') {
+      // Trocar jogador
+      if (keyBindings.isKeyBound(e.key, 'switchPlayer')) {
         e.preventDefault();
         this.switchPlayer();
       }
@@ -194,8 +162,8 @@ export class Game {
       
       this.keyState[e.key] = false;
       
-      // No modo carregável, soltar a tecla dispara o chute
-      if (e.key === ' ' && this.config.kickMode === 'chargeable') {
+      // Soltar tecla de chute em qualquer modo
+      if (keyBindings.isKeyBound(e.key, 'kick')) {
         this.handleKickRelease();
       }
     });
@@ -203,54 +171,19 @@ export class Game {
   
   private setupConsole(): void {
     this.console.onChatMessage((message) => {
-      if (this.isMultiplayer && this.networkManager) {
-        // Envia mensagem de chat pela network
-        const playerName = this.getPlayerName(this.controlledPlayerId);
-        
-        // Adiciona localmente SEMPRE (host e peer)
-        this.console.addChatMessage(playerName, message);
-        
-        // Envia pela network
-        this.networkManager.sendChatMessage(playerName, message);
-      } else {
-        // Single player - apenas local
-        const playerName = this.getPlayerName(this.controlledPlayerId);
-        this.console.addChatMessage(playerName, message);
-      }
+      // Single player - apenas adiciona localmente
+      const playerName = this.getPlayerName(this.controlledPlayerId);
+      this.console.addChatMessage(playerName, message);
     });
-    
-    // Se for host, broadcast eventos para os clientes
-    if (this.isHost && this.networkManager) {
-      this.console.onEventBroadcast((text, type) => {
-        this.networkManager?.broadcastConsoleEvent(text, type);
-      });
-    }
   }
   
   private getPlayerName(playerId: string): string {
-    // Tenta buscar em roomPlayers primeiro
-    const roomPlayer = this.roomPlayers.find(p => p.id === playerId);
-    if (roomPlayer) return roomPlayer.name;
-    
-    // Tenta buscar em state.players
     const player = this.state.players.find(p => p.id === playerId);
     if (player) return player.name;
-    
-    // Se for o controlledPlayerId, usa o nome local armazenado
-    if (playerId === this.controlledPlayerId) {
-      return this.localPlayerName;
-    }
-    
-    return 'Unknown';
+    return 'Player';
   }
   
-  private broadcastChatExcept(playerName: string, message: string, excludeId: string): void {
-    if (this.networkManager) {
-      this.networkManager.broadcastChatExcept(playerName, message, excludeId);
-    }
-  }
-  
-  // Processa kick imediatamente para resposta mais rápida
+  // Processa kick imediatamente
   private handleKickInput(): void {
     if (!this.state.running || this.state.finished) return;
     
@@ -261,77 +194,43 @@ export class Game {
     if (this.config.kickMode === 'chargeable') {
       player.isChargingKick = true;
       player.kickCharge = 0;
-      
-      // Se for multiplayer client, notifica que começou a carregar
-      if (this.isMultiplayer && !this.isHost && this.networkManager) {
-        this.networkManager.sendInput({
-          up: !!(this.keyState['ArrowUp'] || this.keyState['w']),
-          down: !!(this.keyState['ArrowDown'] || this.keyState['s']),
-          left: !!(this.keyState['ArrowLeft'] || this.keyState['a']),
-          right: !!(this.keyState['ArrowRight'] || this.keyState['d']),
-          kick: false // Kick só será true quando soltar
-        });
-      }
+      player.hasKickedThisPress = false;
       return;
     }
     
-    // Modo clássico: kick imediato
-    // Se for multiplayer client, envia kick imediatamente para o host E simula localmente
-    if (this.isMultiplayer && !this.isHost) {
-      if (this.networkManager) {
-        // Envia input com kick=true imediatamente
-        this.networkManager.sendInput({
-          up: !!(this.keyState['ArrowUp'] || this.keyState['w']),
-          down: !!(this.keyState['ArrowDown'] || this.keyState['s']),
-          left: !!(this.keyState['ArrowLeft'] || this.keyState['a']),
-          right: !!(this.keyState['ArrowRight'] || this.keyState['d']),
-          kick: true
-        });
-        
-        // Client-Side Prediction: simula kick localmente para feedback visual imediato
-        // O estado real da bola será corrigido quando receber update do host
-        if (this.CLIENT_PREDICTION_ENABLED) {
-          this.tryKickLocal(player);
-        }
-      }
-      return;
-    }
+    // Modo clássico: kick imediato e mostra indicador enquanto tecla pressionada
+    player.isChargingKick = true;
+    player.kickCharge = 1;
+    player.hasKickedThisPress = false;
+    this.tryKick(player); // tryKick vai marcar hasKickedThisPress se chutar
     
-    // Host ou singleplayer: executa kick diretamente
-    this.tryKick(player);
+    // Notificar callback customizado
+    if (this.customKickCallback) {
+      this.customKickCallback();
+    }
   }
 
   private handleKickRelease(): void {
     if (!this.state.running || this.state.finished) return;
     
     const player = this.state.players.find(p => p.id === this.controlledPlayerId);
-    if (!player || !player.isChargingKick) return;
+    if (!player) return;
     
-    const chargeAmount = player.kickCharge;
-    player.isChargingKick = false;
-    
-    // Se for multiplayer client, envia kick com a força carregada
-    if (this.isMultiplayer && !this.isHost && this.networkManager) {
-      this.networkManager.sendInput({
-        up: !!(this.keyState['ArrowUp'] || this.keyState['w']),
-        down: !!(this.keyState['ArrowDown'] || this.keyState['s']),
-        left: !!(this.keyState['ArrowLeft'] || this.keyState['a']),
-        right: !!(this.keyState['ArrowRight'] || this.keyState['d']),
-        kick: true,
-        kickCharge: chargeAmount
-      });
+    // Modo carregável: executa kick com força carregada
+    if (this.config.kickMode === 'chargeable' && player.isChargingKick) {
+      const chargeAmount = player.kickCharge;
+      this.tryKick(player, chargeAmount);
       
-      // Client-Side Prediction: simula kick localmente para feedback visual imediato
-      if (this.CLIENT_PREDICTION_ENABLED) {
-        this.tryKickLocal(player, chargeAmount);
+      // Notificar callback customizado
+      if (this.customKickCallback) {
+        this.customKickCallback();
       }
-      player.kickCharge = 0;
-      return;
     }
     
-    // Host ou singleplayer: executa kick com força carregada
-    this.tryKick(player, chargeAmount);
+    // Desativa indicador em ambos os modos
+    player.isChargingKick = false;
     player.kickCharge = 0;
+    player.hasKickedThisPress = false;
   }
 
   private switchPlayer(): void {
@@ -346,41 +245,20 @@ export class Game {
   private updatePlayerInput(player: Player): void {
     if (player.id === this.controlledPlayerId) {
       // Reutiliza objeto cacheado para evitar alocações
-      // Nota: kick agora é processado diretamente no keydown, não aqui
       const input = this.cachedInput;
-      input.up = !!(this.keyState['ArrowUp'] || this.keyState['w']);
-      input.down = !!(this.keyState['ArrowDown'] || this.keyState['s']);
-      input.left = !!(this.keyState['ArrowLeft'] || this.keyState['a']);
-      input.right = !!(this.keyState['ArrowRight'] || this.keyState['d']);
+      const binds = keyBindings.getBindings();
+      
+      input.up = binds.up.some(key => this.keyState[key]);
+      input.down = binds.down.some(key => this.keyState[key]);
+      input.left = binds.left.some(key => this.keyState[key]);
+      input.right = binds.right.some(key => this.keyState[key]);
       input.kick = false; // Kick é processado no keydown
       
-      // SEMPRE copia valores para o player (para Client-Side Prediction funcionar)
+      // Copia valores para o player
       player.input.up = input.up;
       player.input.down = input.down;
       player.input.left = input.left;
       player.input.right = input.right;
-      
-      if (this.isMultiplayer && !this.isHost) {
-        // Comparação rápida sem JSON.stringify (sem kick pois é tratado separadamente)
-        const inputKey = `${+input.up}${+input.down}${+input.left}${+input.right}`;
-        const inputChanged = inputKey !== this.lastInputSent;
-        
-        this.inputSendCounter++;
-        const shouldSendPeriodic = this.inputSendCounter >= 5;
-        if (shouldSendPeriodic) {
-          this.inputSendCounter = 0;
-        }
-        
-        if ((inputChanged || shouldSendPeriodic || player.isChargingKick) && this.networkManager) {
-          this.networkManager.sendInput({ 
-            ...input,
-            isChargingKick: player.isChargingKick,
-            kickCharge: player.kickCharge
-          });
-          this.lastInputSent = inputKey;
-        }
-      }
-      // kick é setado pelo handleKickInput
     }
   }
 
@@ -391,9 +269,22 @@ export class Game {
     if (this.config.kickMode === 'chargeable' && player.isChargingKick) {
       player.kickCharge = Math.min(1, player.kickCharge + dt); // 1 segundo para carregar totalmente
     }
+    
+    // Atualiza tempo de feedback visual do chute
+    if (player.kickFeedbackTime > 0) {
+      player.kickFeedbackTime = Math.max(0, player.kickFeedbackTime - dt);
+    }
 
     const accel = Physics.PLAYER_ACCELERATION;
-    const maxSpeed = Physics.PLAYER_MAX_SPEED;
+    const baseSpeedMultiplier = player.maxSpeedMultiplier ?? 1;
+    const baseMaxSpeed = Physics.PLAYER_MAX_SPEED * baseSpeedMultiplier;
+    
+    // Calcula velocidade máxima reduzida quando está segurando chute
+    const kickSpeedMult = this.config.kickSpeedMultiplier ?? 0.5;
+    const reducedMaxSpeed = baseMaxSpeed * kickSpeedMult;
+    
+    // Usa a velocidade máxima reduzida se estiver carregando chute
+    const maxSpeed = player.isChargingKick ? reducedMaxSpeed : baseMaxSpeed;
 
     if (player.input.up) player.circle.vel.y -= accel;
     if (player.input.down) player.circle.vel.y += accel;
@@ -407,7 +298,6 @@ export class Game {
       player.circle.vel.y = normalized.y * maxSpeed;
     }
 
-    // Kick de peers é processado via input de rede
     if (player.input.kick) {
       this.tryKick(player, player.kickCharge);
       player.input.kick = false;
@@ -418,7 +308,7 @@ export class Game {
     Physics.updateCircle(player.circle, dt);
   }
 
-  // Simula física local do jogador controlado para Client-Side Prediction
+  // Simula física do jogador local
   private simulateLocalPlayer(player: Player, dt: number): void {
     const accel = Physics.PLAYER_ACCELERATION;
     const maxSpeed = Physics.PLAYER_MAX_SPEED;
@@ -450,7 +340,7 @@ export class Game {
     }
     
     // Colisão local com a bola (para feedback visual imediato)
-    // Apenas resolve a separação visual - o host tem autoridade sobre a física real
+    // Resolve a separação dos círculos
     const ball = this.state.ball.circle;
     if (Physics.checkCircleCollision(player.circle, ball)) {
       // Resolve colisão localmente para evitar sobreposição visual
@@ -475,7 +365,7 @@ export class Game {
     
     // Verifica colisão entre jogador local e bola
     if (Physics.checkCircleCollision(localPlayer.circle, ball)) {
-      // Resolve colisão com física parcial (host tem autoridade, mas queremos feedback)
+      // Resolve colisão com a bola
       // Calcula separação e aplica apenas parcialmente à bola
       const dx = ball.pos.x - localPlayer.circle.pos.x;
       const dy = ball.pos.y - localPlayer.circle.pos.y;
@@ -504,7 +394,7 @@ export class Game {
           
           if (dotProduct > 0) {
             // Transfere parte da velocidade para a bola
-            const transferFactor = 0.3; // Transferência parcial para não sobrescrever o host
+            const transferFactor = 0.3; // Transferência parcial de momento
             ball.vel.x += nx * dotProduct * transferFactor;
             ball.vel.y += ny * dotProduct * transferFactor;
           }
@@ -530,6 +420,9 @@ export class Game {
   }
 
   private tryKick(player: Player, chargeAmount: number = 1): void {
+    // Se já chutou neste pressionamento, não chuta de novo
+    if (player.hasKickedThisPress) return;
+    
     const ball = this.state.ball.circle;
     const dx = ball.pos.x - player.circle.pos.x;
     const dy = ball.pos.y - player.circle.pos.y;
@@ -547,11 +440,25 @@ export class Game {
         
         ball.vel.x += dx * invDist * kickStrength;
         ball.vel.y += dy * invDist * kickStrength;
+        
+        // Marca que já chutou neste pressionamento
+        player.hasKickedThisPress = true;
+        
+        // Ativa feedback visual por 0.1 segundos
+        player.kickFeedbackTime = 0.1;
+        
+        // Som de chute
+        audioManager.play('kick');
+        
+        // Notificar callback customizado (para prevent_touch também detectar chutes)
+        if (this.customBallTouchCallback && player.team !== 'spectator') {
+          this.customBallTouchCallback(player.id);
+        }
       }
     }
   }
 
-  // Versão local do kick para Client-Side Prediction (feedback visual imediato)
+  // Aplica chute na bola
   private tryKickLocal(player: Player, chargeAmount: number = 1): void {
     const ball = this.state.ball.circle;
     const dx = ball.pos.x - player.circle.pos.x;
@@ -563,7 +470,7 @@ export class Game {
       const dist = Math.sqrt(distSq);
       if (dist > 0) {
         const invDist = 1 / dist;
-        // Aplica força reduzida localmente - o host tem a autoridade real
+        // Aplica força do chute
         // Usamos força parcial para dar feedback visual sem exagerar
         const kickStrength = this.config.kickMode === 'chargeable' 
           ? this.config.kickStrength * Math.max(0.2, chargeAmount) * 0.7
@@ -619,109 +526,17 @@ export class Game {
   private update(dt: number): void {
     if (!this.state.running || this.state.finished) return;
 
-    // Client com Client-Side Prediction
-    if (this.isMultiplayer && !this.isHost) {
-      const localPlayer = this.state.players.find(p => p.id === this.controlledPlayerId);
-      
-      if (localPlayer) {
-        // 1. Captura e aplica input imediatamente (Client-Side Prediction)
-        this.updatePlayerInput(localPlayer);
-        
-        // 2. Simula física local do jogador controlado para resposta imediata
-        if (this.CLIENT_PREDICTION_ENABLED) {
-          this.simulateLocalPlayer(localPlayer, dt);
-        }
-        
-        // Client processa carregamento de chute localmente para visualização
-        if (this.config.kickMode === 'chargeable' && localPlayer.isChargingKick) {
-          localPlayer.kickCharge = Math.min(1, localPlayer.kickCharge + dt);
-        }
-        
-        // 3. Física local da bola - simula colisão com jogador local para resposta imediata
-        if (this.localBallPhysicsEnabled) {
-          this.simulateLocalBallPhysics(localPlayer, dt);
-        }
-      }
-      
-      // 4. Interpola outros jogadores (NÃO o jogador local)
-      if (this.targetState) {
-        for (const player of this.state.players) {
-          // Pula o jogador local - ele usa prediction, não interpolação
-          if (player.id === this.controlledPlayerId && this.CLIENT_PREDICTION_ENABLED) {
-            continue;
-          }
-          
-          const target = this.targetState.players.get(player.id);
-          if (!target) continue;
-          
-          // Outros jogadores: interpolação suave
-          player.circle.pos.x += (target.x - player.circle.pos.x) * this.INTERPOLATION_SPEED;
-          player.circle.pos.y += (target.y - player.circle.pos.y) * this.INTERPOLATION_SPEED;
-          player.circle.vel.x += (target.vx - player.circle.vel.x) * this.INTERPOLATION_SPEED;
-          player.circle.vel.y += (target.vy - player.circle.vel.y) * this.INTERPOLATION_SPEED;
-        }
-        
-        // 5. Reconciliação do jogador local - APENAS quando novo estado é recebido
-        if (this.newStateReceived && localPlayer && this.CLIENT_PREDICTION_ENABLED) {
-          const target = this.targetState.players.get(localPlayer.id);
-          if (target) {
-            const dx = target.x - localPlayer.circle.pos.x;
-            const dy = target.y - localPlayer.circle.pos.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            
-            if (dist > this.RECONCILIATION_THRESHOLD) {
-              // Grande discrepância: snap imediato (teleporte, reset, gol, etc)
-              localPlayer.circle.pos.x = target.x;
-              localPlayer.circle.pos.y = target.y;
-              localPlayer.circle.vel.x = target.vx;
-              localPlayer.circle.vel.y = target.vy;
-            } else if (dist > 3) {
-              // Pequena discrepância: correção suave
-              localPlayer.circle.pos.x += dx * this.RECONCILIATION_SPEED;
-              localPlayer.circle.pos.y += dy * this.RECONCILIATION_SPEED;
-              // Também corrige velocidade suavemente
-              localPlayer.circle.vel.x += (target.vx - localPlayer.circle.vel.x) * this.RECONCILIATION_SPEED;
-              localPlayer.circle.vel.y += (target.vy - localPlayer.circle.vel.y) * this.RECONCILIATION_SPEED;
-            }
-          }
-          this.newStateReceived = false;
-        }
-        
-        // 6. Interpola bola suavemente para o estado do servidor
-        // Mas não sobrescreve completamente se estamos aplicando física local
-        const ballTarget = this.targetState.ball;
-        const ball = this.state.ball.circle;
-        
-        // Calcula distância para o alvo
-        const ballDx = ballTarget.x - ball.pos.x;
-        const ballDy = ballTarget.y - ball.pos.y;
-        const ballDist = Math.sqrt(ballDx * ballDx + ballDy * ballDy);
-        
-        if (ballDist > 50) {
-          // Grande discrepância: snap mais rápido
-          ball.pos.x += ballDx * 0.4;
-          ball.pos.y += ballDy * 0.4;
-          ball.vel.x = ballTarget.vx;
-          ball.vel.y = ballTarget.vy;
-        } else {
-          // Interpolação suave
-          ball.pos.x += ballDx * this.BALL_INTERPOLATION_SPEED;
-          ball.pos.y += ballDy * this.BALL_INTERPOLATION_SPEED;
-          ball.vel.x += (ballTarget.vx - ball.vel.x) * this.BALL_INTERPOLATION_SPEED;
-          ball.vel.y += (ballTarget.vy - ball.vel.y) * this.BALL_INTERPOLATION_SPEED;
-        }
-      }
+    // Single player: processa toda a física
+    this.state.time += dt;
+    
+    if (this.config.timeLimit > 0 && this.state.time >= this.config.timeLimit) {
+      this.endGame();
       return;
     }
 
-    // Host ou singleplayer: processa toda a física
-    if (!this.isMultiplayer || this.isHost) {
-      this.state.time += dt;
-      
-      if (this.config.timeLimit > 0 && this.state.time >= this.config.timeLimit) {
-        this.endGame();
-        return;
-      }
+    // Atualizar IAs dos bots
+    for (const [botId, botAI] of this.bots.entries()) {
+      botAI.update(this.state, dt);
     }
 
     for (const player of this.state.players) {
@@ -741,9 +556,34 @@ export class Game {
     for (const player of this.state.players) {
       if (Physics.checkCircleCollision(player.circle, this.state.ball.circle)) {
         Physics.resolveCircleCollision(player.circle, this.state.ball.circle);
-        // Rastreia quem tocou na bola por último (apenas jogadores em times)
+        
+        // Se o player está segurando a tecla de chute, executa o chute automaticamente
+        if (player.isChargingKick && player.id === this.controlledPlayerId) {
+          const chargeAmount = this.config.kickMode === 'chargeable' ? player.kickCharge : 1;
+          this.tryKick(player, chargeAmount);
+          
+          // Desativa o indicador e o estado de carregamento
+          player.isChargingKick = false;
+          player.kickCharge = 0;
+          
+          // Notificar callback customizado
+          if (this.customKickCallback) {
+            this.customKickCallback();
+          }
+        }
+        
+        // Rastreia quem tocou na bola por último  
         if (player.team !== 'spectator') {
-          this.lastBallToucher = { id: player.id, name: player.name, team: player.team };
+          this.lastBallToucher = { id: player.id, name: player.name, team: player.team as 'red' | 'blue' };
+          
+          // Incrementar contador de toques
+          const currentTouches = this.ballTouches.get(player.id) || 0;
+          this.ballTouches.set(player.id, currentTouches + 1);
+          
+          // Notificar callback customizado
+          if (this.customBallTouchCallback) {
+            this.customBallTouchCallback(player.id);
+          }
         }
       }
     }
@@ -762,9 +602,17 @@ export class Game {
       }
     }
 
+    // Callback customizado de atualização
+    if (this.customUpdateCallback) {
+      this.customUpdateCallback();
+    }
+
     const goalScored = this.checkGoal();
     if (goalScored && !this.goalJustScored) {
       this.goalJustScored = true;
+      
+      // Som de gol
+      audioManager.play('goal');
       
       // Log do gol
       if (this.lastBallToucher) {
@@ -777,6 +625,11 @@ export class Game {
         this.state.score.red++;
       }
       
+      // Notificar callback customizado
+      if (this.customGoalCallback) {
+        this.customGoalCallback(goalScored);
+      }
+      
       this.updateUI();
       
       // Aguarda 1 segundo antes de reposicionar ou finalizar
@@ -785,22 +638,18 @@ export class Game {
             (this.state.score.red >= this.config.scoreLimit || 
              this.state.score.blue >= this.config.scoreLimit)) {
           this.endGame();
-        } else {
+        } else if (!this.config.disableGoalReset) {
+          // Só reseta posições se não estiver desabilitado
           this.resetPositions();
         }
         this.goalJustScored = false;
       }, 1000);
-    }
-    
-    if (this.isMultiplayer && this.isHost && this.networkManager) {
-      this.networkManager.broadcastState(this.serializeState());
     }
   }
 
   private endGame(): void {
     this.state.finished = true;
     this.state.running = false;
-    this.gameStarted = false;
     
     if (this.state.score.red > this.state.score.blue) {
       this.state.winner = 'red';
@@ -812,11 +661,6 @@ export class Game {
     
     // Log do fim do jogo
     this.console.logGameEnd(this.state.winner);
-    
-    // Em multiplayer, host move todos para espectador
-    if (this.isMultiplayer && this.isHost) {
-      this.resetAllToSpectators();
-    }
     
     this.showGameOver();
   }
@@ -854,71 +698,29 @@ export class Game {
       resultColor = '#ffa502';
     }
     
-    // Botões diferentes para multiplayer vs singleplayer
-    let buttonsHtml = '';
-    if (this.isMultiplayer) {
-      if (this.isHost) {
-        buttonsHtml = `
-          <button id="btn-open-room-menu" style="
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 18px;
-            border-radius: 10px;
-            cursor: pointer;
-            margin: 10px;
-          ">Open Room Menu</button>
-          <button id="btn-menu-over" style="
-            background: #666;
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 18px;
-            border-radius: 10px;
-            cursor: pointer;
-            margin: 10px;
-          ">Leave Room</button>
-        `;
-      } else {
-        buttonsHtml = `
-          <p style="color: #888; margin-bottom: 20px;">Waiting for host to set up next game...</p>
-          <button id="btn-menu-over" style="
-            background: #666;
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 18px;
-            border-radius: 10px;
-            cursor: pointer;
-            margin: 10px;
-          ">Leave Room</button>
-        `;
-      }
-    } else {
-      buttonsHtml = `
-        <button id="btn-play-again" style="
-          background: #667eea;
-          color: white;
-          border: none;
-          padding: 15px 40px;
-          font-size: 18px;
-          border-radius: 10px;
-          cursor: pointer;
-          margin: 10px;
-        ">Play Again</button>
-        <button id="btn-menu-over" style="
-          background: #666;
-          color: white;
-          border: none;
-          padding: 15px 40px;
-          font-size: 18px;
-          border-radius: 10px;
-          cursor: pointer;
-          margin: 10px;
-        ">Back to Menu</button>
-      `;
-    }
+    // Botões para singleplayer
+    const buttonsHtml = `
+      <button id="btn-play-again" style="
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 15px 40px;
+        font-size: 18px;
+        border-radius: 10px;
+        cursor: pointer;
+        margin: 10px;
+      ">Play Again</button>
+      <button id="btn-menu-over" style="
+        background: #666;
+        color: white;
+        border: none;
+        padding: 15px 40px;
+        font-size: 18px;
+        border-radius: 10px;
+        cursor: pointer;
+        margin: 10px;
+      ">Back to Menu</button>
+    `;
     
     overlay.innerHTML = `
       <h1 style="font-size: 48px; margin-bottom: 20px; color: ${resultColor};">${resultText}</h1>
@@ -935,11 +737,6 @@ export class Game {
       this.start();
     });
     
-    document.getElementById('btn-open-room-menu')?.addEventListener('click', () => {
-      overlay.remove();
-      this.toggleRoomMenu();
-    });
-    
     document.getElementById('btn-menu-over')?.addEventListener('click', () => {
       overlay.remove();
       this.showMenu();
@@ -953,640 +750,7 @@ export class Game {
     if (menu) menu.classList.remove('hidden');
     if (gameContainer) gameContainer.classList.add('hidden');
     
-    this.hideRoomMenu();
     this.stop();
-  }
-
-  // ========== Room Menu Methods ==========
-  
-  toggleRoomMenu(): void {
-    this.roomMenuVisible = !this.roomMenuVisible;
-    if (this.roomMenuVisible) {
-      this.showRoomMenu();
-    } else {
-      this.hideRoomMenu();
-    }
-  }
-
-  private showRoomMenu(): void {
-    if (this.roomMenuElement) {
-      this.roomMenuElement.remove();
-    }
-
-    const gameContainer = document.getElementById('game-container');
-    if (!gameContainer) return;
-
-    this.roomMenuElement = document.createElement('div');
-    this.roomMenuElement.id = 'room-menu';
-    this.roomMenuElement.style.cssText = `
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.75);
-      padding: 30px;
-      border-radius: 15px;
-      min-width: 600px;
-      max-width: 800px;
-      color: white;
-      z-index: 1000;
-      font-family: Arial, sans-serif;
-      backdrop-filter: blur(5px);
-    `;
-
-    this.updateRoomMenuContent();
-    gameContainer.style.position = 'relative';
-    gameContainer.appendChild(this.roomMenuElement);
-  }
-
-  private hideRoomMenu(): void {
-    if (this.roomMenuElement) {
-      this.roomMenuElement.remove();
-      this.roomMenuElement = null;
-    }
-    this.roomMenuVisible = false;
-  }
-
-  private updateRoomMenu(): void {
-    if (this.roomMenuVisible && this.roomMenuElement) {
-      this.updateRoomMenuContent();
-    }
-  }
-
-  private updateRoomMenuContent(): void {
-    if (!this.roomMenuElement) return;
-
-    const spectators = this.roomPlayers.filter(p => p.team === 'spectator');
-    const redPlayers = this.roomPlayers.filter(p => p.team === 'red');
-    const bluePlayers = this.roomPlayers.filter(p => p.team === 'blue');
-
-    let statusText = '';
-    if (this.gameStarted) {
-      statusText = this.state.running 
-        ? '<span style="color: #2ecc71;">● Game in Progress</span>'
-        : '<span style="color: #f39c12;">● Game Paused</span>';
-    } else {
-      statusText = '<span style="color: #f39c12;">● Waiting to Start</span>';
-    }
-
-    this.roomMenuElement.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="margin: 0; color: #667eea;">Room Menu</h2>
-        <span style="font-size: 14px;">${statusText}</span>
-      </div>
-      <p style="color: #888; margin-bottom: 20px; font-size: 14px;">Press ESC to close${this.isHost ? ' | You are the host' : ''}</p>
-      
-      <div style="display: flex; gap: 20px; margin-bottom: 20px;">
-        <!-- Red Team -->
-        <div style="flex: 1; background: rgba(255, 71, 87, 0.2); border: 2px solid #ff4757; border-radius: 10px; padding: 15px;">
-          <h3 style="color: #ff4757; margin: 0 0 15px 0; text-align: center;">🔴 Red Team (${redPlayers.length}/${this.config.playersPerTeam})</h3>
-          <div id="red-team-list" style="min-height: 80px;">
-            ${redPlayers.length === 0 ? '<p style="color: #888; text-align: center;">Empty</p>' : ''}
-            ${redPlayers.map(p => this.renderPlayerItem(p, 'red')).join('')}
-          </div>
-        </div>
-        
-        <!-- Blue Team -->
-        <div style="flex: 1; background: rgba(83, 82, 237, 0.2); border: 2px solid #5352ed; border-radius: 10px; padding: 15px;">
-          <h3 style="color: #5352ed; margin: 0 0 15px 0; text-align: center;">🔵 Blue Team (${bluePlayers.length}/${this.config.playersPerTeam})</h3>
-          <div id="blue-team-list" style="min-height: 80px;">
-            ${bluePlayers.length === 0 ? '<p style="color: #888; text-align: center;">Empty</p>' : ''}
-            ${bluePlayers.map(p => this.renderPlayerItem(p, 'blue')).join('')}
-          </div>
-        </div>
-      </div>
-      
-      <!-- Spectators -->
-      <div style="background: rgba(255, 255, 255, 0.1); border: 2px solid #888; border-radius: 10px; padding: 15px;">
-        <h3 style="color: #888; margin: 0 0 15px 0; text-align: center;">👁️ Spectators (${spectators.length})</h3>
-        <div id="spectator-list" style="min-height: 50px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-          ${spectators.length === 0 ? '<p style="color: #666; text-align: center; width: 100%;">No spectators</p>' : ''}
-          ${spectators.map(p => this.renderPlayerItem(p, 'spectator')).join('')}
-        </div>
-      </div>
-      
-      ${this.isHost ? `
-        <div style="margin-top: 20px; text-align: center;">
-          ${!this.gameStarted ? `
-            <button id="btn-start-game" style="
-              background: #2ecc71;
-              color: white;
-              border: none;
-              padding: 15px 40px;
-              font-size: 16px;
-              border-radius: 8px;
-              cursor: pointer;
-              margin: 5px;
-            ">▶ Start Game</button>
-          ` : `
-            <button id="btn-pause-game" style="
-              background: ${this.state.running ? '#f39c12' : '#2ecc71'};
-              color: white;
-              border: none;
-              padding: 15px 40px;
-              font-size: 16px;
-              border-radius: 8px;
-              cursor: pointer;
-              margin: 5px;
-            ">${this.state.running ? '⏸ Pause' : '▶ Resume'}</button>
-            <button id="btn-stop-game" style="
-              background: #e74c3c;
-              color: white;
-              border: none;
-              padding: 15px 40px;
-              font-size: 16px;
-              border-radius: 8px;
-              cursor: pointer;
-              margin: 5px;
-            ">⏹ Stop Game</button>
-          `}
-          <button id="btn-room-settings" style="
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            margin: 5px;
-          ">⚙ Room Settings</button>
-          <button id="btn-reset-teams" style="
-            background: #95a5a6;
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            margin: 5px;
-          ">↻ Reset All to Spectators</button>
-        </div>
-      ` : ''}
-    `;
-
-    // Add event listeners
-    if (this.isHost) {
-      this.setupRoomMenuEvents();
-    }
-  }
-
-  private renderPlayerItem(player: RoomPlayer, currentTeam: 'red' | 'blue' | 'spectator'): string {
-    const isMe = player.id === this.controlledPlayerId || player.id === this.networkManager?.getClientId();
-    const meIndicator = isMe ? ' (You)' : '';
-    const hostIndicator = this.isHostPlayer(player.id) ? ' ⭐' : '';
-    
-    // Exibe ping para todos os jogadores, se o ping estiver disponível
-    // Host não tem ping (seria 0ms)
-    let pingDisplay = '';
-    if (player.ping !== undefined) {
-      pingDisplay = ` <span style="color: #888; font-size: 11px;">(${player.ping}ms)</span>`;
-    } else if (isMe && this.isHost) {
-      // Host não exibe ping para si mesmo
-      pingDisplay = '';
-    }
-    
-    let bgColor = 'rgba(255,255,255,0.1)';
-    if (currentTeam === 'red') bgColor = 'rgba(255, 71, 87, 0.3)';
-    if (currentTeam === 'blue') bgColor = 'rgba(83, 82, 237, 0.3)';
-
-    if (!this.isHost) {
-      return `
-        <div style="background: ${bgColor}; padding: 10px 15px; border-radius: 8px; margin: 5px 0; display: flex; justify-content: space-between; align-items: center;">
-          <span>${player.name}${meIndicator}${hostIndicator}${pingDisplay}</span>
-        </div>
-      `;
-    }
-
-    return `
-      <div style="background: ${bgColor}; padding: 10px 15px; border-radius: 8px; margin: 5px 0; display: flex; justify-content: space-between; align-items: center;">
-        <span>${player.name}${meIndicator}${hostIndicator}${pingDisplay}</span>
-        <div style="display: flex; gap: 5px;">
-          ${currentTeam !== 'red' ? `<button class="move-btn" data-player="${player.id}" data-team="red" style="background: #ff4757; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;">→ Red</button>` : ''}
-          ${currentTeam !== 'blue' ? `<button class="move-btn" data-player="${player.id}" data-team="blue" style="background: #5352ed; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;">→ Blue</button>` : ''}
-          ${currentTeam !== 'spectator' ? `<button class="move-btn" data-player="${player.id}" data-team="spectator" style="background: #888; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;">→ Spec</button>` : ''}
-        </div>
-      </div>
-    `;
-  }
-
-  private isHostPlayer(playerId: string): boolean {
-    // O host é sempre o primeiro player adicionado em multiplayer
-    if (this.roomPlayers.length > 0) {
-      return this.roomPlayers[0].id === playerId;
-    }
-    return false;
-  }
-
-  private setupRoomMenuEvents(): void {
-    // Move player buttons
-    const moveButtons = this.roomMenuElement?.querySelectorAll('.move-btn');
-    moveButtons?.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const target = e.target as HTMLElement;
-        const playerId = target.dataset.player;
-        const team = target.dataset.team as 'red' | 'blue' | 'spectator';
-        if (playerId && team) {
-          this.movePlayerToTeam(playerId, team);
-        }
-      });
-    });
-
-    // Start game button
-    const startBtn = this.roomMenuElement?.querySelector('#btn-start-game');
-    startBtn?.addEventListener('click', () => {
-      this.startGameFromMenu();
-    });
-
-    // Pause game button
-    const pauseBtn = this.roomMenuElement?.querySelector('#btn-pause-game');
-    pauseBtn?.addEventListener('click', () => {
-      this.togglePauseGame();
-    });
-
-    // Stop game button
-    const stopBtn = this.roomMenuElement?.querySelector('#btn-stop-game');
-    stopBtn?.addEventListener('click', () => {
-      this.stopGame();
-    });
-
-    // Reset teams button
-    const resetBtn = this.roomMenuElement?.querySelector('#btn-reset-teams');
-    resetBtn?.addEventListener('click', () => {
-      this.resetAllToSpectators();
-    });
-
-    // Room settings button
-    const settingsBtn = this.roomMenuElement?.querySelector('#btn-room-settings');
-    settingsBtn?.addEventListener('click', () => {
-      this.showSettingsModal();
-    });
-  }
-
-  private showSettingsModal(): void {
-    if (!this.isHost) return;
-    this.settingsMenuVisible = true;
-
-    if (!this.roomMenuElement) return;
-
-    const timeLimitMin = Math.floor(this.config.timeLimit / 60);
-
-    this.roomMenuElement.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="margin: 0; color: #667eea;">⚙ Room Settings</h2>
-        <button id="btn-settings-back" style="background: none; border: 1px solid #888; color: #ccc; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">← Back</button>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-        <div>
-          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Players per Team</label>
-          <select id="cfg-players-per-team" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #555; background: #333; color: white; font-size: 14px;">
-            <option value="1" ${this.config.playersPerTeam === 1 ? 'selected' : ''}>1v1</option>
-            <option value="2" ${this.config.playersPerTeam === 2 ? 'selected' : ''}>2v2</option>
-            <option value="3" ${this.config.playersPerTeam === 3 ? 'selected' : ''}>3v3</option>
-          </select>
-        </div>
-        <div>
-          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Kick Mode</label>
-          <select id="cfg-kick-mode" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #555; background: #333; color: white; font-size: 14px;">
-            <option value="classic" ${this.config.kickMode === 'classic' ? 'selected' : ''}>Classic (instant)</option>
-            <option value="chargeable" ${this.config.kickMode === 'chargeable' ? 'selected' : ''}>Chargeable (hold)</option>
-          </select>
-        </div>
-        <div>
-          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Kick Strength: <span id="cfg-kick-strength-val">${this.config.kickStrength}</span></label>
-          <input type="range" id="cfg-kick-strength" min="200" max="1000" value="${this.config.kickStrength}" step="50" style="width: 100%;">
-        </div>
-        <div>
-          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Player Size: <span id="cfg-player-radius-val">${this.config.playerRadius}</span></label>
-          <input type="range" id="cfg-player-radius" min="10" max="25" value="${this.config.playerRadius}" step="1" style="width: 100%;">
-        </div>
-        <div>
-          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Score Limit</label>
-          <input type="number" id="cfg-score-limit" min="1" max="10" value="${this.config.scoreLimit}" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #555; background: #333; color: white; font-size: 14px; box-sizing: border-box;">
-        </div>
-        <div>
-          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Time Limit (minutes)</label>
-          <input type="number" id="cfg-time-limit" min="1" max="30" value="${timeLimitMin}" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #555; background: #333; color: white; font-size: 14px; box-sizing: border-box;">
-        </div>
-      </div>
-
-      <h3 style="color: #ccc; margin: 15px 0 10px; font-size: 15px;">⚽ Ball Settings</h3>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-        <div>
-          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Ball Color</label>
-          <input type="color" id="cfg-ball-color" value="${this.config.ballConfig.color}" style="width: 100%; height: 35px; border: 1px solid #555; border-radius: 6px; background: #333; cursor: pointer;">
-        </div>
-        <div>
-          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Border Color</label>
-          <input type="color" id="cfg-ball-border-color" value="${this.config.ballConfig.borderColor}" style="width: 100%; height: 35px; border: 1px solid #555; border-radius: 6px; background: #333; cursor: pointer;">
-        </div>
-        <div>
-          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Radius: <span id="cfg-ball-radius-val">${this.config.ballConfig.radius}</span></label>
-          <input type="range" id="cfg-ball-radius" min="5" max="15" value="${this.config.ballConfig.radius}" step="0.5" style="width: 100%;">
-        </div>
-        <div>
-          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Mass: <span id="cfg-ball-mass-val">${this.config.ballConfig.mass}</span></label>
-          <input type="range" id="cfg-ball-mass" min="1" max="20" value="${this.config.ballConfig.mass}" step="0.5" style="width: 100%;">
-        </div>
-        <div style="grid-column: span 2;">
-          <label style="display: block; color: #aaa; margin-bottom: 4px; font-size: 13px;">Damping (friction): <span id="cfg-ball-damping-val">${this.config.ballConfig.damping}</span></label>
-          <input type="range" id="cfg-ball-damping" min="0.95" max="0.999" value="${this.config.ballConfig.damping}" step="0.001" style="width: 100%;">
-        </div>
-      </div>
-
-      <div style="text-align: center; margin-top: 10px;">
-        <button id="btn-save-settings" style="
-          background: #2ecc71;
-          color: white;
-          border: none;
-          padding: 12px 40px;
-          font-size: 16px;
-          border-radius: 8px;
-          cursor: pointer;
-          margin: 5px;
-        ">✓ Save Settings</button>
-        <button id="btn-cancel-settings" style="
-          background: #666;
-          color: white;
-          border: none;
-          padding: 12px 40px;
-          font-size: 16px;
-          border-radius: 8px;
-          cursor: pointer;
-          margin: 5px;
-        ">Cancel</button>
-      </div>
-    `;
-
-    // Slider value display listeners
-    const radiusInput = this.roomMenuElement.querySelector('#cfg-ball-radius') as HTMLInputElement;
-    const massInput = this.roomMenuElement.querySelector('#cfg-ball-mass') as HTMLInputElement;
-    const dampingInput = this.roomMenuElement.querySelector('#cfg-ball-damping') as HTMLInputElement;
-    const kickStrengthInput = this.roomMenuElement.querySelector('#cfg-kick-strength') as HTMLInputElement;
-    const playerRadiusInput = this.roomMenuElement.querySelector('#cfg-player-radius') as HTMLInputElement;
-
-    radiusInput?.addEventListener('input', () => {
-      const val = this.roomMenuElement?.querySelector('#cfg-ball-radius-val');
-      if (val) val.textContent = radiusInput.value;
-    });
-    massInput?.addEventListener('input', () => {
-      const val = this.roomMenuElement?.querySelector('#cfg-ball-mass-val');
-      if (val) val.textContent = massInput.value;
-    });
-    dampingInput?.addEventListener('input', () => {
-      const val = this.roomMenuElement?.querySelector('#cfg-ball-damping-val');
-      if (val) val.textContent = dampingInput.value;
-    });
-    kickStrengthInput?.addEventListener('input', () => {
-      const val = this.roomMenuElement?.querySelector('#cfg-kick-strength-val');
-      if (val) val.textContent = kickStrengthInput.value;
-    });
-    playerRadiusInput?.addEventListener('input', () => {
-      const val = this.roomMenuElement?.querySelector('#cfg-player-radius-val');
-      if (val) val.textContent = playerRadiusInput.value;
-    });
-
-    // Back button
-    this.roomMenuElement.querySelector('#btn-settings-back')?.addEventListener('click', () => {
-      this.settingsMenuVisible = false;
-      this.updateRoomMenuContent();
-    });
-
-    // Cancel button
-    this.roomMenuElement.querySelector('#btn-cancel-settings')?.addEventListener('click', () => {
-      this.settingsMenuVisible = false;
-      this.updateRoomMenuContent();
-    });
-
-    // Save button
-    this.roomMenuElement.querySelector('#btn-save-settings')?.addEventListener('click', () => {
-      this.saveSettings();
-    });
-  }
-
-  private saveSettings(): void {
-    if (!this.isHost || !this.roomMenuElement) return;
-
-    const playersPerTeam = parseInt((this.roomMenuElement.querySelector('#cfg-players-per-team') as HTMLSelectElement).value);
-    const kickMode = (this.roomMenuElement.querySelector('#cfg-kick-mode') as HTMLSelectElement).value as 'classic' | 'chargeable';
-    const scoreLimit = parseInt((this.roomMenuElement.querySelector('#cfg-score-limit') as HTMLInputElement).value);
-    const timeLimitMin = parseInt((this.roomMenuElement.querySelector('#cfg-time-limit') as HTMLInputElement).value);
-    const ballColor = (this.roomMenuElement.querySelector('#cfg-ball-color') as HTMLInputElement).value;
-    const ballBorderColor = (this.roomMenuElement.querySelector('#cfg-ball-border-color') as HTMLInputElement).value;
-    const ballRadius = parseFloat((this.roomMenuElement.querySelector('#cfg-ball-radius') as HTMLInputElement).value);
-    const ballMass = parseFloat((this.roomMenuElement.querySelector('#cfg-ball-mass') as HTMLInputElement).value);
-    const ballDamping = parseFloat((this.roomMenuElement.querySelector('#cfg-ball-damping') as HTMLInputElement).value);
-    const kickStrength = parseFloat((this.roomMenuElement.querySelector('#cfg-kick-strength') as HTMLInputElement).value);
-    const playerRadius = parseFloat((this.roomMenuElement.querySelector('#cfg-player-radius') as HTMLInputElement).value);
-
-    this.config.playersPerTeam = playersPerTeam;
-    this.config.kickMode = kickMode;
-    this.config.scoreLimit = scoreLimit;
-    this.config.timeLimit = timeLimitMin * 60;
-    this.config.kickStrength = kickStrength;
-    this.config.playerRadius = playerRadius;
-    this.config.ballConfig.color = ballColor;
-    this.config.ballConfig.borderColor = ballBorderColor;
-    this.config.ballConfig.radius = ballRadius;
-    this.config.ballConfig.mass = ballMass;
-    this.config.ballConfig.damping = ballDamping;
-
-    // Apply ball physics changes
-    this.state.ball.circle.radius = ballRadius;
-    this.state.ball.circle.mass = ballMass;
-    this.state.ball.circle.invMass = ballMass > 0 ? 1 / ballMass : 0;
-    this.state.ball.circle.damping = ballDamping;
-
-    // Broadcast to clients
-    if (this.networkManager) {
-      this.networkManager.broadcastConfigUpdate({
-        playersPerTeam,
-        kickMode,
-        scoreLimit,
-        timeLimit: timeLimitMin * 60,
-        kickStrength,
-        playerRadius,
-        ballConfig: this.config.ballConfig
-      });
-    }
-
-    // Log to console
-    this.console.addMessage('⚙ Room settings updated by host', 'event');
-    if (this.networkManager) {
-      this.networkManager.broadcastConsoleEvent('⚙ Room settings updated by host', 'event');
-    }
-
-    // Return to room menu
-    this.settingsMenuVisible = false;
-    this.updateRoomMenuContent();
-  }
-
-  applyConfigUpdate(config: any): void {
-    if (this.isHost) return;
-
-    if (config.playersPerTeam !== undefined) this.config.playersPerTeam = config.playersPerTeam;
-    if (config.kickMode !== undefined) this.config.kickMode = config.kickMode;
-    if (config.scoreLimit !== undefined) this.config.scoreLimit = config.scoreLimit;
-    if (config.timeLimit !== undefined) this.config.timeLimit = config.timeLimit;
-    if (config.kickStrength !== undefined) this.config.kickStrength = config.kickStrength;
-    if (config.playerRadius !== undefined) this.config.playerRadius = config.playerRadius;
-    if (config.ballConfig) {
-      this.config.ballConfig = { ...this.config.ballConfig, ...config.ballConfig };
-      this.state.ball.circle.radius = this.config.ballConfig.radius;
-      this.state.ball.circle.mass = this.config.ballConfig.mass;
-      this.state.ball.circle.invMass = this.config.ballConfig.mass > 0 ? 1 / this.config.ballConfig.mass : 0;
-      this.state.ball.circle.damping = this.config.ballConfig.damping;
-    }
-  }
-
-  movePlayerToTeam(playerId: string, team: 'red' | 'blue' | 'spectator'): void {
-    if (!this.isHost) return;
-
-    // Check team limits
-    if (team !== 'spectator') {
-      const teamCount = this.roomPlayers.filter(p => p.team === team).length;
-      if (teamCount >= this.config.playersPerTeam) {
-        console.log(`Team ${team} is full`);
-        return;
-      }
-    }
-
-    const roomPlayer = this.roomPlayers.find(p => p.id === playerId);
-    if (!roomPlayer) return;
-
-    const oldTeam = roomPlayer.team;
-    roomPlayer.team = team;
-    
-    // Log mudança de time
-    if (oldTeam !== team) {
-      this.console.logTeamChange(roomPlayer.name, team);
-    }
-
-    // Remove from game state if was playing
-    if (oldTeam !== 'spectator') {
-      this.state.players = this.state.players.filter(p => p.id !== playerId);
-    }
-
-    // Add to game state if joining a team
-    if (team !== 'spectator') {
-      const spawnPoints = team === 'red' ? this.map.spawnPoints.red : this.map.spawnPoints.blue;
-      const spawnIndex = this.state.players.filter(p => p.team === team).length % spawnPoints.length;
-      const spawn = spawnPoints[spawnIndex];
-
-      const player: Player = {
-        id: playerId,
-        name: roomPlayer.name,
-        team,
-        circle: Physics.createCircle(spawn.x, spawn.y, this.config.playerRadius, 10),
-        input: { up: false, down: false, left: false, right: false, kick: false },
-        kickCharge: 0,
-        isChargingKick: false
-      };
-
-      this.state.players.push(player);
-      
-      // Se é o próprio host sendo movido, atualiza controlledPlayerId
-      if (playerId === this.networkManager?.getClientId()) {
-        this.controlledPlayerId = playerId;
-      }
-    }
-
-    // Broadcast changes
-    if (this.networkManager) {
-      this.networkManager.broadcastTeamChange(playerId, team);
-    }
-    this.broadcastRoomUpdate();
-  }
-
-  private startGameFromMenu(): void {
-    if (!this.isHost) return;
-
-    const redCount = this.roomPlayers.filter(p => p.team === 'red').length;
-    const blueCount = this.roomPlayers.filter(p => p.team === 'blue').length;
-
-    if (redCount === 0 && blueCount === 0) {
-      alert('At least 1 player must be in a team to start!');
-      return;
-    }
-
-    // Remove overlay de game over se existir
-    const gameOverOverlay = document.getElementById('game-over-overlay');
-    if (gameOverOverlay) {
-      gameOverOverlay.remove();
-    }
-
-    this.gameStarted = true;
-    this.state.finished = false;
-    this.state.winner = null;
-    this.hideRoomMenu();
-    this.reset();
-    this.start();
-    
-    // Log início do jogo
-    this.console.logGameStart();
-
-    if (this.networkManager) {
-      this.networkManager.broadcastGameStart();
-    }
-  }
-
-  private togglePauseGame(): void {
-    if (!this.isHost || !this.gameStarted) return;
-
-    if (this.state.running) {
-      // Pause
-      this.state.running = false;
-      this.console.logGamePause();
-    } else {
-      // Resume
-      this.state.running = true;
-      this.lastTime = 0;
-      this.animationId = requestAnimationFrame(this.gameLoop);
-      this.console.logGameResume();
-    }
-
-    // Broadcast pause state to clients
-    if (this.networkManager) {
-      this.networkManager.broadcastGamePause(this.state.running);
-    }
-
-    this.updateRoomMenu();
-  }
-
-  private stopGame(): void {
-    if (!this.isHost || !this.gameStarted) return;
-
-    this.gameStarted = false;
-    this.state.running = false;
-    this.state.finished = true;
-    
-    // Move everyone to spectator
-    this.resetAllToSpectators();
-    
-    // Broadcast stop to clients
-    if (this.networkManager) {
-      this.networkManager.broadcastGameStop();
-    }
-
-    this.updateRoomMenu();
-  }
-
-  private resetAllToSpectators(): void {
-    if (!this.isHost) return;
-
-    for (const player of this.roomPlayers) {
-      if (player.team !== 'spectator') {
-        this.movePlayerToTeam(player.id, 'spectator');
-      }
-    }
-  }
-
-  getRoomPlayers(): RoomPlayer[] {
-    return this.roomPlayers;
-  }
-
-  isGameStarted(): boolean {
-    return this.gameStarted;
   }
 
   private updateUI(): void {
@@ -1621,71 +785,34 @@ export class Game {
       gameTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
       this.lastUIState.time = currentTime;
     }
-    
-    // Atualiza status de espectador
-    this.updateSpectatorStatus();
   }
-  
-  private updateSpectatorStatus(): void {
-    const spectatorStatus = document.getElementById('spectator-status');
-    if (!spectatorStatus) return;
-    
-    if (!this.isMultiplayer) {
-      spectatorStatus.classList.add('hidden');
-      return;
-    }
-    
-    const myId = this.networkManager?.getClientId() || this.controlledPlayerId;
-    const myRoomPlayer = this.roomPlayers.find(p => p.id === myId);
-    const isSpectator = !myRoomPlayer || myRoomPlayer.team === 'spectator';
-    
-    if (isSpectator) {
-      spectatorStatus.classList.remove('hidden');
-      spectatorStatus.textContent = this.gameStarted 
-        ? '👁️ Spectating - Press ESC to open Room Menu'
-        : '👁️ Waiting for game to start - Press ESC to open Room Menu';
-    } else {
-      spectatorStatus.classList.add('hidden');
-    }
-  }
-
-  private gameLoop = (timestamp: number): void => {
-    const dt = this.lastTime ? (timestamp - this.lastTime) / 1000 : 0;
-    this.lastTime = timestamp;
-
-    if (dt > 0 && dt < 0.1) {
-      this.update(dt);
-    }
-
-    this.renderer.drawState(this.state, this.map, this.controlledPlayerId, this.state.time, this.config.ballConfig);
-    this.updateUI();
-
-    // Em multiplayer, sempre continua o loop (para renderizar enquanto espera)
-    // Em singleplayer, só continua se o jogo está rodando
-    if (this.state.running || this.isMultiplayer) {
-      this.animationId = requestAnimationFrame(this.gameLoop);
-    }
-  };
 
   start(): void {
     this.state.running = true;
+    this.isPaused = false;
     this.lastTime = 0;
     this.animationId = requestAnimationFrame(this.gameLoop);
-  }
-  
-  // Inicia o render loop sem iniciar o jogo (para lobby)
-  startRenderLoop(): void {
-    if (!this.animationId) {
-      this.lastTime = 0;
-      this.animationId = requestAnimationFrame(this.gameLoop);
-    }
   }
 
   stop(): void {
     this.state.running = false;
+    this.isPaused = false;
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
+      this.animationId = 0;
     }
+  }
+  
+  pause(): void {
+    this.isPaused = true;
+    this.state.running = false;
+  }
+  
+  resume(): void {
+    this.isPaused = false;
+    this.state.running = true;
+    this.lastTime = 0;
+    this.animationId = requestAnimationFrame(this.gameLoop);
   }
 
   reset(): void {
@@ -1697,348 +824,77 @@ export class Game {
     this.updateUI();
   }
 
-  private serializeState(): any {
-    return {
-      players: this.state.players.map(p => ({
-        id: p.id,
-        name: p.name,
-        team: p.team,
-        pos: p.circle.pos,
-        vel: p.circle.vel,
-        kickCharge: p.kickCharge,
-        isChargingKick: p.isChargingKick
-      })),
-      ball: {
-        pos: this.state.ball.circle.pos,
-        vel: this.state.ball.circle.vel
-      },
-      score: this.state.score,
-      time: this.state.time,
-      finished: this.state.finished,
-      winner: this.state.winner,
-      running: this.state.running,
-      gameStarted: this.gameStarted,
-      config: {
-        kickMode: this.config.kickMode,
-        kickStrength: this.config.kickStrength,
-        playerRadius: this.config.playerRadius,
-        ballConfig: this.config.ballConfig
+  private gameLoop = (timestamp: number): void => {
+    const dt = this.lastTime ? (timestamp - this.lastTime) / 1000 : 0;
+    this.lastTime = timestamp;
+
+    if (dt > 0 && dt < 0.1) {
+      this.update(dt);
+      
+      // Executar callback customizado de update
+      if (this.customUpdateCallback) {
+        this.customUpdateCallback();
       }
-    };
+    }
+
+    this.renderer.drawState(this.state, this.map, this.controlledPlayerId, this.state.time, this.config.ballConfig);
+    
+    // Executar callback customizado de renderização
+    if (this.customRenderCallback) {
+      const ctx = this.renderer.getContext();
+      if (ctx) {
+        this.customRenderCallback(ctx);
+      }
+    }
+    
+    this.updateUI();
+
+    if (this.state.running) {
+      this.animationId = requestAnimationFrame(this.gameLoop);
+    }
+  };
+  
+  // Métodos públicos para acesso aos dados do jogo
+  getPlayers(): Player[] {
+    return this.state.players;
+  }
+  
+  getBall() {
+    return this.state.ball;
+  }
+  
+  getState(): GameState {
+    return this.state;
+  }
+  
+  setCustomRenderCallback(callback: ((ctx: CanvasRenderingContext2D) => void) | null): void {
+    this.customRenderCallback = callback;
+  }
+  
+  setCustomUpdateCallback(callback: (() => void) | null): void {
+    this.customUpdateCallback = callback;
+  }
+  
+  setCustomKickCallback(callback: (() => void) | null): void {
+    this.customKickCallback = callback;
   }
 
-  applyNetworkState(netState: any): void {
-    if (this.isHost) return;
-
-    // Se o client ainda não tem jogadores, significa que é a primeira vez recebendo o estado
-    const isFirstSync = this.state.players.length === 0;
-    
-    // Inicializa targetState se necessário
-    if (!this.targetState) {
-      this.targetState = {
-        players: new Map(),
-        ball: { x: 0, y: 0, vx: 0, vy: 0 }
-      };
-    }
-    
-    netState.players.forEach((netPlayer: any) => {
-      let player = this.state.players.find(p => p.id === netPlayer.id);
-      
-      // Se o jogador não existe localmente, cria
-      if (!player) {
-        const team = netPlayer.team || 'blue';
-        this.addPlayer(netPlayer.id, netPlayer.name || 'Player', team);
-        player = this.state.players.find(p => p.id === netPlayer.id);
-        
-        // Se este jogador tem o mesmo ID que este client, marca como controlado
-        if (isFirstSync && netPlayer.id === this.networkManager?.getClientId()) {
-          this.controlledPlayerId = netPlayer.id;
-          console.log(`Controlling player: ${netPlayer.id}`);
-        }
-        
-        // Primeira sincronização: aplica posição diretamente
-        if (player) {
-          player.circle.pos.x = netPlayer.pos.x;
-          player.circle.pos.y = netPlayer.pos.y;
-          player.circle.vel.x = netPlayer.vel.x;
-          player.circle.vel.y = netPlayer.vel.y;
-        }
-      }
-      
-      // Armazena estado alvo para interpolação
-      this.targetState!.players.set(netPlayer.id, {
-        x: netPlayer.pos.x,
-        y: netPlayer.pos.y,
-        vx: netPlayer.vel.x,
-        vy: netPlayer.vel.y
-      });
-      
-      // Atualiza kickCharge e isChargingKick apenas para jogadores NÃO controlados localmente
-      // O jogador local mantém seu próprio estado de carregamento
-      if (player && player.id !== this.controlledPlayerId) {
-        player.kickCharge = netPlayer.kickCharge || 0;
-        player.isChargingKick = netPlayer.isChargingKick || false;
-      }
-    });
-
-    // Armazena estado alvo da bola
-    if (isFirstSync) {
-      // Primeira sincronização: aplica diretamente
-      this.state.ball.circle.pos.x = netState.ball.pos.x;
-      this.state.ball.circle.pos.y = netState.ball.pos.y;
-      this.state.ball.circle.vel.x = netState.ball.vel.x;
-      this.state.ball.circle.vel.y = netState.ball.vel.y;
-    }
-    
-    // Sempre sincroniza config do host (não apenas no primeiro sync)
-    if (netState.config) {
-      this.config.kickMode = netState.config.kickMode || 'classic';
-      if (netState.config.ballConfig) {
-        this.config.ballConfig = { ...this.config.ballConfig, ...netState.config.ballConfig };
-        // Atualiza as propriedades físicas da bola
-        if (netState.config.ballConfig.radius) {
-          this.state.ball.circle.radius = netState.config.ballConfig.radius;
-        }
-        if (netState.config.ballConfig.mass) {
-          this.state.ball.circle.mass = netState.config.ballConfig.mass;
-          this.state.ball.circle.invMass = netState.config.ballConfig.mass > 0 ? 1 / netState.config.ballConfig.mass : 0;
-        }
-        if (netState.config.ballConfig.damping) {
-          this.state.ball.circle.damping = netState.config.ballConfig.damping;
-        }
-      }
-    }
-    this.targetState!.ball = {
-      x: netState.ball.pos.x,
-      y: netState.ball.pos.y,
-      vx: netState.ball.vel.x,
-      vy: netState.ball.vel.y
-    };
-    
-    this.state.score = netState.score;
-    this.state.time = netState.time;
-    this.state.finished = netState.finished;
-    this.state.winner = netState.winner;
-    
-    // Marca que novo estado foi recebido (para reconciliação do jogador local)
-    this.newStateReceived = true;
-
-    // Sync game status
-    if (netState.running !== undefined) {
-      this.state.running = netState.running;
-    }
-    if (netState.gameStarted !== undefined) {
-      this.gameStarted = netState.gameStarted;
-    }
-
-    if (this.state.finished && netState.winner) {
-      this.showGameOver();
-    }
+  setCustomBallTouchCallback(callback: ((playerId: string) => void) | null): void {
+    this.customBallTouchCallback = callback;
   }
 
-  applyPlayerInput(playerId: string, input: any): void {
-    if (!this.isHost) return;
-
-    const player = this.state.players.find(p => p.id === playerId);
-    if (player) {
-      // Preserva kick=true se já estava setado, pois é um evento de momento único
-      const hadKick = player.input.kick;
-      
-      player.input.up = input.up;
-      player.input.down = input.down;
-      player.input.left = input.left;
-      player.input.right = input.right;
-      
-      // Atualiza estado de carregamento do peer (para visualização no host)
-      if (input.isChargingKick !== undefined) {
-        player.isChargingKick = input.isChargingKick;
-      }
-      if (input.kickCharge !== undefined) {
-        player.kickCharge = input.kickCharge;
-      }
-      
-      // Se tinha kick antes OU recebeu kick agora, manter true
-      if (hadKick || input.kick) {
-        player.input.kick = true;
-        // Para modo carregável, usa o kickCharge enviado pelo client
-        if (input.kickCharge !== undefined) {
-          player.kickCharge = input.kickCharge;
-        } else if (!hadKick && input.kick) {
-          // Modo clássico - força total
-          player.kickCharge = 1;
-        }
-      } else {
-        player.input.kick = false;
-      }
-    }
+  setCustomGoalCallback(callback: ((team: 'red' | 'blue') => void) | null): void {
+    this.customGoalCallback = callback;
   }
 
-  setupNetworkCallbacks(): void {
-    if (!this.networkManager) return;
+  getBallTouches(playerId: string): number {
+    return this.ballTouches.get(playerId) || 0;
+  }
 
-    this.networkManager.onStateUpdate((state) => {
-      this.applyNetworkState(state);
-    });
-
-    this.networkManager.onInput((playerId, input) => {
-      this.applyPlayerInput(playerId, input);
-    });
-    
-    this.networkManager.onPingUpdate((peerId, ping) => {
-      // Atualiza o ping do jogador na lista
-      const roomPlayer = this.roomPlayers.find(p => p.id === peerId);
-      if (roomPlayer) {
-        roomPlayer.ping = ping;
-        this.updateRoomMenu();
-      }
-    });
-
-    this.networkManager.onPlayerJoin((player) => {
-      console.log('onPlayerJoin callback received:', player);
-      if (this.isHost) {
-        // Players entram como espectadores
-        this.addSpectator(player.id, player.name);
-        console.log(`Player ${player.id} joined as spectator`);
-      }
-    });
-
-    this.networkManager.onPlayerLeave((playerId) => {
-      const player = this.roomPlayers.find(p => p.id === playerId);
-      if (player) {
-        this.console.logPlayerLeft(player.name);
-      }
-      
-      this.state.players = this.state.players.filter(p => p.id !== playerId);
-      this.roomPlayers = this.roomPlayers.filter(p => p.id !== playerId);
-      this.broadcastRoomUpdate();
-      this.updateRoomMenu(); // Atualizar UI da lista de jogadores
-    });
-
-    this.networkManager.onRoomUpdate((players) => {
-      // Client recebe atualização da sala do host
-      if (!this.isHost) {
-        this.roomPlayers = players;
-        this.updateRoomMenu();
-      }
-    });
-
-    this.networkManager.onTeamChange((playerId, team) => {
-      // Client recebe mudança de time do host
-      if (!this.isHost) {
-        const roomPlayer = this.roomPlayers.find(p => p.id === playerId);
-        if (roomPlayer) {
-          const oldTeam = roomPlayer.team;
-          roomPlayer.team = team;
-
-          // Atualiza game state
-          if (oldTeam !== 'spectator') {
-            this.state.players = this.state.players.filter(p => p.id !== playerId);
-          }
-
-          if (team !== 'spectator') {
-            const spawnPoints = team === 'red' ? this.map.spawnPoints.red : this.map.spawnPoints.blue;
-            const spawnIndex = this.state.players.filter(p => p.team === team).length % spawnPoints.length;
-            const spawn = spawnPoints[spawnIndex];
-
-            const player: Player = {
-              id: playerId,
-              name: roomPlayer.name,
-              team,
-              circle: Physics.createCircle(spawn.x, spawn.y, this.config.playerRadius, 10),
-              input: { up: false, down: false, left: false, right: false, kick: false },
-              kickCharge: 0,
-              isChargingKick: false
-            };
-
-            this.state.players.push(player);
-            
-            // Se sou eu que fui movido para um time, atualizo meu controlledPlayerId
-            if (playerId === this.networkManager?.getClientId()) {
-              this.controlledPlayerId = playerId;
-              
-              // Se o jogo já está rodando, garantir que estou sincronizado
-              // O estado completo virá pelo próximo state_update, mas já inicializo aqui
-              if (!this.animationId) {
-                this.lastTime = 0;
-                this.animationId = requestAnimationFrame(this.gameLoop);
-              }
-            }
-          }
-        }
-        this.updateRoomMenu();
-      }
-    });
-
-    this.networkManager.onGameStart(() => {
-      // Client recebe sinal de início do jogo
-      if (!this.isHost) {
-        // Remove overlay de game over se existir
-        const gameOverOverlay = document.getElementById('game-over-overlay');
-        if (gameOverOverlay) {
-          gameOverOverlay.remove();
-        }
-        
-        this.gameStarted = true;
-        this.state.finished = false;
-        this.state.winner = null;
-        this.hideRoomMenu();
-        this.reset();
-        this.start();
-      }
-    });
-
-    this.networkManager.onGamePause((running) => {
-      // Client recebe sinal de pause/resume do jogo
-      if (!this.isHost) {
-        this.state.running = running;
-        if (running) {
-          this.lastTime = 0;
-          this.animationId = requestAnimationFrame(this.gameLoop);
-        }
-        this.updateRoomMenu();
-      }
-    });
-
-    this.networkManager.onGameStop(() => {
-      // Client recebe sinal de parada do jogo
-      if (!this.isHost) {
-        this.gameStarted = false;
-        this.state.running = false;
-        this.state.finished = true;
-        this.updateRoomMenu();
-      }
-    });
-
-    this.networkManager.onChatMessage((playerName, message, senderId) => {
-      // Recebe mensagem de chat
-      // Adiciona apenas se NÃO for do próprio jogador
-      if (senderId !== this.networkManager?.getClientId()) {
-        this.console.addChatMessage(playerName, message);
-      }
-      
-      // Se for host, retransmite para os outros clientes (exceto quem enviou)
-      if (this.isHost && this.networkManager) {
-        this.broadcastChatExcept(playerName, message, senderId);
-      }
-    });
-
-    this.networkManager.onConsoleEvent((text, type) => {
-      // Client recebe eventos do console do host
-      this.console.addMessage(text, type);
-    });
-
-    this.networkManager.onConfigUpdate((config) => {
-      this.applyConfigUpdate(config);
-    });
-
-    this.networkManager.onRoomClosed((reason) => {
-      // Sala foi fechada - voltar ao menu principal
-      alert(`Room closed: ${reason}`);
-      this.stop();
-      
-      // Importar showMainMenu do main.ts não é possível aqui
-      // Então vamos recarregar a página para voltar ao menu
-      window.location.reload();
-    });
+  resetBallTouches(): void {
+    this.ballTouches.clear();
+    for (const player of this.state.players) {
+      this.ballTouches.set(player.id, 0);
+    }
   }
 }

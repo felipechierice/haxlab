@@ -1,0 +1,124 @@
+{
+  "name": "Controle de Chutes",
+  "description": "Aprenda a controlar quando e como chutar",
+  "scenarios": [
+    {
+      "name": "Passe Sem Chute",
+      "map": "default",
+      "timeLimit": 20,
+      "objectives": [
+        {
+          "type": "kick_count",
+          "max": 0
+        },
+        {
+          "type": "checkpoint",
+          "position": { "x": 700, "y": 300 },
+          "radius": 50,
+          "timeLimit": 15
+        }
+      ],
+      "ballSpawn": { "x": 300, "y": 300 },
+      "playerSpawn": { "x": 200, "y": 300 },
+      "initialBallVelocity": { "x": 150, "y": 0 }
+    },
+    {
+      "name": "Um Único Chute",
+      "map": "default",
+      "timeLimit": 25,
+      "objectives": [
+        {
+          "type": "kick_count",
+          "exact": 1
+        },
+        {
+          "type": "checkpoint",
+          "position": { "x": 800, "y": 300 },
+          "radius": 50,
+          "timeLimit": 20
+        }
+      ],
+      "ballSpawn": { "x": 250, "y": 300 },
+      "playerSpawn": { "x": 200, "y": 300 }
+    },
+    {
+      "name": "Máximo 3 Chutes",
+      "map": "default",
+      "timeLimit": 30,
+      "objectives": [
+        {
+          "type": "kick_count",
+          "max": 3
+        },
+        {
+          "type": "checkpoint",
+          "position": { "x": 500, "y": 200 },
+          "radius": 45,
+          "timeLimit": 10
+        },
+        {
+          "type": "checkpoint",
+          "position": { "x": 700, "y": 400 },
+          "radius": 45,
+          "timeLimit": 10
+        },
+        {
+          "type": "checkpoint",
+          "position": { "x": 850, "y": 300 },
+          "radius": 45,
+          "timeLimit": 10
+        }
+      ],
+      "ballSpawn": { "x": 250, "y": 300 },
+      "playerSpawn": { "x": 200, "y": 300 }
+    },
+    {
+      "name": "Entre 2 e 4 Chutes",
+      "map": "default",
+      "timeLimit": 35,
+      "objectives": [
+        {
+          "type": "kick_count",
+          "min": 2,
+          "max": 4
+        },
+        {
+          "type": "path",
+          "points": [
+            { "x": 250, "y": 300 },
+            { "x": 500, "y": 250 },
+            { "x": 750, "y": 350 }
+          ],
+          "width": 70
+        },
+        {
+          "type": "checkpoint",
+          "position": { "x": 750, "y": 350 },
+          "radius": 50,
+          "timeLimit": 25
+        }
+      ],
+      "ballSpawn": { "x": 250, "y": 300 },
+      "playerSpawn": { "x": 200, "y": 300 }
+    },
+    {
+      "name": "Mínimo 5 Chutes",
+      "map": "default",
+      "timeLimit": 40,
+      "objectives": [
+        {
+          "type": "kick_count",
+          "min": 5
+        },
+        {
+          "type": "checkpoint",
+          "position": { "x": 850, "y": 300 },
+          "radius": 55,
+          "timeLimit": 35
+        }
+      ],
+      "ballSpawn": { "x": 250, "y": 300 },
+      "playerSpawn": { "x": 200, "y": 300 }
+    }
+  ]
+}

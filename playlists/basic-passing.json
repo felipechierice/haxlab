@@ -1,0 +1,117 @@
+{
+  "name": "Treino Básico de Passes",
+  "description": "Aprenda os fundamentos de passes e controle de bola",
+  "scenarios": [
+    {
+      "name": "Passe Simples",
+      "map": "default",
+      "timeLimit": 30,
+      "objectives": [
+        {
+          "type": "checkpoint",
+          "position": { "x": 700, "y": 300 },
+          "radius": 50,
+          "timeLimit": 10
+        }
+      ],
+      "ballSpawn": { "x": 300, "y": 300 },
+      "playerSpawn": { "x": 200, "y": 300 }
+    },
+    {
+      "name": "Passe com Velocidade Inicial",
+      "map": "default",
+      "timeLimit": 20,
+      "objectives": [
+        {
+          "type": "checkpoint",
+          "position": { "x": 800, "y": 200 },
+          "radius": 60,
+          "timeLimit": 8
+        }
+      ],
+      "ballSpawn": { "x": 250, "y": 300 },
+      "playerSpawn": { "x": 200, "y": 300 },
+      "initialBallVelocity": { "x": 100, "y": -50 }
+    },
+    {
+      "name": "Sequência de Passes",
+      "map": "default",
+      "timeLimit": 45,
+      "objectives": [
+        {
+          "type": "checkpoint",
+          "position": { "x": 500, "y": 200 },
+          "radius": 50,
+          "timeLimit": 12
+        },
+        {
+          "type": "checkpoint",
+          "position": { "x": 700, "y": 400 },
+          "radius": 50,
+          "timeLimit": 12
+        },
+        {
+          "type": "checkpoint",
+          "position": { "x": 850, "y": 300 },
+          "radius": 50,
+          "timeLimit": 12
+        }
+      ],
+      "ballSpawn": { "x": 250, "y": 300 },
+      "playerSpawn": { "x": 200, "y": 300 }
+    },
+    {
+      "name": "Passe no Caminho",
+      "map": "default",
+      "timeLimit": 25,
+      "objectives": [
+        {
+          "type": "path",
+          "points": [
+            { "x": 250, "y": 300 },
+            { "x": 400, "y": 250 },
+            { "x": 600, "y": 250 },
+            { "x": 750, "y": 350 }
+          ],
+          "width": 80
+        },
+        {
+          "type": "checkpoint",
+          "position": { "x": 750, "y": 350 },
+          "radius": 55,
+          "timeLimit": 15
+        }
+      ],
+      "ballSpawn": { "x": 250, "y": 300 },
+      "playerSpawn": { "x": 200, "y": 300 }
+    },
+    {
+      "name": "Curva Perfeita",
+      "map": "default",
+      "timeLimit": 30,
+      "objectives": [
+        {
+          "type": "path",
+          "points": [
+            { "x": 300, "y": 400 },
+            { "x": 400, "y": 350 },
+            { "x": 500, "y": 300 },
+            { "x": 600, "y": 250 },
+            { "x": 700, "y": 250 },
+            { "x": 800, "y": 300 }
+          ],
+          "width": 60
+        },
+        {
+          "type": "checkpoint",
+          "position": { "x": 800, "y": 300 },
+          "radius": 50,
+          "timeLimit": 20
+        }
+      ],
+      "ballSpawn": { "x": 300, "y": 400 },
+      "playerSpawn": { "x": 250, "y": 400 },
+      "initialPlayerVelocity": { "x": 50, "y": 0 }
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "name": "Domínio de Movimento",
+  "description": "Cenários com spawns e velocidades variadas para domínio total",
+  "scenarios": [
+    {
+      "name": "Spawn à Direita",
+      "map": "default",
+      "timeLimit": 20,
+      "objectives": [
+        {
+          "type": "checkpoint",
+          "position": { "x": 300, "y": 300 },
+          "radius": 50,
+          "timeLimit": 15
+        }
+      ],
+      "ballSpawn": { "x": 500, "y": 300 },
+      "playerSpawn": { "x": 800, "y": 300 }
+    },
+    {
+      "name": "Correndo para Frente",
+      "map": "default",
+      "timeLimit": 25,
+      "objectives": [
+        {
+          "type": "checkpoint",
+          "position": { "x": 850, "y": 300 },
+          "radius": 55,
+          "timeLimit": 18
+        }
+      ],
+      "ballSpawn": { "x": 400, "y": 300 },
+      "playerSpawn": { "x": 150, "y": 300 },
+      "initialPlayerVelocity": { "x": 150, "y": 0 }
+    },
+    {
+      "name": "Diagonal Descendente",
+      "map": "default",
+      "timeLimit": 30,
+      "objectives": [
+        {
+          "type": "path",
+          "points": [
+            { "x": 350, "y": 200 },
+            { "x": 500, "y": 300 },
+            { "x": 650, "y": 400 }
+          ],
+          "width": 70
+        },
+        {
+          "type": "checkpoint",
+          "position": { "x": 650, "y": 400 },
+          "radius": 50,
+          "timeLimit": 22
+        }
+      ],
+      "ballSpawn": { "x": 350, "y": 200 },
+      "playerSpawn": { "x": 250, "y": 150 },
+      "initialPlayerVelocity": { "x": 100, "y": 80 }
+    },
+    {
+      "name": "Desafio Lateral",
+      "map": "default",
+      "timeLimit": 28,
+      "objectives": [
+        {
+          "type": "kick_count",
+          "max": 2
+        },
+        {
+          "type": "checkpoint",
+          "position": { "x": 500, "y": 150 },
+          "radius": 45,
+          "timeLimit": 20
+        }
+      ],
+      "ballSpawn": { "x": 500, "y": 450 },
+      "playerSpawn": { "x": 500, "y": 500 },
+      "initialPlayerVelocity": { "x": 0, "y": -120 }
+    },
+    {
+      "name": "Rebote Controlado",
+      "map": "default",
+      "timeLimit": 35,
+      "objectives": [
+        {
+          "type": "checkpoint",
+          "position": { "x": 200, "y": 200 },
+          "radius": 50,
+          "timeLimit": 25
+        }
+      ],
+      "ballSpawn": { "x": 600, "y": 400 },
+      "playerSpawn": { "x": 700, "y": 450 },
+      "initialPlayerVelocity": { "x": -180, "y": -100 },
+      "initialBallVelocity": { "x": -120, "y": -80 }
+    },
+    {
+      "name": "Alta Velocidade",
+      "map": "default",
+      "timeLimit": 20,
+      "objectives": [
+        {
+          "type": "checkpoint",
+          "position": { "x": 900, "y": 250 },
+          "radius": 60,
+          "timeLimit": 15
+        }
+      ],
+      "ballSpawn": { "x": 200, "y": 350 },
+      "playerSpawn": { "x": 100, "y": 400 },
+      "initialPlayerVelocity": { "x": 200, "y": -50 },
+      "initialBallVelocity": { "x": 180, "y": -30 }
+    }
+  ]
+}
