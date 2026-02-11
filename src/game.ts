@@ -16,7 +16,7 @@ export class Game {
   private keyState: { [key: string]: boolean } = {};
   private controlledPlayerId: string = 'local-0';
   private console: GameConsole;
-  private lastBallToucher: { id: string, name: string, team: 'red' | 'blue' } | null = null;
+  private lastBallToucher: { id: string, name: string, team: 'red' | 'blue', isBot: boolean } | null = null;
   private goalJustScored: boolean = false;
   private isPaused: boolean = false;
   private customRenderCallback: ((ctx: CanvasRenderingContext2D) => void) | null = null;
@@ -25,7 +25,7 @@ export class Game {
   private bots: Map<string, BotAI> = new Map();
   private ballTouches: Map<string, number> = new Map(); // Rastreia toques na bola por bot/jogador
   private customBallTouchCallback: ((playerId: string) => void) | null = null;
-  private customGoalCallback: ((team: 'red' | 'blue') => void) | null = null;
+  private customGoalCallback: ((team: 'red' | 'blue', scoredBy?: { id: string, name: string, team: 'red' | 'blue', isBot: boolean }) => void) | null = null;
   
   // Cache de elementos DOM para evitar lookups repetidos
   private uiElements: {
@@ -89,12 +89,13 @@ export class Game {
     this.ballTouches.set(id, 0);
   }
 
-  addBot(id: string, name: string, team: 'red' | 'blue', spawn: Vector2D, behavior: BotBehavior, initialVelocity?: Vector2D): void {
+  addBot(id: string, name: string, team: 'red' | 'blue', spawn: Vector2D, behavior: BotBehavior, initialVelocity?: Vector2D, radius?: number): void {
+    const botRadius = radius ?? this.config.playerRadius;
     const bot: Player = {
       id,
       name,
       team,
-      circle: Physics.createCircle(spawn.x, spawn.y, this.config.playerRadius, 10),
+      circle: Physics.createCircle(spawn.x, spawn.y, botRadius, 10),
       input: { up: false, down: false, left: false, right: false, kick: false },
       kickCharge: 0,
       isChargingKick: false,
@@ -265,6 +266,12 @@ export class Game {
   private updatePlayer(player: Player, dt: number): void {
     this.updatePlayerInput(player);
 
+    // Para bots: resetar hasKickedThisPress quando não está tentando chutar
+    // Isso permite que o bot chute novamente quando a bola se aproximar de novo
+    if (player.isBot && !player.input.kick) {
+      player.hasKickedThisPress = false;
+    }
+
     // Atualiza carregamento do chute no modo carregável
     if (this.config.kickMode === 'chargeable' && player.isChargingKick) {
       player.kickCharge = Math.min(1, player.kickCharge + dt); // 1 segundo para carregar totalmente
@@ -303,6 +310,7 @@ export class Game {
       player.input.kick = false;
       player.kickCharge = 0;
       player.isChargingKick = false;
+      player.hasKickedThisPress = false; // Resetar para permitir próximo chute
     }
 
     Physics.updateCircle(player.circle, dt);
@@ -427,7 +435,10 @@ export class Game {
     const dx = ball.pos.x - player.circle.pos.x;
     const dy = ball.pos.y - player.circle.pos.y;
     const distSq = dx * dx + dy * dy;
-    const kickRadiusSq = Physics.KICK_RADIUS * Physics.KICK_RADIUS;
+    
+    // Kick radius considera o raio do jogador + uma margem fixa
+    const kickRadius = player.circle.radius + 20; // raio do jogador + margem para chute
+    const kickRadiusSq = kickRadius * kickRadius;
 
     if (distSq < kickRadiusSq) {
       const dist = Math.sqrt(distSq);
@@ -450,6 +461,16 @@ export class Game {
         // Som de chute
         audioManager.play('kick');
         
+        // Rastreia quem tocou na bola por último (chute conta como toque)
+        if (player.team !== 'spectator') {
+          this.lastBallToucher = { 
+            id: player.id, 
+            name: player.name, 
+            team: player.team as 'red' | 'blue',
+            isBot: player.isBot || false
+          };
+        }
+        
         // Notificar callback customizado (para prevent_touch também detectar chutes)
         if (this.customBallTouchCallback && player.team !== 'spectator') {
           this.customBallTouchCallback(player.id);
@@ -464,7 +485,10 @@ export class Game {
     const dx = ball.pos.x - player.circle.pos.x;
     const dy = ball.pos.y - player.circle.pos.y;
     const distSq = dx * dx + dy * dy;
-    const kickRadiusSq = Physics.KICK_RADIUS * Physics.KICK_RADIUS;
+    
+    // Kick radius considera o raio do jogador + uma margem fixa
+    const kickRadius = player.circle.radius + 20;
+    const kickRadiusSq = kickRadius * kickRadius;
 
     if (distSq < kickRadiusSq) {
       const dist = Math.sqrt(distSq);
@@ -557,6 +581,8 @@ export class Game {
       if (Physics.checkCircleCollision(player.circle, this.state.ball.circle)) {
         Physics.resolveCircleCollision(player.circle, this.state.ball.circle);
         
+        console.log('Colisão detectada:', player.id, 'isBot:', player.isBot);
+        
         // Se o player está segurando a tecla de chute, executa o chute automaticamente
         if (player.isChargingKick && player.id === this.controlledPlayerId) {
           const chargeAmount = this.config.kickMode === 'chargeable' ? player.kickCharge : 1;
@@ -574,7 +600,12 @@ export class Game {
         
         // Rastreia quem tocou na bola por último  
         if (player.team !== 'spectator') {
-          this.lastBallToucher = { id: player.id, name: player.name, team: player.team as 'red' | 'blue' };
+          this.lastBallToucher = { 
+            id: player.id, 
+            name: player.name, 
+            team: player.team as 'red' | 'blue',
+            isBot: player.isBot || false
+          };
           
           // Incrementar contador de toques
           const currentTouches = this.ballTouches.get(player.id) || 0;
@@ -625,9 +656,15 @@ export class Game {
         this.state.score.red++;
       }
       
-      // Notificar callback customizado
+      // Notificar callastBallToucher.isBot
       if (this.customGoalCallback) {
-        this.customGoalCallback(goalScored);
+        const scoredByInfo = this.lastBallToucher ? {
+          id: this.lastBallToucher.id,
+          name: this.lastBallToucher.name,
+          team: this.lastBallToucher.team,
+          isBot: this.state.players.find(p => p.id === this.lastBallToucher!.id)?.isBot || false
+        } : undefined;
+        this.customGoalCallback(goalScored, scoredByInfo);
       }
       
       this.updateUI();
@@ -662,7 +699,10 @@ export class Game {
     // Log do fim do jogo
     this.console.logGameEnd(this.state.winner);
     
-    this.showGameOver();
+    // Só mostrar game over se não estiver desabilitado
+    if (!this.config.disableGameOver) {
+      this.showGameOver();
+    }
   }
 
   private showGameOver(): void {
@@ -883,7 +923,7 @@ export class Game {
     this.customBallTouchCallback = callback;
   }
 
-  setCustomGoalCallback(callback: ((team: 'red' | 'blue') => void) | null): void {
+  setCustomGoalCallback(callback: ((team: 'red' | 'blue', scoredBy?: { id: string, name: string, team: 'red' | 'blue', isBot: boolean }) => void) | null): void {
     this.customGoalCallback = callback;
   }
 

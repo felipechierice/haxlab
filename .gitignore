@@ -39,3 +39,4 @@ coverage/
 *.tmp
 .cache/
 .aider*
+.vercel

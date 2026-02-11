@@ -6,6 +6,7 @@ import {
   Vector2D,
   Ball,
   GameState,
+  IdleParams,
   ChaseBallParams,
   MarkPlayerParams,
   InterceptParams,
@@ -40,6 +41,10 @@ export class BotAI {
   }
 
   update(gameState: GameState, dt: number): void {
+    // Resetar input de chute no início de cada frame
+    // O chute será setado para true pelos behaviors que precisam chutar
+    this.bot.input.kick = false;
+    
     if (this.behavior.type === 'programmed') {
       this.updateProgrammed(this.behavior.config as ProgrammedBehavior, dt);
     } else if (this.behavior.type === 'ai_preset') {
@@ -105,6 +110,9 @@ export class BotAI {
     const params = config.params;
 
     switch (params.type) {
+      case 'idle':
+        this.idle(params, gameState);
+        break;
       case 'chase_ball':
         this.chaseBall(params, gameState);
         break;
@@ -120,6 +128,25 @@ export class BotAI {
       case 'patrol':
         this.patrol(params, gameState, dt);
         break;
+    }
+  }
+
+  private idle(params: IdleParams, gameState: GameState): void {
+    // Bot fica parado
+    this.queueMovement({ x: 0, y: 0 }, 0, 0);
+    
+    // Verifica se deve chutar quando a bola encostar
+    if (params.kickOnContact) {
+      const ball = gameState.ball;
+      const botPos = this.bot.circle.pos;
+      const ballPos = ball.circle.pos;
+      
+      const distanceToBall = Physics.vectorLength(Physics.vectorSub(ballPos, botPos));
+      const touchDistance = this.bot.circle.radius + ball.circle.radius + 5; // Margem de 5px
+      
+      if (distanceToBall <= touchDistance) {
+        this.bot.input.kick = true;
+      }
     }
   }
 
@@ -407,14 +434,38 @@ export class BotAI {
     const arrivalThreshold = 20;
 
     if (distance < arrivalThreshold) {
-      // Chegou no ponto
-      if (params.waitTime && this.patrolState.waitTimer < params.waitTime) {
+      // Chegou no ponto - calcular próximo índice
+      const nextIndex = this.patrolState.currentPointIndex + 1;
+      
+      // Se atingiu o último ponto
+      if (nextIndex >= params.points.length) {
+        // Verificar se deve fazer loop (padrão é true)
+        const shouldLoop = params.loop !== false;
+        if (!shouldLoop) {
+          // Se não faz loop, permanece no último ponto parado
+          this.currentMovement = { direction: { x: 0, y: 0 }, speed: 0 };
+          this.stopMovement();
+          return;
+        }
+      }
+      
+      // Calcular qual será o próximo ponto (com wrap around se loop)
+      const actualNextIndex = nextIndex >= params.points.length ? 0 : nextIndex;
+      const nextPoint = params.points[actualNextIndex];
+      
+      // Usar delay do PRÓXIMO ponto (destino), não do ponto atual
+      const nextPointDelay = nextPoint.delay !== undefined ? nextPoint.delay : (params.waitTime || 0);
+      
+      if (nextPointDelay > 0 && this.patrolState.waitTimer < nextPointDelay) {
+        // Esperar antes de ir para o próximo ponto
         this.patrolState.waitTimer += dt;
+        // Parar completamente e limpar movimento atual
+        this.currentMovement = { direction: { x: 0, y: 0 }, speed: 0 };
         this.stopMovement();
       } else {
-        // Avançar para o próximo ponto
+        // Terminou de esperar, avançar para o próximo ponto
         this.patrolState.waitTimer = 0;
-        this.patrolState.currentPointIndex = (this.patrolState.currentPointIndex + 1) % params.points.length;
+        this.patrolState.currentPointIndex = actualNextIndex;
       }
     } else {
       const normalized = Physics.vectorNormalize(direction);
@@ -422,6 +473,20 @@ export class BotAI {
       const speedRatio = Math.min(1, distance / 60);
       const adjustedSpeed = params.speed * speedRatio;
       this.queueMovement(normalized, adjustedSpeed, params.reactionTime);
+    }
+    
+    // Verifica se deve chutar quando a bola encostar
+    if (params.kickOnContact) {
+      const ball = gameState.ball;
+      const botPos = this.bot.circle.pos;
+      const ballPos = ball.circle.pos;
+      
+      const distanceToBall = Physics.vectorLength(Physics.vectorSub(ballPos, botPos));
+      const touchDistance = this.bot.circle.radius + ball.circle.radius + 5; // Margem de 5px
+      
+      if (distanceToBall <= touchDistance) {
+        this.bot.input.kick = true;
+      }
     }
   }
 

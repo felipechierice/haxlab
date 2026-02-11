@@ -274,7 +274,9 @@ export class Renderer {
       // Desenha círculo de carregamento de chute (só se não tiver chutado ainda ou se está no feedback visual)
       const shouldShowKickIndicator = (player.isChargingKick && !player.hasKickedThisPress) || player.kickFeedbackTime > 0;
       if (shouldShowKickIndicator) {
-        this.drawKickChargeIndicator(circle.pos.x, circle.pos.y, circle.radius, player.kickCharge);
+        // Se está no feedback visual (após chute), mostra círculo completo
+        const chargeToShow = player.kickFeedbackTime > 0 ? 1 : player.kickCharge;
+        this.drawKickChargeIndicator(circle.pos.x, circle.pos.y, circle.radius, chargeToShow);
       }
       
       if (player.id === controlledPlayerId) {

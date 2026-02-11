@@ -82,8 +82,13 @@ export interface ProgrammedMovement {
 // Comportamentos de IA predefinidos
 export interface AIPresetBehavior {
   type: 'ai_preset';
-  preset: 'chase_ball' | 'mark_player' | 'intercept' | 'stay_near' | 'patrol';
-  params: ChaseBallParams | MarkPlayerParams | InterceptParams | StayNearParams | PatrolParams;
+  preset: 'idle' | 'chase_ball' | 'mark_player' | 'intercept' | 'stay_near' | 'patrol';
+  params: IdleParams | ChaseBallParams | MarkPlayerParams | InterceptParams | StayNearParams | PatrolParams;
+}
+
+export interface IdleParams {
+  type: 'idle';
+  kickOnContact?: boolean; // Se deve chutar quando a bola encostar
 }
 
 export interface ChaseBallParams {
@@ -127,12 +132,20 @@ export interface StayNearParams {
   kickDistance?: number; // Distância para chutar a bola
 }
 
+export interface PatrolPoint {
+  x: number;
+  y: number;
+  delay?: number; // Tempo de espera ANTES de começar a ir para este ponto (segundos)
+}
+
 export interface PatrolParams {
   type: 'patrol';
-  points: Vector2D[]; // Pontos de patrulha
+  points: PatrolPoint[]; // Pontos de patrulha
   speed: number; // 0 a 1
-  waitTime?: number; // Tempo de espera em cada ponto (segundos)
+  loop?: boolean; // Se deve voltar ao primeiro ponto após o último (padrão: true)
+  waitTime?: number; // Tempo de espera em cada ponto (segundos) - DEPRECATED, use delay em cada ponto
   reactionTime?: number; // Tempo de reação em segundos (delay para mudar direção)
+  kickOnContact?: boolean; // Se deve chutar quando a bola encostar
 }
 
 export interface Ball {
@@ -168,6 +181,7 @@ export interface GameConfig {
   ballConfig: BallConfig;
   disableGoalReset?: boolean; // Se true, não reseta posições após gol
   kickSpeedMultiplier?: number; // Multiplicador de velocidade ao segurar chute (padrão 0.5)
+  disableGameOver?: boolean; // Se true, não mostra tela de game over
 }
 
 // Playlist System Types
@@ -187,6 +201,8 @@ export interface PathObjective {
 export interface GoalObjective {
   type: 'goal';
   team: 'red' | 'blue'; // Em qual gol precisa marcar
+  scoredBy?: 'player' | 'bot'; // Quem deve fazer o gol (padrão: qualquer um)
+  scoredByBotId?: string; // ID específico do bot que deve fazer o gol (apenas se scoredBy === 'bot')
 }
 
 export interface NoGoalObjective {
@@ -234,6 +250,7 @@ export interface BotDefinition {
   spawn: Vector2D;
   behavior: BotBehavior;
   initialVelocity?: Vector2D;
+  radius?: number; // Raio customizado do bot (padrão: playerRadius da config)
 }
 
 export interface Playlist {

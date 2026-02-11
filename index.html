@@ -3,7 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HaxLab</title>
+    <title>HaxLab - Training for Haxball</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js"
+      }
+    }
+    </script>
     <style>
         * {
             margin: 0;
@@ -11,8 +22,8 @@
             box-sizing: border-box;
         }
         body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -38,18 +49,21 @@
             background: transparent;
         }
         #menu, #game-modes-menu, #settings-menu {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 24px;
+            padding: 48px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             text-align: center;
         }
         #menu {
-            min-width: 400px;
+            min-width: 480px;
+            max-width: 540px;
         }
         #game-modes-menu, #settings-menu {
-            min-width: 500px;
-            max-width: 600px;
+            min-width: 560px;
+            max-width: 680px;
         }
         #settings-menu {
             max-height: 90vh;
@@ -65,52 +79,63 @@
         #rooms-table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 12px;
+            overflow: hidden;
         }
         #rooms-table thead {
-            background: #667eea;
+            background: rgba(99, 102, 241, 0.9);
             color: white;
             position: sticky;
             top: 0;
             z-index: 10;
         }
         #rooms-table th {
-            padding: 12px 10px;
+            padding: 14px 12px;
             text-align: left;
-            font-weight: bold;
+            font-weight: 600;
             font-size: 14px;
-            border-bottom: 2px solid #764ba2;
+            border-bottom: 2px solid #6366f1;
         }
         #rooms-table td {
-            padding: 12px 10px;
-            border-bottom: 1px solid #e0e0e0;
+            padding: 14px 12px;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.1);
             font-size: 14px;
+            color: #cbd5e1;
         }
         #rooms-table tbody tr {
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         #rooms-table tbody tr:hover {
-            background: #f0f0ff;
+            background: rgba(99, 102, 241, 0.15);
+            transform: translateX(2px);
         }
         .room-code-cell {
             font-family: 'Courier New', monospace;
-            font-weight: bold;
-            color: #667eea;
+            font-weight: 700;
+            color: #6366f1;
         }
         .room-name-cell {
-            font-weight: 500;
-            color: #333;
+            font-weight: 600;
+            color: #f1f5f9;
         }
         h1 {
-            color: #667eea;
-            margin-bottom: 30px;
+            background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 32px;
             font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
         }
         h2 {
-            color: #667eea;
-            margin-bottom: 25px;
+            color: #f1f5f9;
+            margin-bottom: 28px;
             font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
         }
         .form-group {
             margin: 20px 0;
@@ -118,25 +143,41 @@
         }
         .form-group label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #cbd5e1;
+            font-size: 14px;
         }
         .form-group input, .form-group select {
             width: 100%;
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
+            padding: 12px 16px;
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            background: rgba(51, 65, 85, 0.5);
+            color: #f1f5f9;
+            border-radius: 10px;
             font-size: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .form-group input[type="color"] {
             height: 50px;
             padding: 5px;
             cursor: pointer;
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            background: rgba(51, 65, 85, 0.5);
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        .form-group input[type="color"]:hover {
+            border-color: #6366f1;
         }
         .form-group input:focus, .form-group select:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1), 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+        .form-group select option {
+            background: #1e293b;
+            color: #f1f5f9;
         }
         .button-group {
             display: flex;
@@ -145,25 +186,34 @@
             margin-top: 20px;
         }
         button {
-            background: #667eea;
+            background: #6366f1;
             color: white;
             border: none;
-            padding: 15px 40px;
-            font-size: 18px;
-            border-radius: 10px;
+            padding: 14px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 12px;
             cursor: pointer;
-            margin: 10px;
-            transition: all 0.3s;
+            margin: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         button:hover {
-            background: #764ba2;
-            transform: scale(1.05);
+            background: #4f46e5;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+        }
+        button:active {
+            transform: translateY(0) scale(0.98);
         }
         button.secondary {
-            background: #95afc0;
+            background: rgba(99, 102, 241, 0.15);
+            border: 2px solid #6366f1;
+            color: #a5b4fc;
         }
         button.secondary:hover {
-            background: #778ca3;
+            background: rgba(99, 102, 241, 0.25);
+            color: #c7d2fe;
         }
         #game-container {
             display: flex;
@@ -185,15 +235,18 @@
             left: 20px;
             width: 350px;
             max-height: 300px;
-            background: rgba(0, 0, 0, 0.7);
-            color: #fff;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: #e2e8f0;
             font-family: 'Courier New', monospace;
             font-size: 12px;
-            border-radius: 5px;
+            border-radius: 12px;
             overflow: hidden;
             z-index: 1000;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
         }
         #console-messages {
             flex: 1;
@@ -227,75 +280,395 @@
             color: #fff;
         }
         #console-input-container {
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 5px;
+            border-top: 1px solid rgba(99, 102, 241, 0.3);
+            padding: 8px;
             display: none;
+            background: rgba(30, 41, 59, 0.5);
         }
         #console-input-container.active {
             display: block;
         }
         #console-input {
             width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: #fff;
-            padding: 5px;
+            background: rgba(51, 65, 85, 0.6);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            color: #f1f5f9;
+            padding: 6px 10px;
             font-family: 'Courier New', monospace;
             font-size: 12px;
             outline: none;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        #console-input:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
         }
         #console-input::placeholder {
-            color: rgba(255, 255, 255, 0.4);
+            color: rgba(148, 163, 184, 0.6);
         }
         #game-info {
-            margin-top: 15px;
+            margin-top: 20px;
             display: flex;
-            gap: 30px;
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
+            gap: 24px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #e2e8f0;
             align-items: center;
         }
         .score {
-            padding: 10px 20px;
-            background: #f0f0f0;
-            border-radius: 8px;
+            padding: 12px 24px;
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
         }
         .red-team { color: #ff4757; }
         .blue-team { color: #5352ed; }
         .hidden { display: none !important; }
+        
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        #menu:not(.hidden), #game-modes-menu:not(.hidden), #playlists-menu:not(.hidden), #settings-menu:not(.hidden) {
+            animation: fadeInScale 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        #ranking-modal:not(.hidden), #playlist-result-modal:not(.hidden) {
+            animation: fadeIn 0.3s ease;
+        }
+        
+        #ranking-modal > div, #playlist-result-modal > div {
+            animation: fadeInScale 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Editor Styles */
+        .editor-toolbar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            padding: 16px 24px;
+            border-radius: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+        
+        .editor-tool-btn, .editor-action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            background: rgba(51, 65, 85, 0.5);
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            color: #cbd5e1;
+            padding: 10px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 12px;
+        }
+        
+        .editor-tool-btn:hover, .editor-action-btn:hover {
+            background: rgba(51, 65, 85, 0.8);
+            border-color: #6366f1;
+            color: #f1f5f9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+        }
+        
+        .editor-tool-btn.active {
+            background: rgba(99, 102, 241, 0.9);
+            border-color: #6366f1;
+            color: white;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+        }
+        
+        .tool-icon {
+            font-size: 24px;
+        }
+        
+        .tool-name {
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .editor-toolbar-divider {
+            width: 2px;
+            height: 50px;
+            background: rgba(99, 102, 241, 0.3);
+            margin: 0 10px;
+        }
+        
+        .scenario-navigation {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(51, 65, 85, 0.5);
+            padding: 6px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        .scenario-navigation button {
+            padding: 5px 10px;
+            min-width: auto;
+        }
+        
+        .scenario-navigation .tool-name {
+            display: none;
+        }
+        
+        #editor-scenario-counter {
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .editor-properties {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: #e2e8f0;
+            padding: 24px;
+            border-radius: 16px;
+            width: 320px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+        
+        .editor-properties::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        .editor-properties::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 5px;
+        }
+        
+        .editor-properties::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.6);
+            border-radius: 5px;
+        }
+        
+        .editor-properties::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.8);
+        }
+        
+        /* Settings specific styles */
+        #settings-menu h3 {
+            color: #a5b4fc;
+            margin-top: 32px;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: 700;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        #settings-menu .form-group input[type="range"] {
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(51, 65, 85, 0.5);
+            outline: none;
+            margin-bottom: 8px;
+        }
+        
+        #settings-menu .form-group input[type="range"]::-webkit-slider-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        #settings-menu .form-group input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .keybind-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .keybind-container input {
+            flex: 1;
+            background: rgba(51, 65, 85, 0.7) !important;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .keybind-container button {
+            min-width: 90px;
+        }
+        
+        .editor-properties h3 {
+            margin-bottom: 16px;
+            color: #a5b4fc;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .editor-properties h4 {
+            margin-top: 24px;
+            margin-bottom: 12px;
+            color: #818cf8;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .property {
+            margin-bottom: 16px;
+        }
+        
+        .property label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #94a3b8;
+        }
+        
+        .property input[type="text"],
+        .property input[type="number"],
+        .property select,
+        .property textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            background: rgba(51, 65, 85, 0.5);
+            color: #f1f5f9;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        
+        .property input[type="text"]:focus,
+        .property input[type="number"]:focus,
+        .property select:focus,
+        .property textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+        
+        .property select option {
+            background: #1e293b;
+            color: #f1f5f9;
+        }
+        
+        .delete-btn {
+            width: 100%;
+            padding: 12px;
+            background: rgba(239, 68, 68, 0.9);
+            border: none;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .delete-btn:hover {
+            background: rgba(220, 38, 38, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.4);
+        }
     </style>
 </head>
 <body>
     <div id="app">
         <div id="menu">
             <h1 data-i18n="menu.title">HaxLab</h1>
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 10px; color: #667eea; font-weight: bold;" data-i18n="menu.language">Language</label>
-                <select id="language-select" style="padding: 10px; border-radius: 8px; border: 2px solid #667eea; font-size: 16px; cursor: pointer; min-width: 200px;">
+            
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 12px; color: #a5b4fc; font-weight: 600; font-size: 14px;" data-i18n="menu.language">🌐 Language</label>
+                <select id="language-select" style="padding: 12px 16px; border-radius: 10px; border: 2px solid rgba(99, 102, 241, 0.3); background: rgba(51, 65, 85, 0.5); color: #f1f5f9; font-size: 16px; cursor: pointer; width: 100%; transition: all 0.3s;">
                     <option value="en">English</option>
                     <option value="pt">Português</option>
                 </select>
             </div>
-            <button id="btn-play" data-i18n="menu.play">Play</button>
+            
+            <div style="margin-bottom: 28px; padding: 20px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; backdrop-filter: blur(8px);">
+                <label style="display: block; margin-bottom: 12px; color: #a5b4fc; font-weight: 600; font-size: 14px;">👤 Nickname</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="nickname-input" placeholder="Enter your nickname" 
+                           style="flex: 1; padding: 12px 16px; border-radius: 10px; border: 2px solid rgba(99, 102, 241, 0.3); background: rgba(51, 65, 85, 0.5); color: #f1f5f9; font-size: 16px; transition: all 0.3s;"
+                           maxlength="16" pattern="[a-zA-Z0-9]{3,16}">
+                    <button id="btn-random-nickname" style="padding: 12px 16px; margin: 0; min-width: auto; border-radius: 10px;" title="Random nickname">🎲</button>
+                </div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button id="btn-play" data-i18n="menu.play" style="width: 100%; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); font-size: 18px; padding: 16px;">▶️ Play</button>
+                <button id="btn-view-ranking" style="width: 100%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); font-size: 16px;">🏆 Ranking</button>
+            </div>
         </div>
 
         <div id="game-modes-menu" class="hidden" style="display: none;">
             <h2 data-i18n="modes.title">⚽ Game Modes</h2>
             
-            <button id="btn-free-training" data-i18n="modes.freeTraining">🎯 Free Training</button>
-            <button id="btn-playlists" data-i18n="modes.playlists">📋 Playlists</button>
-            <button class="secondary" id="btn-back-language" data-i18n="modes.back">Back</button>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+                <button id="btn-free-training" data-i18n="modes.freeTraining" style="width: 100%; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">🎯 Free Training</button>
+                <button id="btn-playlists" data-i18n="modes.playlists" style="width: 100%; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">📋 Playlists</button>
+                <button id="btn-playlist-editor" style="width: 100%; background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);">🎨 Playlist Editor</button>
+            </div>
+            
+            <button class="secondary" id="btn-back-language" data-i18n="modes.back" style="width: 100%;">← Back</button>
         </div>
 
         <div id="playlists-menu" class="hidden" style="display: none;">
             <h2 data-i18n="playlists.title">📋 Training Playlists</h2>
             
-            <div id="playlists-list" style="margin: 20px 0;">
+            <div id="playlists-list" style="margin: 24px 0; display: flex; flex-direction: column; gap: 12px;">
                 <!-- Playlists serão carregadas aqui -->
             </div>
             
-            <button class="secondary" id="btn-back-from-playlists" data-i18n="playlists.back">Back</button>
+            <div style="margin: 24px 0;">
+                <button id="btn-import-playlist" style="width: 100%; background: rgba(99, 102, 241, 0.15); border: 2px solid #6366f1; color: #a5b4fc;">📁 Import Playlist JSON</button>
+                <input type="file" id="playlist-file-input" accept=".json" style="display: none;">
+            </div>
+            
+            <button class="secondary" id="btn-back-from-playlists" data-i18n="playlists.back" style="width: 100%;">← Back</button>
         </div>
 
         <div id="settings-menu" class="hidden" style="display: none;">
@@ -373,63 +746,63 @@
                 <span id="settings-kick-speed-multiplier-value">0.5</span>
             </div>
 
-            <h3 style="margin-top: 30px; margin-bottom: 15px;">⌨️ Key Bindings</h3>
+            <h3>⌨️ Key Bindings</h3>
             
             <div class="form-group">
                 <label>Move Up</label>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="text" id="keybind-up" readonly style="cursor: pointer; background: #f5f5f5;">
+                <div class="keybind-container">
+                    <input type="text" id="keybind-up" readonly>
                     <button class="secondary" onclick="configureKeybind('up')">Change</button>
                 </div>
             </div>
 
             <div class="form-group">
                 <label>Move Down</label>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="text" id="keybind-down" readonly style="cursor: pointer; background: #f5f5f5;">
+                <div class="keybind-container">
+                    <input type="text" id="keybind-down" readonly>
                     <button class="secondary" onclick="configureKeybind('down')">Change</button>
                 </div>
             </div>
 
             <div class="form-group">
                 <label>Move Left</label>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="text" id="keybind-left" readonly style="cursor: pointer; background: #f5f5f5;">
+                <div class="keybind-container">
+                    <input type="text" id="keybind-left" readonly>
                     <button class="secondary" onclick="configureKeybind('left')">Change</button>
                 </div>
             </div>
 
             <div class="form-group">
                 <label>Move Right</label>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="text" id="keybind-right" readonly style="cursor: pointer; background: #f5f5f5;">
+                <div class="keybind-container">
+                    <input type="text" id="keybind-right" readonly>
                     <button class="secondary" onclick="configureKeybind('right')">Change</button>
                 </div>
             </div>
 
             <div class="form-group">
                 <label>Kick</label>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="text" id="keybind-kick" readonly style="cursor: pointer; background: #f5f5f5;">
+                <div class="keybind-container">
+                    <input type="text" id="keybind-kick" readonly>
                     <button class="secondary" onclick="configureKeybind('kick')">Change</button>
                 </div>
             </div>
 
             <div class="form-group">
                 <label>Switch Player</label>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="text" id="keybind-switchPlayer" readonly style="cursor: pointer; background: #f5f5f5;">
+                <div class="keybind-container">
+                    <input type="text" id="keybind-switchPlayer" readonly>
                     <button class="secondary" onclick="configureKeybind('switchPlayer')">Change</button>
                 </div>
             </div>
 
             <div class="form-group">
-                <button class="secondary" onclick="resetKeybindings()" style="width: 100%;">Reset to Default</button>
+                <button class="secondary" onclick="resetKeybindings()" style="width: 100%;">🔄 Reset to Default</button>
             </div>
 
-            <div class="button-group">
-                <button id="btn-apply-settings" data-i18n="settings.apply">Apply & Restart</button>
-                <button class="secondary" id="btn-resume-game" data-i18n="settings.resume">Resume</button>
+            <div class="button-group" style="margin-top: 28px; display: flex; gap: 12px;">
+                <button id="btn-apply-settings" data-i18n="settings.apply" style="flex: 1; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">✓ Apply & Restart</button>
+                <button class="secondary" id="btn-resume-game" data-i18n="settings.resume" style="flex: 1;">Resume</button>
             </div>
         </div>
         
@@ -442,16 +815,16 @@
             </div>
             
             <!-- HUD para modo Playlist -->
-            <div id="playlist-hud" class="hidden" style="position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.8); color: white; padding: 15px; border-radius: 10px; font-family: Arial; z-index: 1000; min-width: 250px;">
-                <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;" id="playlist-name">Playlist</div>
-                <div style="font-size: 14px; margin-bottom: 8px;" id="scenario-name">Cenário</div>
-                <div style="font-size: 12px; color: #aaa; margin-bottom: 15px;">
+            <div id="playlist-hud" class="hidden" style="position: fixed; top: 20px; right: 20px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(99, 102, 241, 0.3); color: #e2e8f0; padding: 20px; border-radius: 16px; font-family: 'Inter', sans-serif; z-index: 1000; min-width: 280px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);">
+                <div style="font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #a5b4fc;" id="playlist-name">Playlist</div>
+                <div style="font-size: 15px; margin-bottom: 10px; color: #f1f5f9; font-weight: 600;" id="scenario-name">Cenário</div>
+                <div style="font-size: 13px; color: #94a3b8; margin-bottom: 16px;">
                     <span id="scenario-progress">1/5</span> cenários
                 </div>
-                <div style="font-size: 16px; font-weight: bold; color: #ffff00; margin-bottom: 8px;">
+                <div style="font-size: 18px; font-weight: 700; color: #fbbf24; margin-bottom: 10px; padding: 12px; background: rgba(251, 191, 36, 0.1); border-radius: 8px; text-align: center;">
                     ⏱️ <span id="scenario-timer">30.0s</span>
                 </div>
-                <div style="font-size: 11px; color: #ccc; margin-top: 15px; border-top: 1px solid #555; padding-top: 10px;">
+                <div style="font-size: 12px; color: #cbd5e1; margin-top: 16px; border-top: 1px solid rgba(99, 102, 241, 0.3); padding-top: 12px; line-height: 1.6;">
                     <div>R - Resetar cenário</div>
                     <div>N - Próximo cenário</div>
                     <div>P - Cenário anterior</div>
@@ -460,7 +833,7 @@
             </div>
             
             <!-- Mensagem de feedback -->
-            <div id="playlist-feedback" class="hidden" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.9); color: white; padding: 30px 50px; border-radius: 15px; font-size: 24px; font-weight: bold; z-index: 2000; text-align: center;">
+            <div id="playlist-feedback" class="hidden" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 23, 42, 0.98); backdrop-filter: blur(12px); border: 2px solid #6366f1; box-shadow: 0 0 40px rgba(99, 102, 241, 0.6); color: white; padding: 40px 60px; border-radius: 20px; font-size: 28px; font-weight: 700; z-index: 2000; text-align: center;">
                 <div id="feedback-text">Texto</div>
             </div>
             
@@ -472,8 +845,116 @@
             </div>
             <button id="btn-menu" data-i18n="game.backToMenu">Back to Menu</button>
         </div>
+        
+        <!-- Modal de Ranking -->
+        <div id="ranking-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(4px); z-index: 3000; display: flex; align-items: center; justify-content: center;">
+            <div style="background: rgba(30, 41, 59, 0.98); backdrop-filter: blur(12px); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 24px; padding: 40px; max-width: 900px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);">
+                <h2 style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 28px; text-align: center; font-size: 32px; font-weight: 800;">🏆 Ranking</h2>
+                
+                <div style="margin-bottom: 24px;">
+                    <label style="display: block; margin-bottom: 12px; font-weight: 600; color: #cbd5e1; font-size: 14px;">Playlist:</label>
+                    <select id="ranking-playlist-select" style="width: 100%; padding: 12px 16px; border-radius: 10px; border: 2px solid rgba(99, 102, 241, 0.3); background: rgba(51, 65, 85, 0.5); color: #f1f5f9; font-size: 16px;">
+                        <option value="">Global (All Playlists)</option>
+                    </select>
+                </div>
+                
+                <div id="ranking-list" style="margin: 24px 0;">
+                    <table style="width: 100%; border-collapse: collapse; background: rgba(30, 41, 59, 0.6); border-radius: 12px; overflow: hidden;">
+                        <thead style="background: rgba(99, 102, 241, 0.9); color: white;">
+                            <tr>
+                                <th style="padding: 14px 12px; text-align: left; font-weight: 600; font-size: 14px;">#</th>
+                                <th style="padding: 14px 12px; text-align: left; font-weight: 600; font-size: 14px;">Nickname</th>
+                                <th style="padding: 14px 12px; text-align: left; font-weight: 600; font-size: 14px;">Playlist</th>
+                                <th style="padding: 14px 12px; text-align: center; font-weight: 600; font-size: 14px;">Chutes</th>
+                                <th style="padding: 14px 12px; text-align: center; font-weight: 600; font-size: 14px;">Tempo</th>
+                                <th style="padding: 14px 12px; text-align: right; font-weight: 600; font-size: 14px;">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ranking-tbody" style="color: #cbd5e1;">
+                            <!-- Rankings serão carregados aqui -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="ranking-loading" style="text-align: center; padding: 32px; display: none;">
+                    <div style="color: #a5b4fc; font-size: 18px; font-weight: 600;">Loading...</div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 24px;">
+                    <button id="btn-close-ranking" class="secondary" style="min-width: 140px;">Close</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal de Resultado da Playlist -->
+        <div id="playlist-result-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(4px); z-index: 3000; display: flex; align-items: center; justify-content: center;">
+            <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 24px; padding: 48px; max-width: 720px; width: 95%; max-height: 90vh; overflow-y: auto; color: white; border: 2px solid rgba(99, 102, 241, 0.4); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);">
+                <h2 style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 32px; text-align: center; font-size: 36px; font-weight: 800;">🎉 Playlist Completa!</h2>
+                
+                <!-- Seu Score -->
+                <div style="background: rgba(99, 102, 241, 0.15); border-radius: 16px; padding: 28px; margin-bottom: 28px; border: 1px solid rgba(99, 102, 241, 0.4); backdrop-filter: blur(8px);">
+                    <h3 style="color: #a5b4fc; margin-bottom: 20px; font-size: 18px; font-weight: 700;">📊 Seu Resultado</h3>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; text-align: center;">
+                        <div>
+                            <div style="font-size: 13px; color: #94a3b8; margin-bottom: 8px; font-weight: 500;">Chutes</div>
+                            <div style="font-size: 32px; font-weight: 800; color: #f1f5f9;" id="result-kicks">0</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 13px; color: #94a3b8; margin-bottom: 8px; font-weight: 500;">Tempo</div>
+                            <div style="font-size: 32px; font-weight: 800; color: #f1f5f9;" id="result-time">0:00</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 13px; color: #94a3b8; margin-bottom: 8px; font-weight: 500;">Score</div>
+                            <div style="font-size: 32px; font-weight: 800; color: #fbbf24;" id="result-score">0</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Highscore Pessoal -->
+                <div id="result-highscore-section" style="background: rgba(251, 191, 36, 0.15); border-radius: 16px; padding: 24px; margin-bottom: 28px; border: 1px solid rgba(251, 191, 36, 0.3);">
+                    <h3 style="color: #fbbf24; margin-bottom: 12px; font-size: 16px; font-weight: 700;">⭐ Seu Highscore</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <div>
+                            <span style="color: #94a3b8; font-size: 14px;">Melhor pontuação:</span>
+                            <span style="font-size: 28px; font-weight: 800; color: #fbbf24; margin-left: 12px;" id="result-highscore">0</span>
+                        </div>
+                        <div id="result-new-record" style="display: none; background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 10px 20px; border-radius: 24px; font-weight: 700; color: white; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);">
+                            🔥 NOVO RECORDE!
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Top 10 -->
+                <div class="ranking-container" style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 16px; padding: 24px; margin-bottom: 28px;">
+                    <h3 style="color: #f1f5f9; margin-bottom: 16px; font-size: 16px; font-weight: 700;">🏆 Top 10 - <span id="result-playlist-name">Playlist</span></h3>
+                    <div id="result-loading" style="text-align: center; padding: 24px; display: none;">
+                        <div style="color: #a5b4fc; font-size: 16px; font-weight: 600;">Carregando ranking...</div>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse;" id="result-ranking-table">
+                        <thead>
+                            <tr style="border-bottom: 2px solid rgba(99, 102, 241, 0.4);">
+                                <th style="padding: 12px 8px; text-align: left; color: #a5b4fc; font-size: 13px; font-weight: 600;">#</th>
+                                <th style="padding: 12px 8px; text-align: left; color: #a5b4fc; font-size: 13px; font-weight: 600;">Jogador</th>
+                                <th style="padding: 12px 8px; text-align: center; color: #a5b4fc; font-size: 13px; font-weight: 600;">Chutes</th>
+                                <th style="padding: 12px 8px; text-align: center; color: #a5b4fc; font-size: 13px; font-weight: 600;">Tempo</th>
+                                <th style="padding: 12px 8px; text-align: right; color: #a5b4fc; font-size: 13px; font-weight: 600;">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="result-ranking-tbody" style="color: #cbd5e1;">
+                            <!-- Rankings serão carregados aqui -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="display: flex; gap: 16px; justify-content: center;">
+                    <button id="btn-retry-playlist" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); min-width: 180px;">🔄 Tentar Novamente</button>
+                    <button id="btn-close-result" class="secondary" style="min-width: 180px;">📋 Voltar às Playlists</button>
+                </div>
+            </div>
+        </div>
     </div>
     
-    <script type="module" src="./dist/main.js"></script>
+    <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
+

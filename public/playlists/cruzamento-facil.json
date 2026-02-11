@@ -1,0 +1,268 @@
+{
+  "name": "Cruzamento - Fácil",
+  "description": "",
+  "scenarios": [
+    {
+      "name": "Cenário Customizado",
+      "map": "default",
+      "timeLimit": 5,
+      "objectives": [
+        {
+          "type": "goal",
+          "team": "red",
+          "scoredBy": "bot",
+          "scoredByBotId": "bot-1770764535146"
+        },
+        {
+          "type": "no_goal",
+          "team": "blue"
+        },
+        {
+          "type": "kick_count",
+          "exact": 1
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-1770764514458",
+            "bot-1770764519205",
+            "bot-1770764524505"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1770764514458",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 929.5,
+            "y": 381.5
+          },
+          "behavior": {
+            "type": "ai_preset",
+            "config": {
+              "type": "ai_preset",
+              "preset": "idle",
+              "params": {
+                "type": "idle",
+                "kickOnContact": false
+              }
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1770764519205",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 895.5,
+            "y": 382.5
+          },
+          "behavior": {
+            "type": "ai_preset",
+            "config": {
+              "type": "ai_preset",
+              "preset": "idle",
+              "params": {
+                "type": "idle",
+                "kickOnContact": false
+              }
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1770764524505",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 862.5,
+            "y": 382.5
+          },
+          "behavior": {
+            "type": "ai_preset",
+            "config": {
+              "type": "ai_preset",
+              "preset": "idle",
+              "params": {
+                "type": "idle",
+                "kickOnContact": false
+              }
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1770764535146",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 741.5,
+            "y": 305.5
+          },
+          "behavior": {
+            "type": "ai_preset",
+            "config": {
+              "type": "ai_preset",
+              "preset": "idle",
+              "params": {
+                "type": "idle",
+                "kickOnContact": true
+              }
+            }
+          },
+          "radius": 30
+        }
+      ],
+      "ballSpawn": {
+        "x": 888,
+        "y": 485
+      },
+      "playerSpawn": {
+        "x": 917,
+        "y": 514
+      },
+      "initialBallVelocity": {
+        "x": -52,
+        "y": -53.5
+      },
+      "initialPlayerVelocity": {
+        "x": -70,
+        "y": -69.5
+      }
+    },
+    {
+      "name": "Cenário 3",
+      "map": "default",
+      "timeLimit": 5,
+      "objectives": [
+        {
+          "type": "goal",
+          "team": "red",
+          "scoredBy": "bot",
+          "scoredByBotId": "bot-1770764696011"
+        },
+        {
+          "type": "no_goal",
+          "team": "blue"
+        },
+        {
+          "type": "kick_count",
+          "exact": 1
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-1770764666830",
+            "bot-1770764670362",
+            "bot-1770764675866"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1770764666830",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 931.5,
+            "y": 219.5
+          },
+          "behavior": {
+            "type": "ai_preset",
+            "config": {
+              "type": "ai_preset",
+              "preset": "idle",
+              "params": {
+                "type": "idle",
+                "kickOnContact": false
+              }
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1770764670362",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 897.5,
+            "y": 219.5
+          },
+          "behavior": {
+            "type": "ai_preset",
+            "config": {
+              "type": "ai_preset",
+              "preset": "idle",
+              "params": {
+                "type": "idle",
+                "kickOnContact": false
+              }
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1770764675866",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 865.5,
+            "y": 219.5
+          },
+          "behavior": {
+            "type": "ai_preset",
+            "config": {
+              "type": "ai_preset",
+              "preset": "idle",
+              "params": {
+                "type": "idle",
+                "kickOnContact": false
+              }
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1770764696011",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 740.5,
+            "y": 297.5
+          },
+          "behavior": {
+            "type": "ai_preset",
+            "config": {
+              "type": "ai_preset",
+              "preset": "idle",
+              "params": {
+                "type": "idle",
+                "kickOnContact": true
+              }
+            }
+          },
+          "radius": 30
+        }
+      ],
+      "ballSpawn": {
+        "x": 882,
+        "y": 118
+      },
+      "playerSpawn": {
+        "x": 912,
+        "y": 84
+      },
+      "initialBallVelocity": {
+        "x": -48,
+        "y": 62.5
+      },
+      "initialPlayerVelocity": {
+        "x": -78,
+        "y": 100.5
+      }
+    }
+  ]
+}

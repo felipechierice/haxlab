@@ -1,0 +1,35 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Permitir leitura do ranking para todos
+    // Permitir escrita apenas com dados válidos
+    match /rankings/{rankingId} {
+      allow read: if true;
+      
+      // Criar novo registro
+      allow create: if request.resource.data.keys().hasAll(['nickname', 'playlistName', 'kicks', 'time', 'score', 'timestamp'])
+                    && request.resource.data.nickname is string
+                    && request.resource.data.nickname.size() >= 3
+                    && request.resource.data.nickname.size() <= 16
+                    && request.resource.data.kicks is number
+                    && request.resource.data.kicks >= 0
+                    && request.resource.data.time is number
+                    && request.resource.data.time >= 0
+                    && request.resource.data.score is number
+                    && request.resource.data.timestamp is number;
+      
+      // Atualizar registro existente (para atualizar highscore)
+      allow update: if request.resource.data.kicks is number
+                    && request.resource.data.kicks >= 0
+                    && request.resource.data.time is number
+                    && request.resource.data.time >= 0
+                    && request.resource.data.score is number
+                    && request.resource.data.timestamp is number;
+      
+      // Deletar registros duplicados
+      allow delete: if true;
+    }
+  }
+}
+

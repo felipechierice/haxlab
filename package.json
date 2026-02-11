@@ -2,12 +2,11 @@
   "name": "haxlab",
   "version": "1.0.0",
   "description": "HaxBall-like game with TypeScript",
-  "main": "dist/main.js",
+  "type": "module",
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc --watch",
-    "serve": "npx http-server -p 8080 -c-1",
-    "dev": "concurrently \"npm run watch\" \"npm run serve\"",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
     "start": "npm run dev"
   },
   "keywords": [
@@ -20,7 +19,12 @@
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^9.2.1",
+    "firebase-tools": "^15.5.1",
     "http-server": "^14.1.1",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vite": "^7.3.1"
+  },
+  "dependencies": {
+    "firebase": "^12.9.0"
   }
 }

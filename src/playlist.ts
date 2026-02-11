@@ -6,6 +6,7 @@ import {
   GameConfig,
   CheckpointObjective,
   PathObjective,
+  GoalObjective,
   KickCountObjective,
   BallTouchObjective,
   PreventTouchObjective,
@@ -44,6 +45,10 @@ export class PlaylistMode {
   private resetTimeoutId: number | null = null; // ID do timeout de reset automático
   private nextScenarioTimeoutId: number | null = null; // ID do timeout para próximo cenário
   private goalScored: boolean = false; // Rastreia se o gol foi marcado
+  
+  // Tracking para ranking
+  private playlistStartTime: number = 0;
+  private totalKicks: number = 0;
   
   constructor(
     canvas: HTMLCanvasElement,
@@ -89,8 +94,8 @@ export class PlaylistMode {
     // Carregar mapa
     const map = this.getMapForScenario(scenario);
     
-    // Criar configuração para o jogo com reset de gol desabilitado
-    const gameConfig = { ...this.baseConfig, disableGoalReset: true };
+    // Criar configuração para o jogo com reset de gol e game over desabilitados
+    const gameConfig = { ...this.baseConfig, disableGoalReset: true, disableGameOver: true };
     
     // Criar jogo
     this.game = new Game(this.canvas, map, gameConfig);
@@ -105,7 +110,8 @@ export class PlaylistMode {
           botDef.team,
           botDef.spawn,
           botDef.behavior,
-          botDef.initialVelocity
+          botDef.initialVelocity,
+          botDef.radius
         );
       }
     }
@@ -161,7 +167,7 @@ export class PlaylistMode {
     this.game.setCustomBallTouchCallback((playerId) => this.onBallTouch(playerId));
     
     // Registrar callback para gols
-    this.game.setCustomGoalCallback((team) => this.onGoal(team));
+    this.game.setCustomGoalCallback((team, scoredBy) => this.onGoal(team, scoredBy));
     
     // Resetar contador de toques
     this.game.resetBallTouches();
@@ -375,24 +381,77 @@ export class PlaylistMode {
     }
   }
   
-  private onGoal(team: 'red' | 'blue'): void {
-    if (this.scenarioFailed || this.scenarioCompleted) return;
+  private onGoal(team: 'red' | 'blue', scoredBy?: { id: string, name: string, team: 'red' | 'blue', isBot: boolean }): void {
+    console.log('=== onGoal called ===');
+    console.log('team (gol onde bola entrou):', team);
+    console.log('scoredBy:', scoredBy);
+    
+    if (this.scenarioFailed || this.scenarioCompleted) {
+      console.log('Cenário já falhou ou completou, ignorando');
+      return;
+    }
     
     const scenario = this.getCurrentScenario();
-    if (!scenario) return;
+    if (!scenario) {
+      console.log('Sem cenário atual');
+      return;
+    }
     
     // Verificar se é o gol correto
     // team = qual gol a bola entrou ('red' = gol vermelho, 'blue' = gol azul)
-    // Se entrou no gol azul, o time vermelho marcou (e vice-versa)
-    const goalObjective = scenario.objectives.find(obj => obj.type === 'goal') as any;
+    // Se a bola entrou no gol VERMELHO, o time AZUL marca ponto
+    // Se a bola entrou no gol AZUL, o time VERMELHO marca ponto
+    const scoringTeam = team === 'red' ? 'blue' : 'red';
+    console.log('scoringTeam (time que marcou ponto):', scoringTeam);
+    
+    const goalObjective = scenario.objectives.find(obj => obj.type === 'goal') as GoalObjective | undefined;
+    console.log('goalObjective:', goalObjective);
+    
     if (goalObjective) {
-      // Inverter: se entrou no gol 'blue', time 'red' marcou
-      const scoringTeam = team === 'blue' ? 'red' : 'blue';
+      console.log('goalObjective.team:', goalObjective.team);
+      console.log('Comparando: goalObjective.team === scoringTeam?', goalObjective.team === scoringTeam);
       
       if (goalObjective.team === scoringTeam) {
+        // Verificar restrições de quem pode fazer o gol
+        if (goalObjective.scoredBy === 'player') {
+          // Só o player pode fazer o gol
+          if (!scoredBy || scoredBy.isBot) {
+            this.failScenario('O jogador deve fazer o gol!');
+            return;
+          }
+        } else if (goalObjective.scoredBy === 'bot') {
+          console.log('Objetivo requer bot');
+          console.log('scoredBy.isBot:', scoredBy?.isBot);
+          
+          // Só um bot pode fazer o gol
+          if (!scoredBy || !scoredBy.isBot) {
+            console.log('FALHA: não é bot');
+            this.failScenario('Um bot aliado deve fazer o gol!');
+            return;
+          }
+          
+          // Verificar se o bot é do time que está marcando ponto
+          console.log('scoredBy.team:', scoredBy.team);
+          console.log('Comparando: scoredBy.team !== scoringTeam?', scoredBy.team !== scoringTeam);
+          if (scoredBy.team !== scoringTeam) {
+            console.log('FALHA: bot do time errado');
+            this.failScenario('Um bot aliado deve fazer o gol!');
+            return;
+          }
+          
+          // Verificar se é um bot específico
+          if (goalObjective.scoredByBotId && scoredBy.id !== goalObjective.scoredByBotId) {
+            this.failScenario(`O bot específico deve fazer o gol!`);
+            return;
+          }
+        }
+        
+        console.log('GOL VÁLIDO! Marcando como sucesso');
         this.goalScored = true;
         // Verificar se pode completar cenário
         this.checkScenarioCompletion();
+      } else {
+        console.log('Time errado marcou gol, ignorando');
       }
     }
   }
@@ -401,6 +460,7 @@ export class PlaylistMode {
     if (this.scenarioFailed || this.scenarioCompleted) return;
     
     this.kickCount++;
+    this.totalKicks++; // Rastrear kicks totais da playlist
     
     // Verificar se excedeu o máximo de chutes
     if (this.kickObjective) {
@@ -609,6 +669,17 @@ export class PlaylistMode {
   }
   
   stop(): void {
+    // Limpar timeouts pendentes
+    if (this.resetTimeoutId) {
+      clearTimeout(this.resetTimeoutId);
+      this.resetTimeoutId = null;
+    }
+    if (this.nextScenarioTimeoutId) {
+      clearTimeout(this.nextScenarioTimeoutId);
+      this.nextScenarioTimeoutId = null;
+    }
+    
+    // Parar o jogo
     if (this.game) {
       this.game.stop();
       this.game = null;
@@ -621,5 +692,19 @@ export class PlaylistMode {
   
   getPlaylist(): Playlist {
     return this.playlist;
+  }
+  
+  getTotalKicks(): number {
+    return this.totalKicks;
+  }
+  
+  getPlaylistTime(): number {
+    if (this.playlistStartTime === 0) return 0;
+    return Math.floor((Date.now() - this.playlistStartTime) / 1000);
+  }
+  
+  resetPlaylistStats(): void {
+    this.totalKicks = 0;
+    this.playlistStartTime = Date.now();
   }
 }
