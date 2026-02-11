@@ -27,6 +27,10 @@ export class Game {
   private customBallTouchCallback: ((playerId: string) => void) | null = null;
   private customGoalCallback: ((team: 'red' | 'blue', scoredBy?: { id: string, name: string, team: 'red' | 'blue', isBot: boolean }) => void) | null = null;
   
+  // Event handlers (guardados para poder remover depois)
+  private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+  private keyupHandler: ((e: KeyboardEvent) => void) | null = null;
+  
   // Cache de elementos DOM para evitar lookups repetidos
   private uiElements: {
     redScore: HTMLElement | null;
@@ -135,7 +139,7 @@ export class Game {
   }
 
   private setupControls(): void {
-    window.addEventListener('keydown', (e) => {
+    this.keydownHandler = (e: KeyboardEvent) => {
       // Ignora controles do jogo se está digitando no console
       if (this.console.isTyping()) return;
       
@@ -155,9 +159,9 @@ export class Game {
         e.preventDefault();
         this.switchPlayer();
       }
-    });
+    };
 
-    window.addEventListener('keyup', (e) => {
+    this.keyupHandler = (e: KeyboardEvent) => {
       // Ignora controles do jogo se está digitando no console
       if (this.console.isTyping()) return;
       
@@ -167,7 +171,21 @@ export class Game {
       if (keyBindings.isKeyBound(e.key, 'kick')) {
         this.handleKickRelease();
       }
-    });
+    };
+
+    window.addEventListener('keydown', this.keydownHandler);
+    window.addEventListener('keyup', this.keyupHandler);
+  }
+  
+  private removeControls(): void {
+    if (this.keydownHandler) {
+      window.removeEventListener('keydown', this.keydownHandler);
+      this.keydownHandler = null;
+    }
+    if (this.keyupHandler) {
+      window.removeEventListener('keyup', this.keyupHandler);
+      this.keyupHandler = null;
+    }
   }
   
   private setupConsole(): void {
@@ -282,9 +300,9 @@ export class Game {
       player.kickFeedbackTime = Math.max(0, player.kickFeedbackTime - dt);
     }
 
-    const accel = Physics.PLAYER_ACCELERATION;
+    const accel = this.config.playerAcceleration ?? Physics.PLAYER_ACCELERATION;
     const baseSpeedMultiplier = player.maxSpeedMultiplier ?? 1;
-    const baseMaxSpeed = Physics.PLAYER_MAX_SPEED * baseSpeedMultiplier;
+    const baseMaxSpeed = (this.config.playerSpeed ?? Physics.PLAYER_MAX_SPEED) * baseSpeedMultiplier;
     
     // Calcula velocidade máxima reduzida quando está segurando chute
     const kickSpeedMult = this.config.kickSpeedMultiplier ?? 0.5;
@@ -293,10 +311,22 @@ export class Game {
     // Usa a velocidade máxima reduzida se estiver carregando chute
     const maxSpeed = player.isChargingKick ? reducedMaxSpeed : baseMaxSpeed;
 
-    if (player.input.up) player.circle.vel.y -= accel;
-    if (player.input.down) player.circle.vel.y += accel;
-    if (player.input.left) player.circle.vel.x -= accel;
-    if (player.input.right) player.circle.vel.x += accel;
+    // Calcula direção do movimento e normaliza para movimento diagonal consistente
+    let accelX = 0;
+    let accelY = 0;
+    if (player.input.up) accelY -= 1;
+    if (player.input.down) accelY += 1;
+    if (player.input.left) accelX -= 1;
+    if (player.input.right) accelX += 1;
+    
+    // Normaliza o vetor de aceleração se houver movimento diagonal
+    if (accelX !== 0 || accelY !== 0) {
+      const accelLength = Math.sqrt(accelX * accelX + accelY * accelY);
+      accelX = (accelX / accelLength) * accel;
+      accelY = (accelY / accelLength) * accel;
+      player.circle.vel.x += accelX;
+      player.circle.vel.y += accelY;
+    }
 
     const speed = Physics.vectorLength(player.circle.vel);
     if (speed > maxSpeed) {
@@ -318,14 +348,25 @@ export class Game {
 
   // Simula física do jogador local
   private simulateLocalPlayer(player: Player, dt: number): void {
-    const accel = Physics.PLAYER_ACCELERATION;
-    const maxSpeed = Physics.PLAYER_MAX_SPEED;
+    const accel = this.config.playerAcceleration ?? Physics.PLAYER_ACCELERATION;
+    const maxSpeed = this.config.playerSpeed ?? Physics.PLAYER_MAX_SPEED;
 
-    // Aplica aceleração baseada no input
-    if (player.input.up) player.circle.vel.y -= accel;
-    if (player.input.down) player.circle.vel.y += accel;
-    if (player.input.left) player.circle.vel.x -= accel;
-    if (player.input.right) player.circle.vel.x += accel;
+    // Calcula direção do movimento e normaliza para movimento diagonal consistente
+    let accelX = 0;
+    let accelY = 0;
+    if (player.input.up) accelY -= 1;
+    if (player.input.down) accelY += 1;
+    if (player.input.left) accelX -= 1;
+    if (player.input.right) accelX += 1;
+    
+    // Normaliza o vetor de aceleração se houver movimento diagonal
+    if (accelX !== 0 || accelY !== 0) {
+      const accelLength = Math.sqrt(accelX * accelX + accelY * accelY);
+      accelX = (accelX / accelLength) * accel;
+      accelY = (accelY / accelLength) * accel;
+      player.circle.vel.x += accelX;
+      player.circle.vel.y += accelY;
+    }
 
     // Limita velocidade máxima
     const speed = Physics.vectorLength(player.circle.vel);
@@ -841,6 +882,8 @@ export class Game {
       cancelAnimationFrame(this.animationId);
       this.animationId = 0;
     }
+    // Remover event listeners de teclado
+    this.removeControls();
   }
   
   pause(): void {

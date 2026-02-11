@@ -7,8 +7,8 @@ const _tempVec2: Vector2D = { x: 0, y: 0 };
 export class Physics {
   static readonly FRICTION = 0.98;
   static readonly AIR_DAMPING = 0.985;
-  static readonly PLAYER_ACCELERATION = 5;
-  static readonly PLAYER_MAX_SPEED = 200;
+  static readonly PLAYER_ACCELERATION = 6.5;
+  static readonly PLAYER_MAX_SPEED = 260;
   static readonly KICK_STRENGTH = 500;
   static readonly KICK_RADIUS = 35;
 

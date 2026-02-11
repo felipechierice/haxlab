@@ -178,6 +178,8 @@ export interface GameConfig {
   kickMode: 'classic' | 'chargeable';
   kickStrength: number;
   playerRadius: number;
+  playerSpeed?: number; // Velocidade máxima do jogador (padrão 260)
+  playerAcceleration?: number; // Aceleração do jogador (padrão 6.5)
   ballConfig: BallConfig;
   disableGoalReset?: boolean; // Se true, não reseta posições após gol
   kickSpeedMultiplier?: number; // Multiplicador de velocidade ao segurar chute (padrão 0.5)

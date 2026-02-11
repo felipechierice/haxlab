@@ -66,9 +66,12 @@
             max-width: 680px;
         }
         #settings-menu {
+            max-width: 920px;
+            min-width: 860px;
             max-height: 90vh;
             overflow-y: auto;
             overflow-x: hidden;
+            padding: 36px 40px;
         }
         #rooms-container {
             margin: 20px 0;
@@ -310,11 +313,44 @@
         #game-info {
             margin-top: 20px;
             display: flex;
-            gap: 24px;
+            flex-direction: column;
+            gap: 16px;
             font-size: 18px;
             font-weight: 700;
             color: #e2e8f0;
             align-items: center;
+        }
+        .game-scores {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .game-controls {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        .game-hint {
+            padding: 6px 14px;
+            background: rgba(99, 102, 241, 0.12);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .game-hint kbd {
+            background: rgba(51, 65, 85, 0.9);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            color: #c7d2fe;
         }
         .score {
             padding: 12px 24px;
@@ -483,6 +519,70 @@
         }
         
         /* Settings specific styles */
+        #settings-menu h2 {
+            font-size: 28px;
+            margin-bottom: 24px;
+        }
+        
+        #settings-menu h3 {
+            color: #a5b4fc;
+            margin-top: 28px;
+            margin-bottom: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        .settings-category {
+            background: rgba(51, 65, 85, 0.3);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .settings-category h3 {
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+        
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px 20px;
+        }
+        
+        .settings-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px 16px;
+        }
+        
+        .settings-full-width {
+            grid-column: 1 / -1;
+        }
+        
+        #settings-menu .form-group {
+            margin: 0;
+        }
+        
+        #settings-menu .form-group label {
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        #settings-menu .form-group input,
+        #settings-menu .form-group select {
+            padding: 10px 12px;
+            font-size: 14px;
+        }
+        
+        #settings-menu .form-group input[type="number"] {
+            width: 100%;
+        }
+        
         #settings-menu h3 {
             color: #a5b4fc;
             margin-top: 32px;
@@ -494,16 +594,28 @@
         }
         
         #settings-menu .form-group input[type="range"] {
-            height: 6px;
+            height: 5px;
             border-radius: 3px;
             background: rgba(51, 65, 85, 0.5);
             outline: none;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
+        }
+        
+        #settings-menu .form-group span {
+            display: inline-block;
+            min-width: 45px;
+            text-align: center;
+            font-size: 13px;
+            color: #a5b4fc;
+            font-weight: 600;
+            background: rgba(99, 102, 241, 0.1);
+            padding: 2px 8px;
+            border-radius: 6px;
         }
         
         #settings-menu .form-group input[type="range"]::-webkit-slider-thumb {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             background: #6366f1;
             cursor: pointer;
@@ -511,8 +623,8 @@
         }
         
         #settings-menu .form-group input[type="range"]::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             background: #6366f1;
             cursor: pointer;
@@ -522,12 +634,14 @@
         
         .keybind-container {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
         }
         
         .keybind-container input {
             flex: 1;
+            font-size: 13px;
+            padding: 8px 10px;
             background: rgba(51, 65, 85, 0.7) !important;
             cursor: pointer;
             font-family: 'Courier New', monospace;
@@ -536,6 +650,9 @@
         }
         
         .keybind-container button {
+            padding: 8px 16px;
+            font-size: 13px;
+            margin: 0;
             min-width: 90px;
         }
         
@@ -672,137 +789,150 @@
         </div>
 
         <div id="settings-menu" class="hidden" style="display: none;">
-            <h2 data-i18n="settings.title">⚙️ Match Settings</h2>
+            <h2 data-i18n="settings.title">⚙️ Configurações da Partida</h2>
             
-            <div class="form-group">
-                <label for="settings-map-select" data-i18n="settings.map">Map</label>
-                <select id="settings-map-select">
-                    <option value="default" data-i18n="settings.mapDefault">Default Stadium</option>
-                    <option value="classic" data-i18n="settings.mapClassic">Classic Arena</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="settings-score-limit" data-i18n="settings.scoreLimit">Score Limit</label>
-                <input type="number" id="settings-score-limit" min="1" max="10" value="3">
-            </div>
-
-            <div class="form-group">
-                <label for="settings-time-limit" data-i18n="settings.timeLimit">Time Limit (minutes)</label>
-                <input type="number" id="settings-time-limit" min="1" max="30" value="5">
-            </div>
-
-            <div class="form-group">
-                <label for="settings-kick-mode" data-i18n="settings.kickMode">Kick Mode</label>
-                <select id="settings-kick-mode">
-                    <option value="classic" data-i18n="settings.kickClassic">Classic (instant)</option>
-                    <option value="chargeable" data-i18n="settings.kickChargeable">Chargeable (hold to power up)</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="settings-kick-strength">Kick Strength</label>
-                <input type="range" id="settings-kick-strength" min="200" max="1000" value="500" step="50">
-                <span id="settings-kick-strength-value">500</span>
-            </div>
-
-            <div class="form-group">
-                <label for="settings-player-radius">Player Size</label>
-                <input type="range" id="settings-player-radius" min="10" max="25" value="15" step="1">
-                <span id="settings-player-radius-value">15</span>
-            </div>
-
-            <div class="form-group">
-                <label for="settings-ball-color" data-i18n="settings.ballColor">Ball Color</label>
-                <input type="color" id="settings-ball-color" value="#ffff00">
-            </div>
-
-            <div class="form-group">
-                <label for="settings-ball-border-color" data-i18n="settings.ballBorderColor">Ball Border Color</label>
-                <input type="color" id="settings-ball-border-color" value="#000000">
-            </div>
-
-            <div class="form-group">
-                <label for="settings-ball-radius" data-i18n="settings.ballRadius">Ball Radius</label>
-                <input type="range" id="settings-ball-radius" min="5" max="15" value="8" step="0.5">
-                <span id="settings-ball-radius-value">8</span>
-            </div>
-
-            <div class="form-group">
-                <label for="settings-ball-mass" data-i18n="settings.ballMass">Ball Mass</label>
-                <input type="range" id="settings-ball-mass" min="1" max="20" value="3" step="0.5">
-                <span id="settings-ball-mass-value">3</span>
-            </div>
-
-            <div class="form-group">
-                <label for="settings-ball-damping" data-i18n="settings.ballDamping">Ball Damping (friction)</label>
-                <input type="range" id="settings-ball-damping" min="0.95" max="0.999" value="0.99" step="0.001">
-                <span id="settings-ball-damping-value">0.99</span>
-            </div>
-
-            <div class="form-group">
-                <label for="settings-kick-speed-multiplier">Movement Speed While Holding Kick</label>
-                <input type="range" id="settings-kick-speed-multiplier" min="0.3" max="1.0" value="0.5" step="0.05">
-                <span id="settings-kick-speed-multiplier-value">0.5</span>
-            </div>
-
-            <h3>⌨️ Key Bindings</h3>
-            
-            <div class="form-group">
-                <label>Move Up</label>
-                <div class="keybind-container">
-                    <input type="text" id="keybind-up" readonly>
-                    <button class="secondary" onclick="configureKeybind('up')">Change</button>
+            <div class="settings-category">
+                <h3>🎮 Regras da Partida</h3>
+                <div class="settings-grid">
+                    <div class="form-group">
+                        <label for="settings-map-select" data-i18n="settings.map">Mapa</label>
+                        <select id="settings-map-select">
+                            <option value="default" data-i18n="settings.mapDefault">Estádio Padrão</option>
+                            <option value="classic" data-i18n="settings.mapClassic">Arena Clássica</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="settings-kick-mode" data-i18n="settings.kickMode">Modo de Chute</label>
+                        <select id="settings-kick-mode">
+                            <option value="classic" data-i18n="settings.kickClassic">Clássico (instantâneo)</option>
+                            <option value="chargeable" data-i18n="settings.kickChargeable">Carregável (segurar)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="settings-score-limit" data-i18n="settings.scoreLimit">Limite de Pontos</label>
+                        <input type="number" id="settings-score-limit" min="1" max="10" value="3">
+                    </div>
+                    <div class="form-group">
+                        <label for="settings-time-limit" data-i18n="settings.timeLimit">Limite de Tempo (min)</label>
+                        <input type="number" id="settings-time-limit" min="1" max="30" value="5">
+                    </div>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label>Move Down</label>
-                <div class="keybind-container">
-                    <input type="text" id="keybind-down" readonly>
-                    <button class="secondary" onclick="configureKeybind('down')">Change</button>
+            <div class="settings-category">
+                <h3>🏃 Jogador</h3>
+                <div class="settings-grid">
+                    <div class="form-group">
+                        <label for="settings-player-radius">Tamanho</label>
+                        <input type="range" id="settings-player-radius" min="10" max="25" value="15" step="1">
+                        <span id="settings-player-radius-value">15</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="settings-player-speed">Velocidade</label>
+                        <input type="range" id="settings-player-speed" min="100" max="500" value="260" step="10">
+                        <span id="settings-player-speed-value">260</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="settings-player-acceleration">Aceleração</label>
+                        <input type="range" id="settings-player-acceleration" min="2" max="15" value="6.5" step="0.5">
+                        <span id="settings-player-acceleration-value">6.5</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="settings-kick-strength">Força do Chute</label>
+                        <input type="range" id="settings-kick-strength" min="200" max="1000" value="500" step="50">
+                        <span id="settings-kick-strength-value">500</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="settings-kick-speed-multiplier">Velocidade ao Segurar Chute</label>
+                        <input type="range" id="settings-kick-speed-multiplier" min="0.3" max="1.0" value="0.5" step="0.05">
+                        <span id="settings-kick-speed-multiplier-value">0.5</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label>Move Left</label>
-                <div class="keybind-container">
-                    <input type="text" id="keybind-left" readonly>
-                    <button class="secondary" onclick="configureKeybind('left')">Change</button>
+            <div class="settings-category">
+                <h3>⚽ Bola</h3>
+                <div class="settings-grid">
+                    <div class="form-group">
+                        <label for="settings-ball-radius" data-i18n="settings.ballRadius">Raio</label>
+                        <input type="range" id="settings-ball-radius" min="5" max="15" value="8" step="0.5">
+                        <span id="settings-ball-radius-value">8</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="settings-ball-mass" data-i18n="settings.ballMass">Massa</label>
+                        <input type="range" id="settings-ball-mass" min="1" max="20" value="3" step="0.5">
+                        <span id="settings-ball-mass-value">3</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="settings-ball-color" data-i18n="settings.ballColor">Cor</label>
+                        <input type="color" id="settings-ball-color" value="#ffff00">
+                    </div>
+                    <div class="form-group">
+                        <label for="settings-ball-border-color" data-i18n="settings.ballBorderColor">Cor da Borda</label>
+                        <input type="color" id="settings-ball-border-color" value="#000000">
+                    </div>
+                    <div class="form-group">
+                        <label for="settings-ball-damping" data-i18n="settings.ballDamping">Amortecimento (fricção)</label>
+                        <input type="range" id="settings-ball-damping" min="0.95" max="0.999" value="0.99" step="0.001">
+                        <span id="settings-ball-damping-value">0.99</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label>Move Right</label>
-                <div class="keybind-container">
-                    <input type="text" id="keybind-right" readonly>
-                    <button class="secondary" onclick="configureKeybind('right')">Change</button>
+            <div class="settings-category">
+                <h3>⌨️ Controles</h3>
+                <div class="settings-grid-3">
+                    <div class="form-group">
+                        <label>Mover Cima</label>
+                        <div class="keybind-container">
+                            <input type="text" id="keybind-up" readonly>
+                            <button class="secondary" onclick="configureKeybind('up')">Mudar</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Mover Baixo</label>
+                        <div class="keybind-container">
+                            <input type="text" id="keybind-down" readonly>
+                            <button class="secondary" onclick="configureKeybind('down')">Mudar</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Mover Esquerda</label>
+                        <div class="keybind-container">
+                            <input type="text" id="keybind-left" readonly>
+                            <button class="secondary" onclick="configureKeybind('left')">Mudar</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Mover Direita</label>
+                        <div class="keybind-container">
+                            <input type="text" id="keybind-right" readonly>
+                            <button class="secondary" onclick="configureKeybind('right')">Mudar</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Chutar</label>
+                        <div class="keybind-container">
+                            <input type="text" id="keybind-kick" readonly>
+                            <button class="secondary" onclick="configureKeybind('kick')">Mudar</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Trocar Jogador</label>
+                        <div class="keybind-container">
+                            <input type="text" id="keybind-switchPlayer" readonly>
+                            <button class="secondary" onclick="configureKeybind('switchPlayer')">Mudar</button>
+                        </div>
+                    </div>
+                    <div class="form-group settings-full-width">
+                        <button class="secondary" onclick="resetKeybindings()" style="width: 100%; margin-top: 8px;">🔄 Restaurar Padrões</button>
+                    </div>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label>Kick</label>
-                <div class="keybind-container">
-                    <input type="text" id="keybind-kick" readonly>
-                    <button class="secondary" onclick="configureKeybind('kick')">Change</button>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Switch Player</label>
-                <div class="keybind-container">
-                    <input type="text" id="keybind-switchPlayer" readonly>
-                    <button class="secondary" onclick="configureKeybind('switchPlayer')">Change</button>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <button class="secondary" onclick="resetKeybindings()" style="width: 100%;">🔄 Reset to Default</button>
-            </div>
-
-            <div class="button-group" style="margin-top: 28px; display: flex; gap: 12px;">
-                <button id="btn-apply-settings" data-i18n="settings.apply" style="flex: 1; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">✓ Apply & Restart</button>
-                <button class="secondary" id="btn-resume-game" data-i18n="settings.resume" style="flex: 1;">Resume</button>
+            <div class="button-group" style="margin-top: 24px; display: flex; gap: 12px;">
+                <button id="btn-apply-settings" data-i18n="settings.apply" style="flex: 1; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">✓ Aplicar & Reiniciar</button>
+                <button class="secondary" id="btn-resume-game" data-i18n="settings.resume" style="flex: 1;">Retomar</button>
             </div>
         </div>
         
@@ -839,11 +969,18 @@
             
             <canvas id="game-canvas" width="1000" height="600"></canvas>
             <div id="game-info">
-                <div class="score red-team"><span data-i18n="game.red">Red</span>: <span id="red-score">0</span></div>
-                <div class="score"><span data-i18n="game.time">Time</span>: <span id="game-time">0:00</span></div>
-                <div class="score blue-team"><span data-i18n="game.blue">Blue</span>: <span id="blue-score">0</span></div>
+                <div class="game-scores">
+                    <div class="score red-team"><span data-i18n="game.red">Red</span>: <span id="red-score">0</span></div>
+                    <div class="score"><span data-i18n="game.time">Time</span>: <span id="game-time">0:00</span></div>
+                    <div class="score blue-team"><span data-i18n="game.blue">Blue</span>: <span id="blue-score">0</span></div>
+                </div>
+                <div class="game-controls">
+                    <div class="game-hint">
+                        <span>Pressione <kbd>ESC</kbd> para configurar</span>
+                    </div>
+                    <button id="btn-menu" data-i18n="game.backToMenu">Back to Menu</button>
+                </div>
             </div>
-            <button id="btn-menu" data-i18n="game.backToMenu">Back to Menu</button>
         </div>
         
         <!-- Modal de Ranking -->

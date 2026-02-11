@@ -24,6 +24,8 @@ function getDefaultConfig(): GameConfig {
     kickMode: 'classic',
     kickStrength: 500,
     playerRadius: 15,
+    playerSpeed: 260,
+    playerAcceleration: 6.5,
     kickSpeedMultiplier: 0.5,
     ballConfig: {
       radius: 8,
@@ -78,10 +80,8 @@ function showLanguageMenu(): void {
     currentGame = null;
   }
   
-  if (currentPlaylist) {
-    currentPlaylist.stop();
-    currentPlaylist = null;
-  }
+  // Parar playlist e HUD interval
+  stopCurrentPlaylist();
   
   if (currentEditor) {
     currentEditor = null;
@@ -130,6 +130,10 @@ function populateSettingsForm(config: GameConfig, mapType: string): void {
   (document.getElementById('settings-kick-strength-value') as HTMLSpanElement).textContent = config.kickStrength.toString();
   (document.getElementById('settings-player-radius') as HTMLInputElement).value = config.playerRadius.toString();
   (document.getElementById('settings-player-radius-value') as HTMLSpanElement).textContent = config.playerRadius.toString();
+  (document.getElementById('settings-player-speed') as HTMLInputElement).value = (config.playerSpeed ?? 260).toString();
+  (document.getElementById('settings-player-speed-value') as HTMLSpanElement).textContent = (config.playerSpeed ?? 260).toString();
+  (document.getElementById('settings-player-acceleration') as HTMLInputElement).value = (config.playerAcceleration ?? 6.5).toString();
+  (document.getElementById('settings-player-acceleration-value') as HTMLSpanElement).textContent = (config.playerAcceleration ?? 6.5).toString();
   (document.getElementById('settings-ball-color') as HTMLInputElement).value = config.ballConfig.color;
   (document.getElementById('settings-ball-border-color') as HTMLInputElement).value = config.ballConfig.borderColor;
   (document.getElementById('settings-ball-radius') as HTMLInputElement).value = config.ballConfig.radius.toString();
@@ -153,6 +157,8 @@ function getConfigFromSettingsForm(): GameConfig {
     kickMode: (document.getElementById('settings-kick-mode') as HTMLSelectElement).value as 'classic' | 'chargeable',
     kickStrength: parseFloat((document.getElementById('settings-kick-strength') as HTMLInputElement).value),
     playerRadius: parseFloat((document.getElementById('settings-player-radius') as HTMLInputElement).value),
+    playerSpeed: parseFloat((document.getElementById('settings-player-speed') as HTMLInputElement).value),
+    playerAcceleration: parseFloat((document.getElementById('settings-player-acceleration') as HTMLInputElement).value),
     kickSpeedMultiplier: parseFloat((document.getElementById('settings-kick-speed-multiplier') as HTMLInputElement).value),
     ballConfig: {
       radius: parseFloat((document.getElementById('settings-ball-radius') as HTMLInputElement).value),
@@ -169,6 +175,9 @@ function startGame(config: GameConfig, mapType: string): void {
   hideAllScreens();
   const gameContainer = document.getElementById('game-container');
   if (gameContainer) gameContainer.classList.remove('hidden');
+  
+  // Parar playlist atual se existir (limpa timeouts e intervals)
+  stopCurrentPlaylist();
   
   // Prevenir scroll durante o jogo
   document.body.classList.add('game-active');
@@ -203,6 +212,9 @@ function startEditor(): void {
   hideAllScreens();
   const gameContainer = document.getElementById('game-container');
   if (gameContainer) gameContainer.classList.remove('hidden');
+  
+  // Parar playlist atual se existir (limpa timeouts e intervals)
+  stopCurrentPlaylist();
   
   // Prevenir scroll durante o editor
   document.body.classList.add('game-active');
@@ -344,6 +356,12 @@ function startPlaylistMode(playlist: Playlist): void {
   const gameContainer = document.getElementById('game-container');
   if (gameContainer) gameContainer.classList.remove('hidden');
   
+  // Parar jogo atual se existir (treino livre)
+  if (currentGame) {
+    currentGame.stop();
+    currentGame = null;
+  }
+  
   // Prevenir scroll durante o jogo
   document.body.classList.add('game-active');
   
@@ -441,6 +459,27 @@ function updatePlaylistHUD(): void {
 }
 
 let hudUpdateInterval: number | null = null;
+
+function stopPlaylistHUDLoop(): void {
+  if (hudUpdateInterval) {
+    clearInterval(hudUpdateInterval);
+    hudUpdateInterval = null;
+  }
+}
+
+function stopCurrentPlaylist(): void {
+  // Parar loop de atualização do HUD
+  stopPlaylistHUDLoop();
+  
+  // Parar e limpar playlist atual
+  if (currentPlaylist) {
+    currentPlaylist.stop();
+    currentPlaylist = null;
+  }
+  
+  // Esconder HUD de playlist
+  document.getElementById('playlist-hud')?.classList.add('hidden');
+}
 
 function startPlaylistHUDLoop(): void {
   if (hudUpdateInterval) clearInterval(hudUpdateInterval);
@@ -704,6 +743,8 @@ function setupSliderListeners(): void {
   const sliders = [
     { input: 'settings-kick-strength', value: 'settings-kick-strength-value' },
     { input: 'settings-player-radius', value: 'settings-player-radius-value' },
+    { input: 'settings-player-speed', value: 'settings-player-speed-value' },
+    { input: 'settings-player-acceleration', value: 'settings-player-acceleration-value' },
     { input: 'settings-ball-radius', value: 'settings-ball-radius-value' },
     { input: 'settings-ball-mass', value: 'settings-ball-mass-value' },
     { input: 'settings-ball-damping', value: 'settings-ball-damping-value' },
