@@ -140,8 +140,10 @@ export class Game {
 
   private setupControls(): void {
     this.keydownHandler = (e: KeyboardEvent) => {
-      // Ignora controles do jogo se está digitando no console
+      // Ignora controles do jogo se está digitando no console ou em um campo de texto
       if (this.console.isTyping()) return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       
       // Evita key repeat
       if (e.repeat) return;
@@ -162,8 +164,10 @@ export class Game {
     };
 
     this.keyupHandler = (e: KeyboardEvent) => {
-      // Ignora controles do jogo se está digitando no console
+      // Ignora controles do jogo se está digitando no console ou em um campo de texto
       if (this.console.isTyping()) return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       
       this.keyState[e.key] = false;
       

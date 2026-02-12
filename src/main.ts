@@ -8,6 +8,13 @@ import { PlaylistEditor } from './editor.js';
 import { getNickname, saveNickname, generateRandomNickname, isValidNickname } from './player.js';
 import { submitScore, getTopScores, getPlayerHighscore, calculateScore, isOfficialPlaylist, RankingEntry } from './firebase.js';
 
+function formatTime(time: number): string {
+  const minutes = Math.floor(time / 60);
+  const seconds = Math.floor(time % 60);
+  const cs = Math.floor((time % 1) * 100);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}.${cs.toString().padStart(2, '0')}`;
+}
+
 let currentGame: Game | null = null;
 let currentPlaylist: PlaylistMode | null = null;
 let currentEditor: PlaylistEditor | null = null;
@@ -94,6 +101,10 @@ function showGameModesMenu(): void {
   const menu = document.getElementById('game-modes-menu');
   menu?.classList.remove('hidden');
   menu?.style.removeProperty('display');
+  
+  // Resetar configurações para valores padrão ao sair do treino livre
+  currentConfig = getDefaultConfig();
+  currentMapType = 'default';
 }
 
 function showPlaylistsMenu(): void {
@@ -102,6 +113,13 @@ function showPlaylistsMenu(): void {
   const menu = document.getElementById('playlists-menu');
   menu?.classList.remove('hidden');
   menu?.style.removeProperty('display');
+  
+  // Parar playlist atual se existir (limpa timeouts e intervals)
+  stopCurrentPlaylist();
+  
+  // Resetar configurações para valores padrão ao sair do treino livre
+  currentConfig = getDefaultConfig();
+  currentMapType = 'default';
   
   loadAvailablePlaylists();
 }
@@ -242,53 +260,228 @@ async function loadAvailablePlaylists(): Promise<void> {
   
   // Lista hardcoded de playlists disponíveis
   const playlists = [
+    { file: 'torneio-1.json', name: 'TORNEIO A.D. BRK - Edição 1', description: 'Playlist oficial do 1º Torneio A.D. BRK', emoji: '🏆' },
     { file: 'cruzamento-facil.json', name: 'Cruzamento - Fácil', description: 'Pratique cruzamentos e finalizações', emoji: '⚽' },
-    { file: 'drible-e-gol.json', name: 'Drible e Gol', description: 'Melhore suas habilidades de drible', emoji: '🎯' }
+    { file: 'drible-e-gol.json', name: 'Drible e Gol', description: 'Melhore suas habilidades de drible', emoji: '🎯' },
+    { file: 'conducao-facil.json', name: 'Condução - Fácil', description: 'Exercícios focados em condução de bola', emoji: '🛞' }
   ];
   
   listContainer.innerHTML = '';
   
   for (const playlistInfo of playlists) {
     const btn = document.createElement('button');
+    btn.className = 'playlist-item';
+    btn.dataset.file = playlistInfo.file;
     btn.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 16px;">
-        <div style="font-size: 32px;">${playlistInfo.emoji}</div>
-        <div style="flex: 1; text-align: left;">
-          <div style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">${playlistInfo.name}</div>
-          <div style="font-size: 13px; color: #94a3b8; font-weight: 400;">${playlistInfo.description}</div>
+      <div class="playlist-item-content">
+        <div class="playlist-emoji">${playlistInfo.emoji}</div>
+        <div class="playlist-info">
+          <div class="playlist-item-name">${playlistInfo.name}</div>
+          <div class="playlist-item-desc">${playlistInfo.description}</div>
         </div>
-        <div style="font-size: 20px; opacity: 0.5;">▶</div>
       </div>
     `;
-    btn.style.cssText = `
-      width: 100%; 
-      padding: 16px 20px; 
-      text-align: left; 
-      background: rgba(99, 102, 241, 0.1);
-      border: 2px solid rgba(99, 102, 241, 0.2);
-      border-radius: 12px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      margin: 0;
-    `;
-    btn.onmouseover = () => {
-      btn.style.background = 'rgba(99, 102, 241, 0.2)';
-      btn.style.borderColor = '#6366f1';
-      btn.style.transform = 'translateX(4px)';
-    };
-    btn.onmouseout = () => {
-      btn.style.background = 'rgba(99, 102, 241, 0.1)';
-      btn.style.borderColor = 'rgba(99, 102, 241, 0.2)';
-      btn.style.transform = 'translateX(0)';
-    };
-    btn.onclick = () => loadAndStartPlaylist(playlistInfo.file);
+    
+    btn.onclick = () => selectPlaylist(playlistInfo.file, playlistInfo.name, playlistInfo.emoji);
     
     listContainer.appendChild(btn);
   }
 }
 
-async function loadAndStartPlaylist(filename: string): Promise<void> {
+let selectedPlaylistData: { file: string; data: Playlist; name: string } | null = null;
+let currentRankingPage = 0;
+const RANKING_PAGE_SIZE = 20;
+let isLoadingRanking = false;
+let hasMoreRankings = true;
+
+async function selectPlaylist(file: string, name: string, emoji: string): Promise<void> {
   try {
-    const response = await fetch(`/playlists/${filename}`);
+    // Marcar item como selecionado visualmente
+    document.querySelectorAll('.playlist-item').forEach(item => item.classList.remove('selected'));
+    const selectedBtn = document.querySelector(`[data-file="${file}"]`);
+    if (selectedBtn) selectedBtn.classList.add('selected');
+    
+    // Carregar dados da playlist
+    const response = await fetch(`/playlists/${file}`);
+    if (!response.ok) throw new Error('Failed to load playlist');
+    
+    const playlistData: Playlist = await response.json();
+    selectedPlaylistData = { file, data: playlistData, name };
+    
+    
+    // Mostrar painel de detalhes
+    document.getElementById('playlist-details-empty')?.classList.add('hidden');
+    document.getElementById('playlist-details-content')?.classList.remove('hidden');
+    
+    // Preencher informações
+    const nameEl = document.getElementById('playlist-name');
+    if (nameEl) nameEl.textContent = `${emoji} ${name}`;
+    
+    const descEl = document.getElementById('playlist-description');
+    if (descEl) descEl.textContent = playlistData.description || 'Sem descrição disponível';
+    
+    const scenariosCountEl = document.getElementById('playlist-scenarios-count');
+    if (scenariosCountEl) scenariosCountEl.textContent = `${playlistData.scenarios.length} cenários`;
+    
+    // Buscar estatísticas reais do Firebase
+    try {
+      const scores = await getTopScores(name, 100); // Buscar top 100 para estatísticas
+      
+      const avgTimeEl = document.getElementById('playlist-avg-time');
+      const avgKicksEl = document.getElementById('playlist-avg-kicks');
+      
+      if (scores.length > 0) {
+        // Calcular médias baseadas nos dados reais
+        const avgTime = scores.reduce((sum, s) => sum + s.time, 0) / scores.length;
+        const avgKicks = scores.reduce((sum, s) => sum + s.kicks, 0) / scores.length;
+        
+        if (avgTimeEl) {
+          avgTimeEl.textContent = `${avgTime.toFixed(1)}s`;
+        }
+        if (avgKicksEl) {
+          avgKicksEl.textContent = `${avgKicks.toFixed(1)} chutes`;
+        }
+      } else {
+        // Se não houver dados, usar estimativa baseada nos cenários
+        const totalTime = playlistData.scenarios.reduce((sum, s) => sum + (s.timeLimit || 0), 0);
+        if (avgTimeEl) {
+          avgTimeEl.textContent = `~${Math.ceil(totalTime)}s (estimado)`;
+        }
+        if (avgKicksEl) {
+          avgKicksEl.textContent = 'N/A';
+        }
+      }
+    } catch (error) {
+      console.error('Error loading playlist stats:', error);
+      // Fallback para estimativa
+      const avgTimeEl = document.getElementById('playlist-avg-time');
+      if (avgTimeEl) {
+        const totalTime = playlistData.scenarios.reduce((sum, s) => sum + (s.timeLimit || 0), 0);
+        avgTimeEl.textContent = `~${Math.ceil(totalTime)}s (estimado)`;
+      }
+      const avgKicksEl = document.getElementById('playlist-avg-kicks');
+      if (avgKicksEl) {
+        avgKicksEl.textContent = 'N/A';
+      }
+    }
+    
+    // Resetar e carregar ranking
+    currentRankingPage = 0;
+    hasMoreRankings = true;
+    await loadPlaylistRanking(name, true);
+    
+    // Carregar highscore do jogador
+    await loadPlayerHighscore(name);
+    
+  } catch (error) {
+    console.error('Error selecting playlist:', error);
+    alert('Erro ao carregar detalhes da playlist!');
+  }
+}
+
+async function loadPlayerHighscore(playlistName: string): Promise<void> {
+  const nickname = getNickname();
+  const highscoreContainer = document.getElementById('player-highscore');
+  
+  if (!highscoreContainer) return;
+  
+  try {
+    const highscore = await getPlayerHighscore(nickname, playlistName);
+    
+    if (highscore) {
+      // Buscar posição do jogador
+      const allScores = await getTopScores(playlistName, 1000); // Buscar muitos para encontrar a posição
+      const playerRank = allScores.findIndex(s => s.nickname === nickname) + 1;
+      
+      document.getElementById('player-score')!.textContent = highscore.score.toLocaleString();
+      document.getElementById('player-rank')!.textContent = playerRank > 0 ? `#${playerRank}` : 'N/A';
+      document.getElementById('player-kicks')!.textContent = highscore.kicks.toString();
+      document.getElementById('player-time')!.textContent = formatTime(highscore.time);
+      
+      highscoreContainer.classList.remove('hidden');
+    } else {
+      highscoreContainer.classList.add('hidden');
+    }
+  } catch (error) {
+    console.error('Error loading player highscore:', error);
+    highscoreContainer.classList.add('hidden');
+  }
+}
+
+async function loadPlaylistRanking(playlistName: string, reset: boolean = false): Promise<void> {
+  if (isLoadingRanking || (!hasMoreRankings && !reset)) return;
+  
+  isLoadingRanking = true;
+  const rankingList = document.getElementById('ranking-list');
+  const loadingIndicator = document.getElementById('ranking-loading');
+  
+  if (!rankingList || !loadingIndicator) {
+    isLoadingRanking = false;
+    return;
+  }
+  
+  if (reset) {
+    currentRankingPage = 0;
+    hasMoreRankings = true;
+    rankingList.innerHTML = '';
+  }
+  
+  loadingIndicator.classList.remove('hidden');
+  
+  try {
+    const limit = RANKING_PAGE_SIZE;
+    const offset = currentRankingPage * RANKING_PAGE_SIZE;
+    
+    // Buscar scores (Firebase não suporta offset direto, então buscamos mais e filtramos)
+    const allScores = await getTopScores(playlistName, offset + limit);
+    const scores = allScores.slice(offset, offset + limit);
+    
+    if (scores.length < limit) {
+      hasMoreRankings = false;
+    }
+    
+    const playerNickname = getNickname();
+    
+    scores.forEach((score, index) => {
+      const globalRank = offset + index + 1;
+      const entry = document.createElement('div');
+      entry.className = 'ranking-entry';
+      
+      if (score.nickname === playerNickname) {
+        entry.classList.add('player-entry');
+      }
+      
+      let rankClass = 'ranking-rank';
+      if (globalRank === 1) rankClass += ' top-1';
+      else if (globalRank === 2) rankClass += ' top-2';
+      else if (globalRank === 3) rankClass += ' top-3';
+      
+      const medal = globalRank === 1 ? '🥇' : globalRank === 2 ? '🥈' : globalRank === 3 ? '🥉' : '';
+      
+      entry.innerHTML = `
+        <div class="${rankClass}">${medal} #${globalRank}</div>
+        <div class="ranking-nickname">${score.nickname}</div>
+        <div class="ranking-stat"><strong>${score.score.toLocaleString()}</strong> pts</div>
+        <div class="ranking-stat">${score.kicks} chutes</div>
+        <div class="ranking-stat">${formatTime(score.time)}</div>
+      `;
+      
+      rankingList.appendChild(entry);
+    });
+    
+    currentRankingPage++;
+    
+  } catch (error) {
+    console.error('Error loading ranking:', error);
+  } finally {
+    loadingIndicator.classList.add('hidden');
+    isLoadingRanking = false;
+  }
+}
+
+async function loadAndStartPlaylist(file: string): Promise<void> {
+  try {
+    const response = await fetch(`/playlists/${file}`);
     if (!response.ok) throw new Error('Failed to load playlist');
     
     const playlist: Playlist = await response.json();
@@ -576,9 +769,7 @@ async function showPlaylistResultModal(
   
   if (resultKicks) resultKicks.textContent = kicks.toString();
   if (resultTime) {
-    const minutes = Math.floor(time / 60);
-    const seconds = time % 60;
-    resultTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    resultTime.textContent = formatTime(time);
   }
   if (resultScore) resultScore.textContent = score.toLocaleString();
   
@@ -663,9 +854,7 @@ async function loadPlaylistResultRanking(playlistName: string): Promise<void> {
         row.style.background = 'rgba(102, 126, 234, 0.2)';
       }
       
-      const minutes = Math.floor(entry.time / 60);
-      const seconds = entry.time % 60;
-      const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      const timeStr = formatTime(entry.time);
       
       // Medalhas para top 3
       let rankDisplay = (index + 1).toString();
@@ -853,6 +1042,52 @@ function init(): void {
     btnResumeGame.addEventListener('click', resumeGame);
   }
   
+  // Configurar tabs de playlist
+  const tabButtons = document.querySelectorAll('.tab-button');
+  tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const tabName = (button as HTMLElement).dataset.tab;
+      if (!tabName) return;
+      
+      // Atualizar botões
+      tabButtons.forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
+      
+      // Atualizar conteúdo
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById(`tab-${tabName}`)?.classList.add('active');
+    });
+  });
+  
+  // Botão de iniciar playlist
+  const btnStartPlaylist = document.getElementById('btn-start-playlist');
+  if (btnStartPlaylist) {
+    btnStartPlaylist.addEventListener('click', () => {
+      if (selectedPlaylistData) {
+        startPlaylistMode(selectedPlaylistData.data);
+      }
+    });
+  }
+  
+  // Scroll infinito no ranking
+  const rankingList = document.getElementById('ranking-list');
+  if (rankingList) {
+    rankingList.addEventListener('scroll', () => {
+      const scrollTop = rankingList.scrollTop;
+      const scrollHeight = rankingList.scrollHeight;
+      const clientHeight = rankingList.clientHeight;
+      
+      // Carregar mais quando estiver perto do final
+      if (scrollTop + clientHeight >= scrollHeight - 100) {
+        if (selectedPlaylistData) {
+          loadPlaylistRanking(selectedPlaylistData.name, false);
+        }
+      }
+    });
+  }
+  
   // Configurar sliders
   setupSliderListeners();
   
@@ -916,6 +1151,7 @@ function init(): void {
       if (gameContainer && !gameContainer.classList.contains('hidden')) {
         if (e.key === 'r' || e.key === 'R') {
           e.preventDefault();
+          hideFeedback();
           currentPlaylist.resetScenario();
           updatePlaylistHUD();
         } else if (e.key === 'n' || e.key === 'N') {
@@ -925,6 +1161,11 @@ function init(): void {
         } else if (e.key === 'p' || e.key === 'P') {
           e.preventDefault();
           currentPlaylist.prevScenario();
+          updatePlaylistHUD();
+        } else if (e.key === 'Backspace') {
+          e.preventDefault();
+          hideFeedback();
+          currentPlaylist.restartPlaylist();
           updatePlaylistHUD();
         }
       }
@@ -1067,9 +1308,7 @@ async function loadRanking(playlistName?: string): Promise<void> {
       const row = document.createElement('tr');
       row.style.borderBottom = '1px solid #e0e0e0';
       
-      const minutes = Math.floor(entry.time / 60);
-      const seconds = entry.time % 60;
-      const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      const timeStr = formatTime(entry.time);
       
       row.innerHTML = `
         <td style="padding: 10px; font-weight: bold; color: ${index < 3 ? '#f39c12' : '#333'};">${index + 1}</td>

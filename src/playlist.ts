@@ -557,7 +557,7 @@ export class PlaylistMode {
     if (path.points.length < 2) return;
     
     ctx.save();
-    ctx.strokeStyle = 'rgba(100, 255, 100, 0.3)';
+    ctx.strokeStyle = 'rgba(100, 255, 100, 0.12)';
     ctx.lineWidth = path.width;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -572,7 +572,7 @@ export class PlaylistMode {
     ctx.stroke();
     
     // Desenhar bordas do caminho
-    ctx.strokeStyle = 'rgba(100, 255, 100, 0.6)';
+    ctx.strokeStyle = 'rgba(100, 255, 100, 0.25)';
     ctx.lineWidth = 2;
     ctx.stroke();
     
@@ -700,11 +700,35 @@ export class PlaylistMode {
   
   getPlaylistTime(): number {
     if (this.playlistStartTime === 0) return 0;
-    return Math.floor((Date.now() - this.playlistStartTime) / 1000);
+    return (Date.now() - this.playlistStartTime) / 1000;
   }
   
   resetPlaylistStats(): void {
     this.totalKicks = 0;
     this.playlistStartTime = Date.now();
+  }
+  
+  restartPlaylist(): void {
+    // Limpar timeouts pendentes de falha/sucesso
+    if (this.resetTimeoutId !== null) {
+      clearTimeout(this.resetTimeoutId);
+      this.resetTimeoutId = null;
+    }
+    if (this.nextScenarioTimeoutId !== null) {
+      clearTimeout(this.nextScenarioTimeoutId);
+      this.nextScenarioTimeoutId = null;
+    }
+    
+    // Resetar progresso
+    this.progress.currentScenarioIndex = 0;
+    this.progress.completedScenarios = new Array(this.playlist.scenarios.length).fill(false);
+    this.progress.scenarioStartTime = 0;
+    this.progress.checkpointTimers = [];
+    
+    // Resetar estatísticas
+    this.resetPlaylistStats();
+    
+    // Iniciar primeiro cenário
+    this.startScenario(0);
   }
 }

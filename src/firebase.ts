@@ -29,7 +29,8 @@ export { db };
 // Lista de playlists oficiais que podem ter ranking salvo
 const OFFICIAL_PLAYLISTS = [
   'Cruzamento - Fácil',
-  'Drible e Gol'
+  'Drible e Gol',
+  'TORNEIO A.D. BRK - Edição 1'
 ];
 
 /**
@@ -56,7 +57,9 @@ export interface RankingEntry {
 export function calculateScore(kicks: number, timeInSeconds: number): number {
   // Fórmula: 1000000 / (kicks * tempo_em_segundos)
   // Isso garante que menos chutes e menos tempo = maior pontuação
-  const baseScore = 1000000 / (kicks * timeInSeconds);
+  const safeKicks = Math.max(kicks, 1);
+  const safeTime = Math.max(timeInSeconds, 0.1);
+  const baseScore = 1000000 / (safeKicks * safeTime);
   return Math.round(baseScore);
 }
 

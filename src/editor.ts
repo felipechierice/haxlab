@@ -260,6 +260,13 @@ export class PlaylistEditor {
     
     // Teclas de atalho
     document.addEventListener('keydown', (e) => {
+      // Ignora atalhos quando o foco está em um campo de texto
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+        // Permite apenas Escape passar para o editor mesmo em inputs
+        if (e.key !== 'Escape') return;
+      }
+      
       if (e.key === 'Escape') {
         // Cancelar captura de coordenada
         if (this.capturingPatrolPoint) {

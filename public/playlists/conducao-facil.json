@@ -1,0 +1,202 @@
+{
+  "name": "Condução - Fácil",
+  "description": "Exercícios focados em condução de bola, ajudando a melhorar o controle e a precisão em diferentes trajetórias. Ideal para jogadores que querem dominar a arte de driblar e manter a posse de bola sob pressão.",
+  "scenarios": [
+    {
+      "name": "Condução Reta",
+      "map": "default",
+      "timeLimit": 10,
+      "objectives": [
+        {
+          "type": "path",
+          "points": [
+            {
+              "x": 501,
+              "y": 300.5
+            },
+            {
+              "x": 937,
+              "y": 303
+            }
+          ],
+          "width": 80
+        },
+        {
+          "type": "goal",
+          "team": "red"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "kick_count",
+          "exact": 0
+        }
+      ],
+      "bots": [],
+      "playerSpawn": {
+        "x": 430,
+        "y": 300
+      }
+    },
+    {
+      "name": "Condução Curvada",
+      "map": "default",
+      "timeLimit": 10,
+      "objectives": [
+        {
+          "type": "path",
+          "points": [
+            {
+              "x": 397,
+              "y": 163.5
+            },
+            {
+              "x": 570,
+              "y": 301.5
+            },
+            {
+              "x": 948,
+              "y": 304
+            }
+          ],
+          "width": 80
+        },
+        {
+          "type": "goal",
+          "team": "red"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "kick_count",
+          "exact": 0
+        }
+      ],
+      "bots": [],
+      "ballSpawn": {
+        "x": 397,
+        "y": 164
+      },
+      "playerSpawn": {
+        "x": 343,
+        "y": 123
+      }
+    },
+    {
+      "name": "Condução em L",
+      "map": "default",
+      "timeLimit": 10,
+      "objectives": [
+        {
+          "type": "path",
+          "points": [
+            {
+              "x": 699,
+              "y": 400.5
+            },
+            {
+              "x": 699,
+              "y": 299
+            },
+            {
+              "x": 936,
+              "y": 300.5
+            }
+          ],
+          "width": 80
+        },
+        {
+          "type": "goal",
+          "team": "red"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "kick_count",
+          "exact": 0
+        }
+      ],
+      "bots": [],
+      "ballSpawn": {
+        "x": 700,
+        "y": 400
+      },
+      "playerSpawn": {
+        "x": 700,
+        "y": 470
+      }
+    },
+    {
+      "name": "Condução em S",
+      "map": "default",
+      "timeLimit": 30,
+      "objectives": [
+        {
+          "type": "path",
+          "points": [
+            {
+              "x": 242,
+              "y": 351.5
+            },
+            {
+              "x": 323,
+              "y": 442
+            },
+            {
+              "x": 476,
+              "y": 443.5
+            },
+            {
+              "x": 577,
+              "y": 363.5
+            },
+            {
+              "x": 578,
+              "y": 255
+            },
+            {
+              "x": 684,
+              "y": 161.5
+            },
+            {
+              "x": 819,
+              "y": 163
+            },
+            {
+              "x": 940,
+              "y": 277
+            }
+          ],
+          "width": 80
+        },
+        {
+          "type": "goal",
+          "team": "red"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "kick_count",
+          "exact": 0
+        }
+      ],
+      "bots": [],
+      "ballSpawn": {
+        "x": 240,
+        "y": 352
+      },
+      "playerSpawn": {
+        "x": 198,
+        "y": 300
+      }
+    }
+  ]
+}

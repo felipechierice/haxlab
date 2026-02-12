@@ -730,6 +730,448 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.4);
         }
+        
+        /* Playlists Menu Styles */
+        #playlists-menu {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 1200px;
+            width: 95vw;
+            max-height: 85vh;
+        }
+        
+        .playlists-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .playlists-header h2 {
+            margin: 0;
+        }
+        
+        .playlists-header button {
+            margin: 0;
+        }
+        
+        .playlists-container {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 24px;
+            height: calc(85vh - 120px);
+            overflow: hidden;
+        }
+        
+        .playlists-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 8px;
+        }
+        
+        .playlists-sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .playlists-sidebar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+        
+        .playlists-sidebar::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.5);
+            border-radius: 4px;
+        }
+        
+        .playlists-sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.7);
+        }
+        
+        #playlists-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .playlist-item {
+            width: 100%;
+            padding: 16px;
+            text-align: left;
+            background: rgba(99, 102, 241, 0.1);
+            border: 2px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        
+        .playlist-item:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateX(4px);
+        }
+        
+        .playlist-item.selected {
+            background: rgba(99, 102, 241, 0.25);
+            border-color: #6366f1;
+        }
+        
+        .playlist-item-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .playlist-emoji {
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+        
+        .playlist-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .playlist-item-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 4px;
+        }
+        
+        .playlist-item-desc {
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: 400;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .playlists-import {
+            margin-top: auto;
+            padding-top: 16px;
+            border-top: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        .playlists-import button {
+            width: 100%;
+            background: rgba(99, 102, 241, 0.15);
+            border: 2px solid #6366f1;
+            color: #a5b4fc;
+            margin: 0;
+            padding: 12px;
+            font-size: 14px;
+        }
+        
+        .playlists-import button:hover {
+            background: rgba(99, 102, 241, 0.25);
+            color: #c7d2fe;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .playlist-details {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            border-radius: 16px;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .playlist-details::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .playlist-details::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+        
+        .playlist-details::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.5);
+            border-radius: 4px;
+        }
+        
+        .playlist-details::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.7);
+        }
+        
+        .playlist-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #64748b;
+        }
+        
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.4;
+        }
+        
+        .playlist-empty p {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        .playlist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        .playlist-header h3 {
+            color: #f1f5f9;
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .playlist-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(99, 102, 241, 0.15);
+        }
+        
+        .tab-button {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            padding: 12px 20px;
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .tab-button:hover {
+            color: #c7d2fe;
+            background: rgba(99, 102, 241, 0.05);
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .tab-button.active {
+            color: #6366f1;
+            border-bottom-color: #6366f1;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .info-section {
+            padding: 16px 0;
+        }
+        
+        .info-item {
+            margin-bottom: 20px;
+        }
+        
+        .info-label {
+            display: block;
+            color: #a5b4fc;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .info-item p {
+            color: #cbd5e1;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 0;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 16px;
+        }
+        
+        .info-value {
+            display: block;
+            color: #f1f5f9;
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+        
+        .player-highscore {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(79, 70, 229, 0.1) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .highscore-header {
+            color: #fbbf24;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        
+        .highscore-content {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        
+        .highscore-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+        
+        .highscore-value {
+            color: #f1f5f9;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        
+        .ranking-header {
+            margin-bottom: 12px;
+        }
+        
+        .ranking-header h4 {
+            color: #f1f5f9;
+            font-size: 16px;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .ranking-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+        
+        .ranking-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .ranking-list::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+        
+        .ranking-list::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.5);
+            border-radius: 4px;
+        }
+        
+        .ranking-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.7);
+        }
+        
+        
+        .ranking-entry {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            border-radius: 10px;
+            padding: 12px 16px;
+            display: grid;
+            grid-template-columns: 40px 1fr 80px 80px 80px;
+            gap: 12px;
+            align-items: center;
+            transition: all 0.2s;
+        }
+        
+        .ranking-entry:hover {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+        
+        .ranking-entry.player-entry {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: #6366f1;
+        }
+        
+        .ranking-rank {
+            font-weight: 700;
+            font-size: 16px;
+            color: #fbbf24;
+            text-align: center;
+        }
+        
+        .ranking-rank.top-1 {
+            color: #fbbf24;
+            font-size: 20px;
+        }
+        
+        .ranking-rank.top-2 {
+            color: #c0c0c0;
+            font-size: 18px;
+        }
+        
+        .ranking-rank.top-3 {
+            color: #cd7f32;
+            font-size: 17px;
+        }
+        
+        .ranking-nickname {
+            color: #f1f5f9;
+            font-weight: 600;
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .ranking-stat {
+            color: #94a3b8;
+            font-size: 13px;
+            text-align: right;
+        }
+        
+        .ranking-stat strong {
+            color: #cbd5e1;
+            font-weight: 700;
+        }
+        
+        .ranking-loading {
+            text-align: center;
+            padding: 20px;
+            color: #94a3b8;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -774,18 +1216,106 @@
         </div>
 
         <div id="playlists-menu" class="hidden" style="display: none;">
-            <h2 data-i18n="playlists.title">📋 Training Playlists</h2>
-            
-            <div id="playlists-list" style="margin: 24px 0; display: flex; flex-direction: column; gap: 12px;">
-                <!-- Playlists serão carregadas aqui -->
+            <div class="playlists-header">
+                <h2 data-i18n="playlists.title">📋 Training Playlists</h2>
+                <button class="secondary" id="btn-back-from-playlists" data-i18n="playlists.back">← Back</button>
             </div>
             
-            <div style="margin: 24px 0;">
-                <button id="btn-import-playlist" style="width: 100%; background: rgba(99, 102, 241, 0.15); border: 2px solid #6366f1; color: #a5b4fc;">📁 Import Playlist JSON</button>
-                <input type="file" id="playlist-file-input" accept=".json" style="display: none;">
+            <div class="playlists-container">
+                <!-- Lista de playlists (esquerda) -->
+                <div class="playlists-sidebar">
+                    <div id="playlists-list">
+                        <!-- Playlists serão carregadas aqui -->
+                    </div>
+                    <div class="playlists-import">
+                        <button id="btn-import-playlist">📁 Import Playlist JSON</button>
+                        <input type="file" id="playlist-file-input" accept=".json" style="display: none;">
+                    </div>
+                </div>
+                
+                <!-- Painel de detalhes (direita) -->
+                <div class="playlist-details">
+                    <div id="playlist-details-empty" class="playlist-empty">
+                        <div class="empty-icon">📋</div>
+                        <p>Selecione uma playlist para ver detalhes</p>
+                    </div>
+                    
+                    <div id="playlist-details-content" class="hidden">
+                        <!-- Header com nome da playlist -->
+                        <div class="playlist-header">
+                            <h3 id="playlist-name"></h3>
+                            <button id="btn-start-playlist" class="btn-primary">▶️ Iniciar Playlist</button>
+                        </div>
+                        
+                        <!-- Tabs -->
+                        <div class="playlist-tabs">
+                            <button class="tab-button active" data-tab="info">📄 Informações</button>
+                            <button class="tab-button" data-tab="ranking">🏆 Ranking</button>
+                        </div>
+                        
+                        <!-- Tab: Informações -->
+                        <div id="tab-info" class="tab-content active">
+                            <div class="info-section">
+                                <div class="info-item">
+                                    <span class="info-label">📝 Descrição:</span>
+                                    <p id="playlist-description"></p>
+                                </div>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">🎯 Cenários:</span>
+                                        <span id="playlist-scenarios-count" class="info-value"></span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">⏱️ Tempo médio:</span>
+                                        <span id="playlist-avg-time" class="info-value"></span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">⚽ Média de chutes:</span>
+                                        <span id="playlist-avg-kicks" class="info-value"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Tab: Ranking -->
+                        <div id="tab-ranking" class="tab-content">
+                            <div id="player-highscore" class="player-highscore hidden">
+                                <div class="highscore-header">🏅 Seu Melhor Score</div>
+                                <div class="highscore-content">
+                                    <div class="highscore-item">
+                                        <span>Pontuação:</span>
+                                        <span id="player-score" class="highscore-value"></span>
+                                    </div>
+                                    <div class="highscore-item">
+                                        <span>Posição:</span>
+                                        <span id="player-rank" class="highscore-value"></span>
+                                    </div>
+                                    <div class="highscore-item">
+                                        <span>Chutes:</span>
+                                        <span id="player-kicks" class="highscore-value"></span>
+                                    </div>
+                                    <div class="highscore-item">
+                                        <span>Tempo:</span>
+                                        <span id="player-time" class="highscore-value"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="ranking-header">
+                                <h4>🏆 Top Players</h4>
+                            </div>
+                            
+                            <div id="ranking-list" class="ranking-list">
+                                <!-- Rankings serão carregados aqui -->
+                            </div>
+                            
+                            <div id="ranking-loading" class="ranking-loading hidden">
+                                Carregando...
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            
-            <button class="secondary" id="btn-back-from-playlists" data-i18n="playlists.back" style="width: 100%;">← Back</button>
         </div>
 
         <div id="settings-menu" class="hidden" style="display: none;">
