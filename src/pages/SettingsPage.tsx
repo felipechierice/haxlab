@@ -32,7 +32,8 @@ interface SettingsFormData {
 function SettingsPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
-  const [settings, setSettings] = useState<SettingsFormData>({
+  
+  const defaultSettings: SettingsFormData = {
     mapType: 'default',
     scoreLimit: 3,
     timeLimit: 5,
@@ -42,12 +43,14 @@ function SettingsPage() {
     playerSpeed: 260,
     playerAcceleration: 6.5,
     ballRadius: 8,
-    ballMass: 3,
+    ballMass: 2,
     ballDamping: 0.99,
     ballColor: '#ffff00',
     ballBorderColor: '#000000',
     kickSpeedMultiplier: 0.5,
-  });
+  };
+  
+  const [settings, setSettings] = useState<SettingsFormData>(defaultSettings);
 
   const [keybinds, setKeybinds] = useState<KeyBindings>(keyBindings.getBindings());
   const [configuringKey, setConfiguringKey] = useState<keyof KeyBindings | null>(null);
@@ -125,6 +128,10 @@ function SettingsPage() {
     setSettings(prev => ({ ...prev, [field]: value }));
   };
 
+  const resetField = (field: keyof SettingsFormData) => {
+    setSettings(prev => ({ ...prev, [field]: defaultSettings[field] }));
+  };
+
   const handleApply = () => {
     // Salvar configurações no localStorage
     const config: GameConfig = {
@@ -150,8 +157,8 @@ function SettingsPage() {
     localStorage.setItem('gameConfig', JSON.stringify(config));
     localStorage.setItem('mapType', settings.mapType);
 
-    // Voltar para o menu de modos
-    navigate('/modes');
+    // Voltar para a tela anterior (reinicia o jogo se estava em jogo)
+    navigate(-1);
   };
 
   const handleResume = () => {
@@ -230,7 +237,17 @@ function SettingsPage() {
           <h3><i className="fas fa-running"></i> Jogador</h3>
           <div className="settings-grid">
             <div className="form-group">
-              <label htmlFor="settings-player-radius">Tamanho</label>
+              <label htmlFor="settings-player-radius">
+                <span>Tamanho</span>
+                <button 
+                  type="button"
+                  className="reset-field-btn" 
+                  onClick={() => resetField('playerRadius')}
+                  title="Restaurar padrão"
+                >
+                  <i className="fas fa-undo"></i>
+                </button>
+              </label>
               <input
                 type="range"
                 id="settings-player-radius"
@@ -243,7 +260,17 @@ function SettingsPage() {
               <span>{settings.playerRadius}</span>
             </div>
             <div className="form-group">
-              <label htmlFor="settings-player-speed">Velocidade</label>
+              <label htmlFor="settings-player-speed">
+                <span>Velocidade</span>
+                <button 
+                  type="button"
+                  className="reset-field-btn" 
+                  onClick={() => resetField('playerSpeed')}
+                  title="Restaurar padrão"
+                >
+                  <i className="fas fa-undo"></i>
+                </button>
+              </label>
               <input
                 type="range"
                 id="settings-player-speed"
@@ -256,7 +283,17 @@ function SettingsPage() {
               <span>{settings.playerSpeed}</span>
             </div>
             <div className="form-group">
-              <label htmlFor="settings-player-acceleration">Aceleração</label>
+              <label htmlFor="settings-player-acceleration">
+                <span>Aceleração</span>
+                <button 
+                  type="button"
+                  className="reset-field-btn" 
+                  onClick={() => resetField('playerAcceleration')}
+                  title="Restaurar padrão"
+                >
+                  <i className="fas fa-undo"></i>
+                </button>
+              </label>
               <input
                 type="range"
                 id="settings-player-acceleration"
@@ -269,7 +306,17 @@ function SettingsPage() {
               <span>{settings.playerAcceleration}</span>
             </div>
             <div className="form-group">
-              <label htmlFor="settings-kick-strength">Força do Chute</label>
+              <label htmlFor="settings-kick-strength">
+                <span>Força do Chute</span>
+                <button 
+                  type="button"
+                  className="reset-field-btn" 
+                  onClick={() => resetField('kickStrength')}
+                  title="Restaurar padrão"
+                >
+                  <i className="fas fa-undo"></i>
+                </button>
+              </label>
               <input
                 type="range"
                 id="settings-kick-strength"
@@ -282,7 +329,17 @@ function SettingsPage() {
               <span>{settings.kickStrength}</span>
             </div>
             <div className="form-group">
-              <label htmlFor="settings-kick-speed-multiplier">Velocidade ao Segurar Chute</label>
+              <label htmlFor="settings-kick-speed-multiplier">
+                <span>Velocidade ao Segurar Chute</span>
+                <button 
+                  type="button"
+                  className="reset-field-btn" 
+                  onClick={() => resetField('kickSpeedMultiplier')}
+                  title="Restaurar padrão"
+                >
+                  <i className="fas fa-undo"></i>
+                </button>
+              </label>
               <input
                 type="range"
                 id="settings-kick-speed-multiplier"
@@ -302,7 +359,17 @@ function SettingsPage() {
           <h3><i className="fas fa-futbol"></i> Bola</h3>
           <div className="settings-grid">
             <div className="form-group">
-              <label htmlFor="settings-ball-radius">{t('settings.ballRadius')}</label>
+              <label htmlFor="settings-ball-radius">
+                <span>{t('settings.ballRadius')}</span>
+                <button 
+                  type="button"
+                  className="reset-field-btn" 
+                  onClick={() => resetField('ballRadius')}
+                  title="Restaurar padrão"
+                >
+                  <i className="fas fa-undo"></i>
+                </button>
+              </label>
               <input
                 type="range"
                 id="settings-ball-radius"
@@ -315,7 +382,17 @@ function SettingsPage() {
               <span>{settings.ballRadius}</span>
             </div>
             <div className="form-group">
-              <label htmlFor="settings-ball-mass">{t('settings.ballMass')}</label>
+              <label htmlFor="settings-ball-mass">
+                <span>{t('settings.ballMass')}</span>
+                <button 
+                  type="button"
+                  className="reset-field-btn" 
+                  onClick={() => resetField('ballMass')}
+                  title="Restaurar padrão"
+                >
+                  <i className="fas fa-undo"></i>
+                </button>
+              </label>
               <input
                 type="range"
                 id="settings-ball-mass"
@@ -328,7 +405,17 @@ function SettingsPage() {
               <span>{settings.ballMass}</span>
             </div>
             <div className="form-group">
-              <label htmlFor="settings-ball-color">{t('settings.ballColor')}</label>
+              <label htmlFor="settings-ball-color">
+                <span>{t('settings.ballColor')}</span>
+                <button 
+                  type="button"
+                  className="reset-field-btn" 
+                  onClick={() => resetField('ballColor')}
+                  title="Restaurar padrão"
+                >
+                  <i className="fas fa-undo"></i>
+                </button>
+              </label>
               <input
                 type="color"
                 id="settings-ball-color"
@@ -337,7 +424,17 @@ function SettingsPage() {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="settings-ball-border-color">{t('settings.ballBorderColor')}</label>
+              <label htmlFor="settings-ball-border-color">
+                <span>{t('settings.ballBorderColor')}</span>
+                <button 
+                  type="button"
+                  className="reset-field-btn" 
+                  onClick={() => resetField('ballBorderColor')}
+                  title="Restaurar padrão"
+                >
+                  <i className="fas fa-undo"></i>
+                </button>
+              </label>
               <input
                 type="color"
                 id="settings-ball-border-color"
@@ -346,7 +443,17 @@ function SettingsPage() {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="settings-ball-damping">{t('settings.ballDamping')}</label>
+              <label htmlFor="settings-ball-damping">
+                <span>{t('settings.ballDamping')}</span>
+                <button 
+                  type="button"
+                  className="reset-field-btn" 
+                  onClick={() => resetField('ballDamping')}
+                  title="Restaurar padrão"
+                >
+                  <i className="fas fa-undo"></i>
+                </button>
+              </label>
               <input
                 type="range"
                 id="settings-ball-damping"

@@ -324,10 +324,12 @@ export class Game {
     if (player.input.right) accelX += 1;
     
     // Normaliza o vetor de aceleração se houver movimento diagonal
+    // Multiplica por dt * 60 para ser frame-rate independente (normalizado a 60fps)
     if (accelX !== 0 || accelY !== 0) {
       const accelLength = Math.sqrt(accelX * accelX + accelY * accelY);
-      accelX = (accelX / accelLength) * accel;
-      accelY = (accelY / accelLength) * accel;
+      const dtScale = dt * 60;
+      accelX = (accelX / accelLength) * accel * dtScale;
+      accelY = (accelY / accelLength) * accel * dtScale;
       player.circle.vel.x += accelX;
       player.circle.vel.y += accelY;
     }
@@ -364,10 +366,12 @@ export class Game {
     if (player.input.right) accelX += 1;
     
     // Normaliza o vetor de aceleração se houver movimento diagonal
+    // Multiplica por dt * 60 para ser frame-rate independente (normalizado a 60fps)
     if (accelX !== 0 || accelY !== 0) {
       const accelLength = Math.sqrt(accelX * accelX + accelY * accelY);
-      accelX = (accelX / accelLength) * accel;
-      accelY = (accelY / accelLength) * accel;
+      const dtScale = dt * 60;
+      accelX = (accelX / accelLength) * accel * dtScale;
+      accelY = (accelY / accelLength) * accel * dtScale;
       player.circle.vel.x += accelX;
       player.circle.vel.y += accelY;
     }
@@ -456,9 +460,10 @@ export class Game {
     }
     
     // Atualiza posição da bola baseada em sua velocidade (predição)
-    // Aplica damping e movimento
-    ball.vel.x *= ball.damping;
-    ball.vel.y *= ball.damping;
+    // Aplica damping normalizado para 60fps (frame-rate independente)
+    const dampingFactor = Math.pow(ball.damping, dt * 60);
+    ball.vel.x *= dampingFactor;
+    ball.vel.y *= dampingFactor;
     
     // Move a bola (pequeno dt para não acumular erro)
     ball.pos.x += ball.vel.x * dt * 0.5;
@@ -482,7 +487,7 @@ export class Game {
     const distSq = dx * dx + dy * dy;
     
     // Kick radius considera o raio do jogador + uma margem fixa
-    const kickRadius = player.circle.radius + 20; // raio do jogador + margem para chute
+    const kickRadius = player.circle.radius + Physics.KICK_MARGIN; // raio do jogador + margem para chute
     const kickRadiusSq = kickRadius * kickRadius;
 
     if (distSq < kickRadiusSq) {
@@ -532,7 +537,7 @@ export class Game {
     const distSq = dx * dx + dy * dy;
     
     // Kick radius considera o raio do jogador + uma margem fixa
-    const kickRadius = player.circle.radius + 20;
+    const kickRadius = player.circle.radius + Physics.KICK_MARGIN;
     const kickRadiusSq = kickRadius * kickRadius;
 
     if (distSq < kickRadiusSq) {
@@ -612,7 +617,8 @@ export class Game {
       this.updatePlayer(player, dt);
     }
 
-    Physics.updateCircle(this.state.ball.circle, dt);
+    // Atualiza bola com sub-stepping para evitar tunneling através das paredes
+    Physics.updateCircleWithSubsteps(this.state.ball.circle, dt, this.map.segments);
 
     for (let i = 0; i < this.state.players.length; i++) {
       for (let j = i + 1; j < this.state.players.length; j++) {
@@ -672,10 +678,7 @@ export class Game {
           }
         }
       }
-      
-      if (Physics.checkSegmentCollision(this.state.ball.circle, segment)) {
-        Physics.resolveSegmentCollision(this.state.ball.circle, segment);
-      }
+      // Colisão da bola com paredes agora é tratada em updateCircleWithSubsteps
     }
 
     // Callback customizado de atualização

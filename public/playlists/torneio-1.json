@@ -4,7 +4,6 @@
   "scenarios": [
     {
       "name": "Finalização Lateral",
-      "description": "Aproveite o passe do aliado e finalize de perto da linha lateral direita, no meio de campo. Precisão e timing num 2x2.",
       "map": "default",
       "timeLimit": 5,
       "objectives": [
@@ -171,8 +170,8 @@
         "y": 484
       },
       "playerSpawn": {
-        "x": 501,
-        "y": 521
+        "x": 500,
+        "y": 518
       },
       "initialBallVelocity": {
         "x": 78,
@@ -185,7 +184,6 @@
     },
     {
       "name": "Cruzamento Certeiro",
-      "description": "Faça o cruzamento perfeito para o seu aliado finalizar. A bola tem que chegar com precisão no 2x2.",
       "map": "default",
       "timeLimit": 60,
       "objectives": [
@@ -375,15 +373,14 @@
     },
     {
       "name": "Drible de Tabela",
-      "description": "Use a parede como aliada: faça o drible de tabela no adversário e finalize no gol.",
       "map": "default",
       "timeLimit": 10,
       "objectives": [
         {
           "type": "checkpoint",
           "position": {
-            "x": 384,
-            "y": 532.5
+            "x": 362,
+            "y": 530.5
           },
           "radius": 20,
           "timeLimit": 5
@@ -392,20 +389,20 @@
           "type": "path",
           "points": [
             {
-              "x": 249,
-              "y": 442.5
+              "x": 250,
+              "y": 441
             },
             {
               "x": 331,
               "y": 442.5
             },
             {
-              "x": 383,
-              "y": 527.5
+              "x": 362,
+              "y": 532
             },
             {
-              "x": 549,
-              "y": 409
+              "x": 500,
+              "y": 380
             },
             {
               "x": 946,
@@ -451,12 +448,12 @@
                     "y": 437
                   },
                   {
-                    "x": 372,
-                    "y": 452
+                    "x": 374,
+                    "y": 461
                   },
                   {
-                    "x": 397,
-                    "y": 489
+                    "x": 396,
+                    "y": 498
                   },
                   {
                     "x": 744,
@@ -464,7 +461,7 @@
                     "delay": 1
                   }
                 ],
-                "speed": 0.5,
+                "speed": 0.6,
                 "loop": true,
                 "waitTime": 0,
                 "reactionTime": 0,
@@ -484,17 +481,16 @@
         "y": 433
       },
       "initialBallVelocity": {
-        "x": 114,
-        "y": 1.5
+        "x": 100,
+        "y": 0.8999977111816406
       },
       "initialPlayerVelocity": {
-        "x": 117,
-        "y": 0.5
+        "x": 144,
+        "y": 0.8999977111816406
       }
     },
     {
-      "name": "Muro Duplo",
-      "description": "Dois goleiros guardando o gol adversário. Encontre o ângulo e mande a bola pra dentro.",
+      "name": "Dois GKs",
       "map": "default",
       "timeLimit": 60,
       "objectives": [
@@ -585,8 +581,7 @@
       }
     },
     {
-      "name": "Superioridade Numérica",
-      "description": "Você contra 3. Sem aliados, sem desculpas. Supere a desvantagem e marque o gol.",
+      "name": "3x1",
       "map": "default",
       "timeLimit": 30,
       "objectives": [
@@ -690,6 +685,14 @@
       "playerSpawn": {
         "x": 205,
         "y": 465
+      },
+      "initialBallVelocity": {
+        "x": 68,
+        "y": 0.8999977111816406
+      },
+      "initialPlayerVelocity": {
+        "x": 73,
+        "y": 0.8999977111816406
       }
     }
   ]

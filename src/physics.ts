@@ -7,10 +7,13 @@ const _tempVec2: Vector2D = { x: 0, y: 0 };
 export class Physics {
   static readonly FRICTION = 0.98;
   static readonly AIR_DAMPING = 0.985;
-  static readonly PLAYER_ACCELERATION = 6.5;
+  static readonly PLAYER_ACCELERATION = 7.5;
   static readonly PLAYER_MAX_SPEED = 260;
+  static readonly PLAYER_DAMPING = 0.96;
+  static readonly BALL_DAMPING = 0.992;
   static readonly KICK_STRENGTH = 500;
-  static readonly KICK_RADIUS = 35;
+  static readonly KICK_MARGIN = 15;
+  static readonly MAX_SAFE_VELOCITY = 400; // Velocidade máxima antes de aplicar sub-stepping
 
   static createVector(x: number = 0, y: number = 0): Vector2D {
     return { x, y };
@@ -52,7 +55,7 @@ export class Physics {
       vel: { x: 0, y: 0 },
       radius,
       mass,
-      damping: damping !== undefined ? damping : (mass > 5 ? 0.96 : 0.992),
+      damping: damping !== undefined ? damping : (mass > 5 ? Physics.PLAYER_DAMPING : Physics.BALL_DAMPING),
       invMass: mass > 0 ? 1 / mass : 0
     };
   }
@@ -63,8 +66,57 @@ export class Physics {
     circle.pos.x += circle.vel.x * dt;
     circle.pos.y += circle.vel.y * dt;
     
-    circle.vel.x *= circle.damping;
-    circle.vel.y *= circle.damping;
+    // Damping normalizado para 60fps: Math.pow(damping, dt * 60) garante
+    // que a desaceleração é idêntica independente do refresh rate do monitor
+    const dampingFactor = Math.pow(circle.damping, dt * 60);
+    circle.vel.x *= dampingFactor;
+    circle.vel.y *= dampingFactor;
+  }
+
+  /**
+   * Atualiza círculo com sub-stepping para evitar tunneling em altas velocidades
+   * @param circle - Círculo a ser atualizado
+   * @param dt - Delta time
+   * @param segments - Segmentos para verificar colisão (paredes)
+   * @param maxVelocity - Velocidade máxima antes de aplicar sub-steps (padrão: MAX_SAFE_VELOCITY)
+   */
+  static updateCircleWithSubsteps(circle: Circle, dt: number, segments: Segment[], maxVelocity: number = Physics.MAX_SAFE_VELOCITY): void {
+    const speed = Math.sqrt(circle.vel.x * circle.vel.x + circle.vel.y * circle.vel.y);
+    
+    // Se velocidade é baixa, usa atualização normal
+    if (speed <= maxVelocity) {
+      circle.pos.x += circle.vel.x * dt;
+      circle.pos.y += circle.vel.y * dt;
+      
+      // Verifica colisões com segmentos
+      for (const segment of segments) {
+        if (Physics.checkSegmentCollision(circle, segment)) {
+          Physics.resolveSegmentCollision(circle, segment);
+        }
+      }
+    } else {
+      // Calcula número de sub-steps necessários baseado na velocidade
+      const substeps = Math.ceil(speed / maxVelocity);
+      const subDt = dt / substeps;
+      
+      // Executa movimento em pequenos passos
+      for (let i = 0; i < substeps; i++) {
+        circle.pos.x += circle.vel.x * subDt;
+        circle.pos.y += circle.vel.y * subDt;
+        
+        // Verifica colisões após cada sub-step
+        for (const segment of segments) {
+          if (Physics.checkSegmentCollision(circle, segment)) {
+            Physics.resolveSegmentCollision(circle, segment);
+          }
+        }
+      }
+    }
+    
+    // Aplica damping
+    const dampingFactor = Math.pow(circle.damping, dt * 60);
+    circle.vel.x *= dampingFactor;
+    circle.vel.y *= dampingFactor;
   }
 
   static checkCircleCollision(c1: Circle, c2: Circle): boolean {
@@ -107,7 +159,7 @@ export class Physics {
 
     if (velAlongNormal > 0) return;
 
-    const restitution = 0.1;
+    const restitution = 0.2;
     const impulse = -(1 + restitution) * velAlongNormal;
     const impulseMagnitude = impulse / (c1.invMass + c2.invMass);
 
@@ -190,7 +242,7 @@ export class Physics {
 
     const velAlongNormal = circle.vel.x * normalX + circle.vel.y * normalY;
     if (velAlongNormal < 0) {
-      const bounce = segment.bounce || 0.8;
+      const bounce = segment.bounce || 0.9;
       circle.vel.x -= normalX * velAlongNormal * (1 + bounce);
       circle.vel.y -= normalY * velAlongNormal * (1 + bounce);
     }

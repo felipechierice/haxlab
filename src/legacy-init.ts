@@ -14,8 +14,8 @@ import { submitScore, getPlayerHighscore, calculateScore, isOfficialPlaylist, Ra
 let currentGame: Game | null = null;
 let currentPlaylist: PlaylistMode | null = null;
 let currentEditor: PlaylistEditor | null = null;
-let currentConfig: GameConfig = getDefaultConfig();
-let currentMapType: string = 'default';
+let currentConfig: GameConfig = loadConfigFromStorage();
+let currentMapType: string = localStorage.getItem('mapType') || 'default';
 let isPlaylistMode: boolean = false;
 
 function getDefaultConfig(): GameConfig {
@@ -31,13 +31,25 @@ function getDefaultConfig(): GameConfig {
     kickSpeedMultiplier: 0.5,
     ballConfig: {
       radius: 8,
-      mass: 3,
+      mass: 2,
       damping: 0.99,
       color: '#ffff00',
       borderColor: '#000000',
       borderWidth: 2
     }
   };
+}
+
+function loadConfigFromStorage(): GameConfig {
+  const savedConfig = localStorage.getItem('gameConfig');
+  if (savedConfig) {
+    try {
+      return JSON.parse(savedConfig) as GameConfig;
+    } catch (e) {
+      console.error('Error loading config from storage:', e);
+    }
+  }
+  return getDefaultConfig();
 }
 
 // ── Playlist HUD ──
@@ -156,6 +168,10 @@ window.addEventListener('game-play-again', handlePlayAgain);
     return;
   }
   
+  // Recarregar configurações do localStorage
+  currentConfig = loadConfigFromStorage();
+  currentMapType = localStorage.getItem('mapType') || 'default';
+  
   const map = currentMapType === 'classic' ? CLASSIC_MAP : DEFAULT_MAP;
   isPlaylistMode = false;
   
@@ -215,7 +231,10 @@ window.addEventListener('game-play-again', handlePlayAgain);
   document.getElementById('playlist-hud')?.classList.remove('hidden');
   document.getElementById('game-info')?.classList.add('hidden');
   
-  currentPlaylist = new PlaylistMode(canvas, playlist, currentConfig, {
+  // Playlists sempre usam configurações padrão (exceto keybinds)
+  const playlistConfig = getDefaultConfig();
+  
+  currentPlaylist = new PlaylistMode(canvas, playlist, playlistConfig, {
     onScenarioComplete: (_index) => {
       showFeedback('<i class="fas fa-check"></i> Cenário Completo!', '#00ff00');
     },

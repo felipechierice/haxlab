@@ -128,7 +128,7 @@ export class PlaylistEditor {
       kickSpeedMultiplier: 0.5,
       ballConfig: {
         radius: 8,
-        mass: 3,
+        mass: 2,
         damping: 0.99,
         color: '#ffff00',
         borderColor: '#000000',
@@ -1722,7 +1722,7 @@ export class PlaylistEditor {
         delete this.scenarioSettings.initialBallVelocity;
         this.config.ballConfig = {
           radius: 8,
-          mass: 3,
+          mass: 2,
           damping: 0.99,
           color: '#ffff00',
           borderColor: '#000000',
