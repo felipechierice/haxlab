@@ -751,91 +751,17 @@ export class Game {
   }
 
   private showGameOver(): void {
-    const gameContainer = document.getElementById('game-container');
-    if (!gameContainer) return;
-    
-    const overlay = document.createElement('div');
-    overlay.id = 'game-over-overlay';
-    overlay.style.cssText = `
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.9);
-      padding: 40px;
-      border-radius: 20px;
-      text-align: center;
-      color: white;
-      z-index: 999;
-    `;
-    
-    let resultText = '';
-    let resultColor = '';
-    
-    if (this.state.winner === 'red') {
-      resultText = 'Red Team Wins!';
-      resultColor = '#ff4757';
-    } else if (this.state.winner === 'blue') {
-      resultText = 'Blue Team Wins!';
-      resultColor = '#5352ed';
-    } else {
-      resultText = 'Draw!';
-      resultColor = '#ffa502';
-    }
-    
-    // Botões para singleplayer
-    const buttonsHtml = `
-      <button id="btn-play-again" style="
-        background: #667eea;
-        color: white;
-        border: none;
-        padding: 15px 40px;
-        font-size: 18px;
-        border-radius: 10px;
-        cursor: pointer;
-        margin: 10px;
-      ">Play Again</button>
-      <button id="btn-menu-over" style="
-        background: #666;
-        color: white;
-        border: none;
-        padding: 15px 40px;
-        font-size: 18px;
-        border-radius: 10px;
-        cursor: pointer;
-        margin: 10px;
-      ">Back to Menu</button>
-    `;
-    
-    overlay.innerHTML = `
-      <h1 style="font-size: 48px; margin-bottom: 20px; color: ${resultColor};">${resultText}</h1>
-      <p style="font-size: 32px; margin-bottom: 30px;">Red ${this.state.score.red} - ${this.state.score.blue} Blue</p>
-      ${buttonsHtml}
-    `;
-    
-    gameContainer.style.position = 'relative';
-    gameContainer.appendChild(overlay);
-    
-    document.getElementById('btn-play-again')?.addEventListener('click', () => {
-      overlay.remove();
-      this.reset();
-      this.start();
-    });
-    
-    document.getElementById('btn-menu-over')?.addEventListener('click', () => {
-      overlay.remove();
-      this.showMenu();
-    });
+    window.dispatchEvent(new CustomEvent('game-over', {
+      detail: {
+        winner: this.state.winner,
+        score: { ...this.state.score }
+      }
+    }));
   }
 
   private showMenu(): void {
-    const menu = document.getElementById('menu');
-    const gameContainer = document.getElementById('game-container');
-    
-    if (menu) menu.classList.remove('hidden');
-    if (gameContainer) gameContainer.classList.add('hidden');
-    
     this.stop();
+    window.dispatchEvent(new CustomEvent('game-back-to-menu'));
   }
 
   private updateUI(): void {

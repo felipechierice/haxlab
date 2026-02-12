@@ -23,10 +23,6 @@ export function useI18n() {
   const changeLanguage = (lang: Language) => {
     i18n.setLanguage(lang);
     setLanguage(lang);
-    
-    // Atualizar elementos legados no DOM também
-    const event = new Event('language-change');
-    window.dispatchEvent(event);
   };
 
   return {

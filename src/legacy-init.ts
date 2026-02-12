@@ -7,7 +7,6 @@ import { Game } from './game.js';
 import { DEFAULT_MAP, CLASSIC_MAP } from './maps.js';
 import { GameConfig, Playlist } from './types.js';
 import { PlaylistMode } from './playlist.js';
-import { keyBindings, KeyBindings } from './keybindings.js';
 import { PlaylistEditor } from './editor.js';
 import { getNickname } from './player.js';
 import { submitScore, getPlayerHighscore, calculateScore, isOfficialPlaylist, RankingEntry } from './firebase.js';
@@ -18,7 +17,6 @@ let currentEditor: PlaylistEditor | null = null;
 let currentConfig: GameConfig = getDefaultConfig();
 let currentMapType: string = 'default';
 let isPlaylistMode: boolean = false;
-let currentlyConfiguringAction: keyof KeyBindings | null = null;
 
 function getDefaultConfig(): GameConfig {
   return {
@@ -138,57 +136,18 @@ function hideFeedback(): void {
   if (feedback) feedback.classList.add('hidden');
 }
 
-// ── Keybind configuration ──
 
-let currentlyConfiguringKeybind: keyof KeyBindings | null = null;
-
-function updateKeybindingsDisplay(): void {
-  const actions: (keyof KeyBindings)[] = ['up', 'down', 'left', 'right', 'kick', 'switchPlayer'];
-  actions.forEach(action => {
-    const input = document.getElementById(`keybind-${action}`) as HTMLInputElement;
-    if (input) {
-      input.value = keyBindings.getDisplayString(action);
-    }
-  });
-}
-
-(window as any).configureKeybind = function(action: keyof KeyBindings): void {
-  currentlyConfiguringAction = action;
-  const input = document.getElementById(`keybind-${action}`) as HTMLInputElement;
-  if (input) {
-    input.value = 'Press any key...';
-    input.style.background = '#fff3cd';
-  }
-};
-
-(window as any).resetKeybindings = function(): void {
-  keyBindings.resetToDefault();
-  updateKeybindingsDisplay();
-};
-
-document.addEventListener('keydown', (e) => {
-  if (currentlyConfiguringAction) {
-    e.preventDefault();
-    
-    if (e.key === 'Escape') {
-      currentlyConfiguringAction = null;
-      updateKeybindingsDisplay();
-      return;
-    }
-    
-    keyBindings.setBinding(currentlyConfiguringAction, [e.key]);
-    
-    const input = document.getElementById(`keybind-${currentlyConfiguringAction}`) as HTMLInputElement;
-    if (input) {
-      input.style.background = '#f5f5f5';
-    }
-    
-    currentlyConfiguringAction = null;
-    updateKeybindingsDisplay();
-  }
-});
 
 // ── Window exports for React ──
+
+// Listener para "Play Again" disparado pelo overlay React de game-over
+const handlePlayAgain = () => {
+  if (currentGame) {
+    currentGame.reset();
+    currentGame.start();
+  }
+};
+window.addEventListener('game-play-again', handlePlayAgain);
 
 (window as any).initGameCanvas = () => {
   const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;

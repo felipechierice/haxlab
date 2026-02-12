@@ -35,6 +35,11 @@ interface PlaylistResult {
   playlistData: Playlist | null;
 }
 
+interface GameOverInfo {
+  winner: 'red' | 'blue' | 'draw';
+  score: { red: number; blue: number };
+}
+
 function GamePage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,6 +48,7 @@ function GamePage() {
 
   const [showResultModal, setShowResultModal] = useState(false);
   const [playlistResult, setPlaylistResult] = useState<PlaylistResult | null>(null);
+  const [gameOver, setGameOver] = useState<GameOverInfo | null>(null);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     const isPlaylist = window.getIsPlaylistMode?.();
@@ -106,6 +112,19 @@ function GamePage() {
     };
     window.addEventListener('playlist-complete', handlePlaylistComplete);
 
+    // Ouvir evento de game over
+    const handleGameOver = (e: Event) => {
+      const detail = (e as CustomEvent).detail as GameOverInfo;
+      setGameOver(detail);
+    };
+    window.addEventListener('game-over', handleGameOver);
+
+    // Ouvir evento de voltar ao menu
+    const handleBackToMenuEvent = () => {
+      navigate('/modes');
+    };
+    window.addEventListener('game-back-to-menu', handleBackToMenuEvent);
+
     // Registrar atalhos de teclado
     window.addEventListener('keydown', handleKeyDown);
 
@@ -113,6 +132,8 @@ function GamePage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('playlist-complete', handlePlaylistComplete);
+      window.removeEventListener('game-over', handleGameOver);
+      window.removeEventListener('game-back-to-menu', handleBackToMenuEvent);
       if (window.cleanupGame) {
         window.cleanupGame();
       }
@@ -175,11 +196,25 @@ function GamePage() {
         <div id="feedback-text">Texto</div>
       </div>
 
+      {/* Game Over overlay */}
+      {gameOver && (
+        <div className="game-over-overlay">
+          <h1 style={{ color: gameOver.winner === 'red' ? '#ff4757' : gameOver.winner === 'blue' ? '#5352ed' : '#ffa502' }}>
+            {gameOver.winner === 'red' ? 'Red Team Wins!' : gameOver.winner === 'blue' ? 'Blue Team Wins!' : 'Draw!'}
+          </h1>
+          <p className="game-over-score">Red {gameOver.score.red} - {gameOver.score.blue} Blue</p>
+          <div className="game-over-buttons">
+            <button className="btn-play-again" onClick={() => { setGameOver(null); window.dispatchEvent(new CustomEvent('game-play-again')); }}>Play Again</button>
+            <button className="btn-back-menu" onClick={() => { setGameOver(null); navigate('/modes'); }}>Back to Menu</button>
+          </div>
+        </div>
+      )}
+
       {/* Canvas do jogo */}
-      <div className="game-container">
+      <div id="game-container" className="game-container">
         <canvas id="game-canvas" width="1000" height="600"></canvas>
         
-        <div className="game-info">
+        <div id="game-info" className="game-info">
           <div className="game-scores">
             <div className="score red-team">
               <span>{t('game.red')}</span>: <span id="red-score">0</span>
