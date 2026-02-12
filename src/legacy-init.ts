@@ -319,12 +319,14 @@ window.addEventListener('game-play-again', handlePlayAgain);
 };
 (window as any).playlistNextScenario = () => {
   if (currentPlaylist) {
+    hideFeedback();
     currentPlaylist.nextScenario();
     updatePlaylistHUD();
   }
 };
 (window as any).playlistPrevScenario = () => {
   if (currentPlaylist) {
+    hideFeedback();
     currentPlaylist.prevScenario();
     updatePlaylistHUD();
   }
