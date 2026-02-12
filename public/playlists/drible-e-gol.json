@@ -9,14 +9,12 @@
       "objectives": [
         {
           "type": "goal",
-          "team": "blue"
+          "team": "red",
+          "scoredBy": "player"
         },
         {
-          "type": "prevent_touch",
-          "preventBotIds": [
-            "bot-1770765796397",
-            "bot-1770765848142"
-          ]
+          "type": "no_goal",
+          "team": "red"
         }
       ],
       "bots": [
@@ -41,7 +39,8 @@
                 "kickOnContact": false
               }
             }
-          }
+          },
+          "radius": 15
         },
         {
           "id": "bot-1770765848142",
@@ -75,7 +74,8 @@
                 "kickOnContact": false
               }
             }
-          }
+          },
+          "radius": 15
         }
       ],
       "ballSpawn": {
