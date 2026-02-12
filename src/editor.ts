@@ -144,64 +144,64 @@ export class PlaylistEditor {
     this.toolbarElement.className = 'editor-toolbar';
     this.toolbarElement.innerHTML = `
       <button class="editor-tool-btn active" data-tool="select">
-        <span class="tool-icon">➤</span>
+        <span class="tool-icon"><i class="fas fa-mouse-pointer"></i></span>
         <span class="tool-name">Selecionar</span>
       </button>
       <button class="editor-tool-btn" data-tool="bot">
-        <span class="tool-icon">🤖</span>
+        <span class="tool-icon"><i class="fas fa-robot"></i></span>
         <span class="tool-name">Bot</span>
       </button>
       <button class="editor-tool-btn" data-tool="checkpoint">
-        <span class="tool-icon">🎯</span>
+        <span class="tool-icon"><i class="fas fa-flag-checkered"></i></span>
         <span class="tool-name">Checkpoint</span>
       </button>
       <button class="editor-tool-btn" data-tool="path">
-        <span class="tool-icon">〰️</span>
+        <span class="tool-icon"><i class="fas fa-route"></i></span>
         <span class="tool-name">Caminho</span>
       </button>
       <div class="editor-toolbar-divider"></div>
       <div class="scenario-navigation">
         <button class="editor-action-btn" id="editor-prev-scenario" title="Cenário anterior">
-          <span class="tool-icon">◀️</span>
+          <span class="tool-icon"><i class="fas fa-chevron-left"></i></span>
         </button>
-        <span id="editor-scenario-counter" style="margin: 0 10px; font-weight: bold;">1 / 1</span>
         <button class="editor-action-btn" id="editor-next-scenario" title="Próximo cenário">
-          <span class="tool-icon">▶️</span>
+          <span class="tool-icon"><i class="fas fa-chevron-right"></i></span>
         </button>
+        <span id="editor-scenario-counter" style="grid-column: span 2; text-align: center; margin: 4px 0; font-weight: bold; font-size: 11px; color: #cbd5e1;">1 / 1</span>
         <button class="editor-action-btn" id="editor-add-scenario" title="Adicionar novo cenário">
-          <span class="tool-icon">➕</span>
+          <span class="tool-icon"><i class="fas fa-plus"></i></span>
         </button>
         <button class="editor-action-btn" id="editor-remove-scenario" title="Remover cenário atual">
-          <span class="tool-icon">➖</span>
+          <span class="tool-icon"><i class="fas fa-minus"></i></span>
         </button>
       </div>
       <div class="editor-toolbar-divider"></div>
       <button class="editor-action-btn" id="editor-playlist-settings">
-        <span class="tool-icon">📋</span>
+        <span class="tool-icon"><i class="fas fa-list"></i></span>
         <span class="tool-name">Playlist</span>
       </button>
       <button class="editor-action-btn" id="editor-import">
-        <span class="tool-icon">📥</span>
+        <span class="tool-icon"><i class="fas fa-file-import"></i></span>
         <span class="tool-name">Importar</span>
       </button>
       <button class="editor-action-btn" id="editor-save">
-        <span class="tool-icon">💾</span>
+        <span class="tool-icon"><i class="fas fa-save"></i></span>
         <span class="tool-name">Exportar</span>
       </button>
       <button class="editor-action-btn" id="editor-test">
-        <span class="tool-icon">▶️</span>
+        <span class="tool-icon"><i class="fas fa-play"></i></span>
         <span class="tool-name">Testar</span>
       </button>
       <button class="editor-action-btn" id="editor-clear">
-        <span class="tool-icon">🗑️</span>
+        <span class="tool-icon"><i class="fas fa-trash"></i></span>
         <span class="tool-name">Limpar</span>
       </button>
       <button class="editor-action-btn" id="editor-settings">
-        <span class="tool-icon">⚙️</span>
+        <span class="tool-icon"><i class="fas fa-cog"></i></span>
         <span class="tool-name">Cenário</span>
       </button>
       <button class="editor-action-btn" id="editor-exit">
-        <span class="tool-icon">✖️</span>
+        <span class="tool-icon"><i class="fas fa-times"></i></span>
         <span class="tool-name">Sair</span>
       </button>
     `;
