@@ -7,12 +7,6 @@ import { PlaylistInfo } from '../types/playlist-ui';
 import { Playlist } from '../types';
 
 
-declare global {
-  interface Window {
-    startPlaylistMode: (playlist: Playlist) => void;
-  }
-}
-
 const AVAILABLE_PLAYLISTS: PlaylistInfo[] = [
   { 
     file: 'torneio-1.json', 
@@ -101,9 +95,8 @@ function PlaylistsPage() {
           throw new Error('Invalid format: must be a playlist or scenario');
         }
 
-        if (window.startPlaylistMode) {
-          window.startPlaylistMode(playlist);
-        }
+        // Navigate to game page with imported playlist
+        navigate('/game', { state: { mode: 'playlist', playlist } });
       } catch (error) {
         console.error('Error parsing playlist:', error);
         alert('Erro ao importar playlist! Verifique se o arquivo JSON está no formato correto.');

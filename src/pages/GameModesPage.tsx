@@ -2,14 +2,6 @@ import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../hooks/useI18n';
 
 
-declare global {
-  interface Window {
-    startFreeTrainingGame: () => void;
-    showPlaylistsMenu: () => void;
-    startPlaylistEditor: () => void;
-  }
-}
-
 function GameModesPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
