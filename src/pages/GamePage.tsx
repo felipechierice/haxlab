@@ -139,6 +139,12 @@ function GamePage() {
     };
     window.addEventListener('game-back-to-menu', handleBackToMenuEvent);
 
+    // Ouvir evento de sair do editor
+    const handleEditorExit = () => {
+      navigate('/modes');
+    };
+    window.addEventListener('editor-exit', handleEditorExit);
+
     // Registrar atalhos de teclado
     window.addEventListener('keydown', handleKeyDown);
 
@@ -148,6 +154,7 @@ function GamePage() {
       window.removeEventListener('playlist-complete', handlePlaylistComplete);
       window.removeEventListener('game-over', handleGameOver);
       window.removeEventListener('game-back-to-menu', handleBackToMenuEvent);
+      window.removeEventListener('editor-exit', handleEditorExit);
       if (window.cleanupGame) {
         window.cleanupGame();
       }
