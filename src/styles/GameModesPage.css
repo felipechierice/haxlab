@@ -1,0 +1,93 @@
+.game-modes-page {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modes-container {
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 24px;
+  padding: 48px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  min-width: 560px;
+  max-width: 680px;
+  animation: fadeInScaleContainer 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modes-title {
+  color: #f1f5f9;
+  margin-bottom: 28px;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.modes-button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.btn-mode {
+  width: 100%;
+  border: none;
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  color: white;
+}
+
+.btn-free-training {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.btn-playlists {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+}
+
+.btn-editor {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+}
+
+.btn-mode:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+}
+
+.btn-mode:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.btn-back {
+  width: 100%;
+  background: rgba(99, 102, 241, 0.15);
+  border: 2px solid #6366f1;
+  color: #a5b4fc;
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-back:hover {
+  background: rgba(99, 102, 241, 0.25);
+  color: #c7d2fe;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+}
+
+.btn-back:active {
+  transform: translateY(0) scale(0.98);
+}

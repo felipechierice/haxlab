@@ -1,0 +1,504 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useI18n } from '../hooks/useI18n';
+import { GameConfig } from '../types';
+import { keyBindings, KeyBindings } from '../keybindings';
+
+
+declare global {
+  interface Window {
+    configureKeybind: (action: keyof KeyBindings) => void;
+    resetKeybindings: () => void;
+  }
+}
+
+interface SettingsFormData {
+  mapType: string;
+  scoreLimit: number;
+  timeLimit: number;
+  kickMode: 'classic' | 'chargeable';
+  kickStrength: number;
+  playerRadius: number;
+  playerSpeed: number;
+  playerAcceleration: number;
+  ballRadius: number;
+  ballMass: number;
+  ballDamping: number;
+  ballColor: string;
+  ballBorderColor: string;
+  kickSpeedMultiplier: number;
+}
+
+function SettingsPage() {
+  const navigate = useNavigate();
+  const { t } = useI18n();
+  const [settings, setSettings] = useState<SettingsFormData>({
+    mapType: 'default',
+    scoreLimit: 3,
+    timeLimit: 5,
+    kickMode: 'classic',
+    kickStrength: 500,
+    playerRadius: 15,
+    playerSpeed: 260,
+    playerAcceleration: 6.5,
+    ballRadius: 8,
+    ballMass: 3,
+    ballDamping: 0.99,
+    ballColor: '#ffff00',
+    ballBorderColor: '#000000',
+    kickSpeedMultiplier: 0.5,
+  });
+
+  const [keybinds, setKeybinds] = useState<KeyBindings>(keyBindings.getBindings());
+  const [configuringKey, setConfiguringKey] = useState<keyof KeyBindings | null>(null);
+
+  useEffect(() => {
+    // Carregar configurações do localStorage se existir
+    const savedConfig = localStorage.getItem('gameConfig');
+    const savedMapType = localStorage.getItem('mapType');
+    
+    if (savedConfig) {
+      try {
+        const config: GameConfig = JSON.parse(savedConfig);
+        setSettings({
+          mapType: savedMapType || 'default',
+          scoreLimit: config.scoreLimit,
+          timeLimit: config.timeLimit / 60,
+          kickMode: config.kickMode,
+          kickStrength: config.kickStrength,
+          playerRadius: config.playerRadius,
+          playerSpeed: config.playerSpeed ?? 260,
+          playerAcceleration: config.playerAcceleration ?? 6.5,
+          ballRadius: config.ballConfig.radius,
+          ballMass: config.ballConfig.mass,
+          ballDamping: config.ballConfig.damping,
+          ballColor: config.ballConfig.color,
+          ballBorderColor: config.ballConfig.borderColor,
+          kickSpeedMultiplier: config.kickSpeedMultiplier ?? 0.5,
+        });
+      } catch (e) {
+        console.error('Error loading saved config:', e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    // Expor função para configurar keybind
+    (window as any).configureKeybind = (action: keyof KeyBindings) => {
+      setConfiguringKey(action);
+    };
+
+    (window as any).resetKeybindings = () => {
+      keyBindings.resetToDefault();
+      setKeybinds(keyBindings.getBindings());
+    };
+
+    return () => {
+      delete (window as any).configureKeybind;
+      delete (window as any).resetKeybindings;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!configuringKey) return;
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      if (e.key === 'Escape') {
+        setConfiguringKey(null);
+        return;
+      }
+
+      // Configurar nova tecla
+      keyBindings.setBinding(configuringKey, [e.key]);
+      setKeybinds(keyBindings.getBindings());
+      setConfiguringKey(null);
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [configuringKey]);
+
+  const handleChange = (field: keyof SettingsFormData, value: string | number) => {
+    setSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleApply = () => {
+    // Salvar configurações no localStorage
+    const config: GameConfig = {
+      timeLimit: settings.timeLimit * 60,
+      scoreLimit: settings.scoreLimit,
+      playersPerTeam: 2,
+      kickMode: settings.kickMode,
+      kickStrength: settings.kickStrength,
+      playerRadius: settings.playerRadius,
+      playerSpeed: settings.playerSpeed,
+      playerAcceleration: settings.playerAcceleration,
+      kickSpeedMultiplier: settings.kickSpeedMultiplier,
+      ballConfig: {
+        radius: settings.ballRadius,
+        mass: settings.ballMass,
+        damping: settings.ballDamping,
+        color: settings.ballColor,
+        borderColor: settings.ballBorderColor,
+        borderWidth: 2,
+      },
+    };
+
+    localStorage.setItem('gameConfig', JSON.stringify(config));
+    localStorage.setItem('mapType', settings.mapType);
+
+    // Voltar para o menu de modos
+    navigate('/modes');
+  };
+
+  const handleResume = () => {
+    // Retomar jogo se houver um ativo
+    navigate(-1);
+  };
+
+  const formatKeyDisplay = (keys: string[]): string => {
+    return keys.map(key => {
+      if (key === ' ' || key === 'Space') return 'SPACE';
+      if (key.startsWith('Arrow')) return key.replace('Arrow', '').toUpperCase();
+      return key.toUpperCase();
+    }).join(' / ');
+  };
+
+  return (
+    <div className="settings-page">
+      <div className="settings-container">
+        <h2>
+          <i className="fas fa-cog"></i> {t('settings.title')}
+        </h2>
+
+        {/* Regras da Partida */}
+        <div className="settings-category">
+          <h3><i className="fas fa-gamepad"></i> Regras da Partida</h3>
+          <div className="settings-grid">
+            <div className="form-group">
+              <label htmlFor="settings-map-select">{t('settings.map')}</label>
+              <select
+                id="settings-map-select"
+                value={settings.mapType}
+                onChange={(e) => handleChange('mapType', e.target.value)}
+              >
+                <option value="default">{t('settings.mapDefault')}</option>
+                <option value="classic">{t('settings.mapClassic')}</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label htmlFor="settings-kick-mode">{t('settings.kickMode')}</label>
+              <select
+                id="settings-kick-mode"
+                value={settings.kickMode}
+                onChange={(e) => handleChange('kickMode', e.target.value as 'classic' | 'chargeable')}
+              >
+                <option value="classic">{t('settings.kickClassic')}</option>
+                <option value="chargeable">{t('settings.kickChargeable')}</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label htmlFor="settings-score-limit">{t('settings.scoreLimit')}</label>
+              <input
+                type="number"
+                id="settings-score-limit"
+                min="1"
+                max="10"
+                value={settings.scoreLimit}
+                onChange={(e) => handleChange('scoreLimit', parseInt(e.target.value))}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="settings-time-limit">{t('settings.timeLimit')}</label>
+              <input
+                type="number"
+                id="settings-time-limit"
+                min="1"
+                max="30"
+                value={settings.timeLimit}
+                onChange={(e) => handleChange('timeLimit', parseInt(e.target.value))}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Jogador */}
+        <div className="settings-category">
+          <h3><i className="fas fa-running"></i> Jogador</h3>
+          <div className="settings-grid">
+            <div className="form-group">
+              <label htmlFor="settings-player-radius">Tamanho</label>
+              <input
+                type="range"
+                id="settings-player-radius"
+                min="10"
+                max="25"
+                step="1"
+                value={settings.playerRadius}
+                onChange={(e) => handleChange('playerRadius', parseFloat(e.target.value))}
+              />
+              <span>{settings.playerRadius}</span>
+            </div>
+            <div className="form-group">
+              <label htmlFor="settings-player-speed">Velocidade</label>
+              <input
+                type="range"
+                id="settings-player-speed"
+                min="100"
+                max="500"
+                step="10"
+                value={settings.playerSpeed}
+                onChange={(e) => handleChange('playerSpeed', parseFloat(e.target.value))}
+              />
+              <span>{settings.playerSpeed}</span>
+            </div>
+            <div className="form-group">
+              <label htmlFor="settings-player-acceleration">Aceleração</label>
+              <input
+                type="range"
+                id="settings-player-acceleration"
+                min="2"
+                max="15"
+                step="0.5"
+                value={settings.playerAcceleration}
+                onChange={(e) => handleChange('playerAcceleration', parseFloat(e.target.value))}
+              />
+              <span>{settings.playerAcceleration}</span>
+            </div>
+            <div className="form-group">
+              <label htmlFor="settings-kick-strength">Força do Chute</label>
+              <input
+                type="range"
+                id="settings-kick-strength"
+                min="200"
+                max="1000"
+                step="50"
+                value={settings.kickStrength}
+                onChange={(e) => handleChange('kickStrength', parseFloat(e.target.value))}
+              />
+              <span>{settings.kickStrength}</span>
+            </div>
+            <div className="form-group">
+              <label htmlFor="settings-kick-speed-multiplier">Velocidade ao Segurar Chute</label>
+              <input
+                type="range"
+                id="settings-kick-speed-multiplier"
+                min="0.3"
+                max="1.0"
+                step="0.05"
+                value={settings.kickSpeedMultiplier}
+                onChange={(e) => handleChange('kickSpeedMultiplier', parseFloat(e.target.value))}
+              />
+              <span>{settings.kickSpeedMultiplier.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bola */}
+        <div className="settings-category">
+          <h3><i className="fas fa-futbol"></i> Bola</h3>
+          <div className="settings-grid">
+            <div className="form-group">
+              <label htmlFor="settings-ball-radius">{t('settings.ballRadius')}</label>
+              <input
+                type="range"
+                id="settings-ball-radius"
+                min="5"
+                max="15"
+                step="0.5"
+                value={settings.ballRadius}
+                onChange={(e) => handleChange('ballRadius', parseFloat(e.target.value))}
+              />
+              <span>{settings.ballRadius}</span>
+            </div>
+            <div className="form-group">
+              <label htmlFor="settings-ball-mass">{t('settings.ballMass')}</label>
+              <input
+                type="range"
+                id="settings-ball-mass"
+                min="1"
+                max="20"
+                step="0.5"
+                value={settings.ballMass}
+                onChange={(e) => handleChange('ballMass', parseFloat(e.target.value))}
+              />
+              <span>{settings.ballMass}</span>
+            </div>
+            <div className="form-group">
+              <label htmlFor="settings-ball-color">{t('settings.ballColor')}</label>
+              <input
+                type="color"
+                id="settings-ball-color"
+                value={settings.ballColor}
+                onChange={(e) => handleChange('ballColor', e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="settings-ball-border-color">{t('settings.ballBorderColor')}</label>
+              <input
+                type="color"
+                id="settings-ball-border-color"
+                value={settings.ballBorderColor}
+                onChange={(e) => handleChange('ballBorderColor', e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="settings-ball-damping">{t('settings.ballDamping')}</label>
+              <input
+                type="range"
+                id="settings-ball-damping"
+                min="0.95"
+                max="0.999"
+                step="0.001"
+                value={settings.ballDamping}
+                onChange={(e) => handleChange('ballDamping', parseFloat(e.target.value))}
+              />
+              <span>{settings.ballDamping.toFixed(3)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Controles */}
+        <div className="settings-category">
+          <h3><i className="fas fa-keyboard"></i> Controles</h3>
+          <div className="settings-grid-3">
+            <div className="form-group">
+              <label>Mover Cima</label>
+              <div className="keybind-container">
+                <input
+                  type="text"
+                  value={configuringKey === 'up' ? 'Pressione uma tecla...' : formatKeyDisplay(keybinds.up)}
+                  readOnly
+                  className={configuringKey === 'up' ? 'configuring' : ''}
+                />
+                <button
+                  className="secondary"
+                  onClick={() => setConfiguringKey('up')}
+                >
+                  Mudar
+                </button>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Mover Baixo</label>
+              <div className="keybind-container">
+                <input
+                  type="text"
+                  value={configuringKey === 'down' ? 'Pressione uma tecla...' : formatKeyDisplay(keybinds.down)}
+                  readOnly
+                  className={configuringKey === 'down' ? 'configuring' : ''}
+                />
+                <button
+                  className="secondary"
+                  onClick={() => setConfiguringKey('down')}
+                >
+                  Mudar
+                </button>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Mover Esquerda</label>
+              <div className="keybind-container">
+                <input
+                  type="text"
+                  value={configuringKey === 'left' ? 'Pressione uma tecla...' : formatKeyDisplay(keybinds.left)}
+                  readOnly
+                  className={configuringKey === 'left' ? 'configuring' : ''}
+                />
+                <button
+                  className="secondary"
+                  onClick={() => setConfiguringKey('left')}
+                >
+                  Mudar
+                </button>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Mover Direita</label>
+              <div className="keybind-container">
+                <input
+                  type="text"
+                  value={configuringKey === 'right' ? 'Pressione uma tecla...' : formatKeyDisplay(keybinds.right)}
+                  readOnly
+                  className={configuringKey === 'right' ? 'configuring' : ''}
+                />
+                <button
+                  className="secondary"
+                  onClick={() => setConfiguringKey('right')}
+                >
+                  Mudar
+                </button>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Chutar</label>
+              <div className="keybind-container">
+                <input
+                  type="text"
+                  value={configuringKey === 'kick' ? 'Pressione uma tecla...' : formatKeyDisplay(keybinds.kick)}
+                  readOnly
+                  className={configuringKey === 'kick' ? 'configuring' : ''}
+                />
+                <button
+                  className="secondary"
+                  onClick={() => setConfiguringKey('kick')}
+                >
+                  Mudar
+                </button>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Trocar Jogador</label>
+              <div className="keybind-container">
+                <input
+                  type="text"
+                  value={configuringKey === 'switchPlayer' ? 'Pressione uma tecla...' : formatKeyDisplay(keybinds.switchPlayer)}
+                  readOnly
+                  className={configuringKey === 'switchPlayer' ? 'configuring' : ''}
+                />
+                <button
+                  className="secondary"
+                  onClick={() => setConfiguringKey('switchPlayer')}
+                >
+                  Mudar
+                </button>
+              </div>
+            </div>
+            <div className="form-group settings-full-width">
+              <button
+                className="secondary"
+                onClick={() => {
+                  keyBindings.resetToDefault();
+                  setKeybinds(keyBindings.getBindings());
+                }}
+                style={{ width: '100%', marginTop: '8px' }}
+              >
+                <i className="fas fa-redo"></i> Restaurar Padrões
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="button-group">
+          <button
+            className="btn-apply"
+            onClick={handleApply}
+          >
+            <i className="fas fa-check"></i> {t('settings.apply')}
+          </button>
+          <button
+            className="secondary"
+            onClick={handleResume}
+          >
+            {t('settings.resume')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default SettingsPage;

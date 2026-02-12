@@ -2914,7 +2914,7 @@ export class PlaylistEditor {
     }
   }
 
-  private cleanup(): void {
+  public cleanup(): void {
     this.toolbarElement?.remove();
     this.propertiesPanel?.remove();
   }

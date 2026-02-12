@@ -18,6 +18,9 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.4",
     "concurrently": "^9.2.1",
     "firebase-tools": "^15.5.1",
     "http-server": "^14.1.1",
@@ -25,6 +28,9 @@
     "vite": "^7.3.1"
   },
   "dependencies": {
-    "firebase": "^12.9.0"
+    "firebase": "^12.9.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.13.0"
   }
 }
