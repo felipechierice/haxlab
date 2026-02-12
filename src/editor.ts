@@ -937,7 +937,7 @@ export class PlaylistEditor {
         <h4>Pontos de Patrulha</h4>
         <div id="patrol-points-list"></div>
         <div class="property">
-          <button id="prop-add-patrol-point" class="apply-btn" style="width: 100%; margin-top: 10px;">➕ Adicionar Ponto</button>
+          <button id="prop-add-patrol-point" class="apply-btn" style="width: 100%; margin-top: 10px;"><i class="fas fa-plus"></i> Adicionar Ponto</button>
         </div>
         <div class="property">
           <label>
@@ -1247,8 +1247,8 @@ export class PlaylistEditor {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
           <strong>Ponto ${index + 1}</strong>
           <div>
-            <button class="capture-patrol-point" data-index="${index}" title="Capturar coordenada clicando no campo" style="background: #667eea; border: none; color: white; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 11px; margin-right: 5px;">📍</button>
-            <button class="delete-patrol-point" data-index="${index}" style="background: #ff4444; border: none; color: white; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">✖</button>
+            <button class="capture-patrol-point" data-index="${index}" title="Capturar coordenada clicando no campo" style="background: #667eea; border: none; color: white; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 11px; margin-right: 5px;"><i class="fas fa-crosshairs"></i></button>
+            <button class="delete-patrol-point" data-index="${index}" style="background: #ff4444; border: none; color: white; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;"><i class="fas fa-times"></i></button>
           </div>
         </div>
         <div style="display: flex; gap: 10px;">
@@ -1330,7 +1330,7 @@ export class PlaylistEditor {
           font-weight: bold;
           box-shadow: 0 5px 20px rgba(0,0,0,0.3);
         `;
-        overlay.textContent = `📍 Clique no campo para definir o Ponto ${index + 1} (ESC para cancelar)`;
+        overlay.textContent = `Clique no campo para definir o Ponto ${index + 1} (ESC para cancelar)`;
         document.body.appendChild(overlay);
       });
     });
@@ -1421,7 +1421,7 @@ export class PlaylistEditor {
       const hasVelocity = this.velocityVisualizationEnabled.player;
       
       this.propertiesPanel.innerHTML = `
-        <h3>⚙️ Configurações do Jogador</h3>
+        <h3><i class="fas fa-user"></i> Configurações do Jogador</h3>
         
         <h4>Posição Inicial</h4>
         <div class="property">
@@ -1450,7 +1450,7 @@ export class PlaylistEditor {
             <input type="number" id="prop-player-vel-y" value="${vel.y}" step="10" />
           </div>
           <div class="property" style="color: #888; font-size: 11px; margin-top: -5px;">
-            💡 Arraste a bolinha no campo para ajustar
+            <i class="fas fa-lightbulb"></i> Arraste a bolinha no campo para ajustar
           </div>
         </div>
         
@@ -1568,7 +1568,7 @@ export class PlaylistEditor {
       const hasVelocity = this.velocityVisualizationEnabled.ball;
       
       this.propertiesPanel.innerHTML = `
-        <h3>⚽ Configurações da Bola</h3>
+        <h3><i class="fas fa-futbol"></i> Configurações da Bola</h3>
         
         <h4>Posição Inicial</h4>
         <div class="property">
@@ -1597,7 +1597,7 @@ export class PlaylistEditor {
             <input type="number" id="prop-ball-vel-y" value="${vel.y}" step="10" />
           </div>
           <div class="property" style="color: #888; font-size: 11px; margin-top: -5px;">
-            💡 Arraste a bolinha no campo para ajustar
+            <i class="fas fa-lightbulb"></i> Arraste a bolinha no campo para ajustar
           </div>
         </div>
         
@@ -2426,7 +2426,7 @@ export class PlaylistEditor {
     ctx.font = `${Math.max(12, radius)}px Arial`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🤖', bot.spawn.x, bot.spawn.y);
+    ctx.fillText('B', bot.spawn.x, bot.spawn.y);
     ctx.restore();
   }
 
@@ -2829,7 +2829,7 @@ export class PlaylistEditor {
     const scenario = this.exportScenario();
     
     if (scenario.objectives.length === 0) {
-      alert('Adicione pelo menos um objetivo antes de testar!\n\nUse as ferramentas:\n- Checkpoint\n- Caminho\n\nOu configure objetivos adicionais no botão ⚙️ Cenário');
+      alert('Adicione pelo menos um objetivo antes de testar!\n\nUse as ferramentas:\n- Checkpoint\n- Caminho\n\nOu configure objetivos adicionais no botão Cenário');
       return;
     }
     

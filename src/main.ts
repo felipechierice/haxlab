@@ -60,7 +60,14 @@ function updateTranslations(): void {
   document.querySelectorAll('[data-i18n]').forEach((element) => {
     const key = element.getAttribute('data-i18n');
     if (key) {
-      element.textContent = i18n.t(key);
+      // Preservar ícones Font Awesome ao traduzir
+      const icon = element.querySelector('i.fas, i.fab, i.far');
+      if (icon) {
+        const iconHTML = icon.outerHTML;
+        element.innerHTML = `${iconHTML} ${i18n.t(key)}`;
+      } else {
+        element.textContent = i18n.t(key);
+      }
     }
   });
 
@@ -260,10 +267,10 @@ async function loadAvailablePlaylists(): Promise<void> {
   
   // Lista hardcoded de playlists disponíveis
   const playlists = [
-    { file: 'torneio-1.json', name: 'TORNEIO A.D. BRK - Edição 1', description: 'Playlist oficial do 1º Torneio A.D. BRK', emoji: '🏆' },
-    { file: 'cruzamento-facil.json', name: 'Cruzamento - Fácil', description: 'Pratique cruzamentos e finalizações', emoji: '⚽' },
-    { file: 'drible-e-gol.json', name: 'Drible e Gol', description: 'Melhore suas habilidades de drible', emoji: '🎯' },
-    { file: 'conducao-facil.json', name: 'Condução - Fácil', description: 'Exercícios focados em condução de bola', emoji: '🛞' }
+    { file: 'torneio-1.json', name: 'TORNEIO A.D. BRK - Edição 1', description: 'Playlist oficial do 1º Torneio A.D. BRK', icon: 'fa-trophy' },
+    { file: 'cruzamento-facil.json', name: 'Cruzamento - Fácil', description: 'Pratique cruzamentos e finalizações', icon: 'fa-futbol' },
+    { file: 'drible-e-gol.json', name: 'Drible e Gol', description: 'Melhore suas habilidades de drible', icon: 'fa-bullseye' },
+    { file: 'conducao-facil.json', name: 'Condução - Fácil', description: 'Exercícios focados em condução de bola', icon: 'fa-person-running' }
   ];
   
   listContainer.innerHTML = '';
@@ -274,7 +281,7 @@ async function loadAvailablePlaylists(): Promise<void> {
     btn.dataset.file = playlistInfo.file;
     btn.innerHTML = `
       <div class="playlist-item-content">
-        <div class="playlist-emoji">${playlistInfo.emoji}</div>
+        <div class="playlist-emoji"><i class="fas ${playlistInfo.icon}"></i></div>
         <div class="playlist-info">
           <div class="playlist-item-name">${playlistInfo.name}</div>
           <div class="playlist-item-desc">${playlistInfo.description}</div>
@@ -282,7 +289,7 @@ async function loadAvailablePlaylists(): Promise<void> {
       </div>
     `;
     
-    btn.onclick = () => selectPlaylist(playlistInfo.file, playlistInfo.name, playlistInfo.emoji);
+    btn.onclick = () => selectPlaylist(playlistInfo.file, playlistInfo.name, playlistInfo.icon);
     
     listContainer.appendChild(btn);
   }
@@ -294,7 +301,7 @@ const RANKING_PAGE_SIZE = 20;
 let isLoadingRanking = false;
 let hasMoreRankings = true;
 
-async function selectPlaylist(file: string, name: string, emoji: string): Promise<void> {
+async function selectPlaylist(file: string, name: string, icon: string): Promise<void> {
   try {
     // Marcar item como selecionado visualmente
     document.querySelectorAll('.playlist-item').forEach(item => item.classList.remove('selected'));
@@ -315,7 +322,7 @@ async function selectPlaylist(file: string, name: string, emoji: string): Promis
     
     // Preencher informações
     const nameEl = document.getElementById('playlist-name');
-    if (nameEl) nameEl.textContent = `${emoji} ${name}`;
+    if (nameEl) nameEl.innerHTML = `<i class="fas ${icon}"></i> ${name}`;
     
     const descEl = document.getElementById('playlist-description');
     if (descEl) descEl.textContent = playlistData.description || 'Sem descrição disponível';
@@ -456,7 +463,7 @@ async function loadPlaylistRanking(playlistName: string, reset: boolean = false)
       else if (globalRank === 2) rankClass += ' top-2';
       else if (globalRank === 3) rankClass += ' top-3';
       
-      const medal = globalRank === 1 ? '🥇' : globalRank === 2 ? '🥈' : globalRank === 3 ? '🥉' : '';
+      const medal = globalRank === 1 ? '<i class="fas fa-medal" style="color: #ffd700;"></i>' : globalRank === 2 ? '<i class="fas fa-medal" style="color: #c0c0c0;"></i>' : globalRank === 3 ? '<i class="fas fa-medal" style="color: #cd7f32;"></i>' : '';
       
       entry.innerHTML = `
         <div class="${rankClass}">${medal} #${globalRank}</div>
@@ -579,10 +586,10 @@ function startPlaylistMode(playlist: Playlist): void {
   // Criar PlaylistMode
   currentPlaylist = new PlaylistMode(canvas, playlist, currentConfig, {
     onScenarioComplete: (index) => {
-      showFeedback('✓ Cenário Completo!', '#00ff00');
+      showFeedback('<i class="fas fa-check"></i> Cenário Completo!', '#00ff00');
     },
     onPlaylistComplete: async () => {
-      showFeedback('🎉 Playlist Completa!', '#ffff00', true);
+      showFeedback('<i class="fas fa-trophy"></i> Playlist Completa!', '#ffff00', true);
       
       // Obter dados do resultado
       const nickname = getNickname();
@@ -613,7 +620,7 @@ function startPlaylistMode(playlist: Playlist): void {
       }, 1500);
     },
     onScenarioFail: (reason) => {
-      showFeedback(`✗ ${reason}`, '#ff0000');
+      showFeedback(`<i class="fas fa-times"></i> ${reason}`, '#ff0000');
     },
     onScenarioStart: (index) => {
       updatePlaylistHUD();
@@ -782,7 +789,7 @@ async function showPlaylistResultModal(
     const rankingContainer = document.querySelector('#playlist-result-modal .ranking-container');
     if (rankingContainer) {
       rankingContainer.innerHTML = `
-        <h3 style="color: #fff; margin-bottom: 15px; font-size: 16px;">🏆 Top 10 - <span id="result-playlist-name">${playlistName}</span></h3>
+        <h3 style="color: #fff; margin-bottom: 15px; font-size: 16px;"><i class="fas fa-trophy"></i> Top 10 - <span id="result-playlist-name">${playlistName}</span></h3>
         <div id="result-loading" style="text-align: center; padding: 20px; display: none;">
           <div style="color: #667eea; font-size: 16px;">Carregando ranking...</div>
         </div>
@@ -823,7 +830,7 @@ async function showPlaylistResultModal(
     if (rankingContainer) {
       rankingContainer.innerHTML = `
         <div style="text-align: center; padding: 30px; color: #aaa;">
-          <div style="font-size: 48px; margin-bottom: 15px;">📝</div>
+          <div style="font-size: 48px; margin-bottom: 15px;"><i class="fas fa-clipboard-list"></i></div>
           <div style="font-size: 16px;">Esta é uma playlist customizada.</div>
           <div style="font-size: 14px; margin-top: 10px; color: #666;">Rankings são salvos apenas para playlists oficiais.</div>
         </div>
@@ -858,9 +865,9 @@ async function loadPlaylistResultRanking(playlistName: string): Promise<void> {
       
       // Medalhas para top 3
       let rankDisplay = (index + 1).toString();
-      if (index === 0) rankDisplay = '🥇';
-      else if (index === 1) rankDisplay = '🥈';
-      else if (index === 2) rankDisplay = '🥉';
+      if (index === 0) rankDisplay = '<i class="fas fa-medal" style="color: #ffd700;"></i>';
+      else if (index === 1) rankDisplay = '<i class="fas fa-medal" style="color: #c0c0c0;"></i>';
+      else if (index === 2) rankDisplay = '<i class="fas fa-medal" style="color: #cd7f32;"></i>';
       
       row.innerHTML = `
         <td style="padding: 10px; font-weight: bold; font-size: 16px;">${rankDisplay}</td>

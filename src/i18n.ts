@@ -24,16 +24,16 @@ export const translations: Translations = {
 
   // Game Modes Menu
   'modes.title': {
-    en: '⚽ Game Modes',
-    pt: '⚽ Modos de Jogo'
+    en: 'Game Modes',
+    pt: 'Modos de Jogo'
   },
   'modes.freeTraining': {
-    en: '🎯 Free Training',
-    pt: '🎯 Treino Livre'
+    en: 'Free Training',
+    pt: 'Treino Livre'
   },
   'modes.playlists': {
-    en: '📋 Playlists',
-    pt: '📋 Playlists'
+    en: 'Playlists',
+    pt: 'Playlists'
   },
   'modes.back': {
     en: 'Back',
@@ -42,8 +42,8 @@ export const translations: Translations = {
 
   // Playlists Menu
   'playlists.title': {
-    en: '📋 Training Playlists',
-    pt: '📋 Playlists de Treino'
+    en: 'Training Playlists',
+    pt: 'Playlists de Treino'
   },
   'playlists.back': {
     en: 'Back',
@@ -52,8 +52,8 @@ export const translations: Translations = {
 
   // Settings Menu
   'settings.title': {
-    en: '⚙️ Match Settings',
-    pt: '⚙️ Configurações da Partida'
+    en: 'Match Settings',
+    pt: 'Configurações da Partida'
   },
   'settings.map': {
     en: 'Map',

@@ -176,27 +176,27 @@ export class GameConsole {
 
   public logGoal(playerName: string, team: 'red' | 'blue'): void {
     const teamColor = team === 'red' ? '^1' : '^4';
-    this.addMessage(`${teamColor}⚽ GOAL! ${playerName}^7 scored!`, 'event');
+    this.addMessage(`${teamColor}GOAL! ${playerName}^7 scored!`, 'event');
   }
 
   public logGameStart(): void {
-    this.addMessage('^2▶ Game started!', 'event');
+    this.addMessage('^2[PLAY] Game started!', 'event');
   }
 
   public logGamePause(): void {
-    this.addMessage('^3⏸ Game paused', 'event');
+    this.addMessage('^3[PAUSE] Game paused', 'event');
   }
 
   public logGameResume(): void {
-    this.addMessage('^2▶ Game resumed', 'event');
+    this.addMessage('^2[PLAY] Game resumed', 'event');
   }
 
   public logGameEnd(winner: 'red' | 'blue' | 'draw'): void {
     if (winner === 'draw') {
-      this.addMessage('^3⏹ Game ended - Draw!', 'event');
+      this.addMessage('^3[END] Game ended - Draw!', 'event');
     } else {
       const color = winner === 'red' ? '^1' : '^4';
-      this.addMessage(`${color}⏹ Game ended - ${winner.toUpperCase()} WINS!`, 'event');
+      this.addMessage(`${color}[END] Game ended - ${winner.toUpperCase()} WINS!`, 'event');
     }
   }
 
