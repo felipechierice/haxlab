@@ -17,6 +17,8 @@ declare global {
     playlistPrevScenario: () => void;
     playlistRestart: () => void;
     getIsPlaylistMode: () => boolean;
+    getIsEditorMode: () => boolean;
+    returnToEditor: () => void;
   }
 }
 
@@ -52,12 +54,24 @@ function GamePage() {
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     const isPlaylist = window.getIsPlaylistMode?.();
+    const isEditor = window.getIsEditorMode?.();
 
     if (e.key === 'Escape') {
       e.preventDefault();
-      if (isPlaylist) {
+      
+      // Se está em modo editor (puro ou testando), não faz nada ou volta ao editor
+      if (isEditor) {
+        // Não faz nada no modo editor puro
+        return;
+      } else if (isPlaylist && state?.mode === 'editor') {
+        // Se está testando playlist do editor, volta para o editor
+        window.returnToEditor?.();
+        return;
+      } else if (isPlaylist) {
+        // Se está em playlist normal, volta para playlists
         navigate('/playlists');
-      } else if (state?.mode !== 'editor') {
+      } else {
+        // Treino livre, abre settings
         navigate('/settings');
       }
       return;

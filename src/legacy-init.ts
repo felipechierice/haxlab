@@ -17,6 +17,7 @@ let currentEditor: PlaylistEditor | null = null;
 let currentConfig: GameConfig = loadConfigFromStorage();
 let currentMapType: string = localStorage.getItem('mapType') || 'default';
 let isPlaylistMode: boolean = false;
+let isEditorMode: boolean = false;
 
 function getDefaultConfig(): GameConfig {
   return {
@@ -174,6 +175,7 @@ window.addEventListener('game-play-again', handlePlayAgain);
   
   const map = currentMapType === 'classic' ? CLASSIC_MAP : DEFAULT_MAP;
   isPlaylistMode = false;
+  isEditorMode = false;
   
   document.getElementById('playlist-hud')?.classList.add('hidden');
   document.getElementById('game-info')?.classList.remove('hidden');
@@ -203,6 +205,9 @@ window.addEventListener('game-play-again', handlePlayAgain);
   document.getElementById('game-info')?.classList.add('hidden');
   document.getElementById('playlist-hud')?.classList.add('hidden');
 
+  isPlaylistMode = false;
+  isEditorMode = true;
+
   currentEditor = new PlaylistEditor(canvas, currentMapType);
   currentEditor.start();
 
@@ -227,6 +232,7 @@ window.addEventListener('game-play-again', handlePlayAgain);
   }
   
   isPlaylistMode = true;
+  isEditorMode = false;
   
   document.getElementById('playlist-hud')?.classList.remove('hidden');
   document.getElementById('game-info')?.classList.add('hidden');
@@ -339,3 +345,18 @@ window.addEventListener('game-play-again', handlePlayAgain);
   }
 };
 (window as any).getIsPlaylistMode = () => isPlaylistMode;
+(window as any).getIsEditorMode = () => isEditorMode;
+(window as any).returnToEditor = () => {
+  if (currentPlaylist) {
+    currentPlaylist.stop();
+    currentPlaylist = null;
+  }
+  if (currentEditor) {
+    // Reativar editor
+    currentEditor.start();
+    isPlaylistMode = false;
+    isEditorMode = true;
+    document.getElementById('playlist-hud')?.classList.add('hidden');
+    document.getElementById('game-info')?.classList.add('hidden');
+  }
+};
