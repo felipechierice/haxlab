@@ -125,6 +125,8 @@ export class PlaylistEditor {
       kickMode: 'classic',
       kickStrength: 500,
       playerRadius: 15,
+      playerSpeed: 260,
+      playerAcceleration: 6.5,
       kickSpeedMultiplier: 0.5,
       ballConfig: {
         radius: 8,
@@ -2595,6 +2597,12 @@ export class PlaylistEditor {
             if (data.gameConfig.playerRadius !== undefined) {
               this.config.playerRadius = data.gameConfig.playerRadius;
             }
+            if (data.gameConfig.playerSpeed !== undefined) {
+              this.config.playerSpeed = data.gameConfig.playerSpeed;
+            }
+            if (data.gameConfig.playerAcceleration !== undefined) {
+              this.config.playerAcceleration = data.gameConfig.playerAcceleration;
+            }
             if (data.gameConfig.kickSpeedMultiplier !== undefined) {
               this.config.kickSpeedMultiplier = data.gameConfig.kickSpeedMultiplier;
             }
@@ -2728,6 +2736,8 @@ export class PlaylistEditor {
       kickStrength: this.config.kickStrength,
       kickMode: this.config.kickMode,
       playerRadius: this.config.playerRadius,
+      playerSpeed: this.config.playerSpeed,
+      playerAcceleration: this.config.playerAcceleration,
       kickSpeedMultiplier: this.config.kickSpeedMultiplier,
       ballConfig: {
         ...this.config.ballConfig

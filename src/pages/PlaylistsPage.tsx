@@ -31,6 +31,12 @@ const AVAILABLE_PLAYLISTS: PlaylistInfo[] = [
     name: 'Condução - Fácil', 
     description: 'Exercícios focados em condução de bola', 
     icon: 'fa-person-running' 
+  },
+  { 
+    file: 'finalizacoes-facil.json', 
+    name: 'Finalizações - Fácil', 
+    description: 'Seu time penetrou pela defesa adversária. Finalize com sucesso marcando gol.', 
+    icon: 'fa-crosshairs' 
   }
 ];
 
