@@ -30,7 +30,8 @@ export { db };
 const OFFICIAL_PLAYLISTS = [
   'Cruzamento - Fácil',
   'Drible e Gol',
-  'TORNEIO A.D. BRK - Edição 1'
+  'TORNEIO A.D. BRK - Edição 1',
+  'Finalizações'
 ];
 
 /**

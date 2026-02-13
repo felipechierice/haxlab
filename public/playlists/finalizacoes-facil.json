@@ -137,7 +137,7 @@
                 "loop": true,
                 "waitTime": 0,
                 "reactionTime": 0,
-                "kickOnContact": false
+                "kickOnContact": true
               }
             }
           },
@@ -180,7 +180,7 @@
                 "loop": true,
                 "waitTime": 0,
                 "reactionTime": 0,
-                "kickOnContact": false
+                "kickOnContact": true
               }
             }
           },
@@ -216,7 +216,7 @@
                 "loop": true,
                 "waitTime": 0,
                 "reactionTime": 0,
-                "kickOnContact": false
+                "kickOnContact": true
               }
             }
           },
@@ -375,7 +375,7 @@
                 "loop": true,
                 "waitTime": 0,
                 "reactionTime": 0,
-                "kickOnContact": false
+                "kickOnContact": true
               }
             }
           },
@@ -418,7 +418,7 @@
                 "loop": true,
                 "waitTime": 0,
                 "reactionTime": 0,
-                "kickOnContact": false
+                "kickOnContact": true
               }
             }
           },
@@ -454,7 +454,7 @@
                 "loop": true,
                 "waitTime": 0,
                 "reactionTime": 0,
-                "kickOnContact": false
+                "kickOnContact": true
               }
             }
           },
@@ -613,7 +613,7 @@
                 "loop": true,
                 "waitTime": 0,
                 "reactionTime": 0,
-                "kickOnContact": false
+                "kickOnContact": true
               }
             }
           },
@@ -656,7 +656,7 @@
                 "loop": true,
                 "waitTime": 0,
                 "reactionTime": 0,
-                "kickOnContact": false
+                "kickOnContact": true
               }
             }
           },
@@ -692,7 +692,7 @@
                 "loop": true,
                 "waitTime": 0,
                 "reactionTime": 0,
-                "kickOnContact": false
+                "kickOnContact": true
               }
             }
           },
@@ -851,7 +851,7 @@
                 "loop": true,
                 "waitTime": 0,
                 "reactionTime": 0,
-                "kickOnContact": false
+                "kickOnContact": true
               }
             }
           },
@@ -894,7 +894,7 @@
                 "loop": true,
                 "waitTime": 0,
                 "reactionTime": 0,
-                "kickOnContact": false
+                "kickOnContact": true
               }
             }
           },
@@ -905,7 +905,7 @@
           "name": "Bot",
           "team": "blue",
           "spawn": {
-            "x": 76,
+            "x": 77,
             "y": 297.10000228881836
           },
           "behavior": {
@@ -930,7 +930,7 @@
                 "loop": true,
                 "waitTime": 0,
                 "reactionTime": 0,
-                "kickOnContact": false
+                "kickOnContact": true
               }
             }
           },
