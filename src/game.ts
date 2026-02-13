@@ -43,6 +43,15 @@ export class Game {
   
   // Cache de estado anterior para evitar atualizações DOM desnecessárias
   private lastUIState = { redScore: -1, blueScore: -1, time: -1 };
+  
+  // Fixed timestep para física determinística
+  private readonly FIXED_DT = 1 / 60; // 60 updates por segundo
+  private accumulator: number = 0;
+  private simulationTime: number = 0; // Tempo acumulado da simulação em segundos
+  
+  // Interpolação visual: posições anteriores para suavizar renderização em qualquer refresh rate
+  private prevPositions: Map<string, { x: number; y: number }> = new Map();
+  private prevBallPos: { x: number; y: number } = { x: 0, y: 0 };
 
   constructor(canvas: HTMLCanvasElement, map: GameMap, config: GameConfig) {
     this.renderer = new Renderer(canvas);
@@ -608,9 +617,9 @@ export class Game {
       return;
     }
 
-    // Atualizar IAs dos bots
+    // Atualizar IAs dos bots (passa tempo de simulação para determinismo)
     for (const [botId, botAI] of this.bots.entries()) {
-      botAI.update(this.state, dt);
+      botAI.update(this.state, dt, this.simulationTime);
     }
 
     for (const player of this.state.players) {
@@ -805,6 +814,8 @@ export class Game {
     this.state.running = true;
     this.isPaused = false;
     this.lastTime = 0;
+    this.accumulator = 0;
+    this.simulationTime = 0;
     this.animationId = requestAnimationFrame(this.gameLoop);
   }
 
@@ -828,6 +839,7 @@ export class Game {
     this.isPaused = false;
     this.state.running = true;
     this.lastTime = 0;
+    this.accumulator = 0;
     this.animationId = requestAnimationFrame(this.gameLoop);
   }
 
@@ -841,17 +853,36 @@ export class Game {
   }
 
   private gameLoop = (timestamp: number): void => {
-    const dt = this.lastTime ? (timestamp - this.lastTime) / 1000 : 0;
+    const frameDt = this.lastTime ? (timestamp - this.lastTime) / 1000 : 0;
     this.lastTime = timestamp;
 
-    if (dt > 0 && dt < 0.1) {
-      this.update(dt);
+    // Limitar acumulador para evitar espiral da morte (ex: tab inativa)
+    if (frameDt > 0 && frameDt < 0.1) {
+      this.accumulator += frameDt;
+    }
+
+    // Salvar posições anteriores antes dos physics steps (para interpolação visual)
+    this.savePreviousPositions();
+
+    // Fixed timestep: avançar simulação em passos fixos de FIXED_DT
+    // Garante que a física é 100% determinística independente do frame rate
+    while (this.accumulator >= this.FIXED_DT) {
+      this.update(this.FIXED_DT);
+      this.simulationTime += this.FIXED_DT;
+      this.accumulator -= this.FIXED_DT;
       
       // Executar callback customizado de update
       if (this.customUpdateCallback) {
         this.customUpdateCallback();
       }
     }
+
+    // Interpolação visual: suavizar posições para renderização
+    // alpha = fração do próximo passo de física já acumulada (0..1)
+    // Interpola entre posição anterior e atual para eliminar micro-stutters
+    // em monitores com refresh rate diferente de 60Hz
+    const alpha = this.accumulator / this.FIXED_DT;
+    this.interpolatePositions(alpha);
 
     this.renderer.drawState(this.state, this.map, this.controlledPlayerId, this.state.time, this.config.ballConfig);
     
@@ -862,6 +893,9 @@ export class Game {
         this.customRenderCallback(ctx);
       }
     }
+
+    // Restaurar posições reais da física após renderização
+    this.restorePositions();
     
     this.updateUI();
 
@@ -870,6 +904,79 @@ export class Game {
     }
   };
   
+  // ── Interpolação Visual ──
+  // Salva posições da física antes dos steps para poder interpolar na renderização
+  
+  private savePreviousPositions(): void {
+    // Salvar posição da bola
+    this.prevBallPos.x = this.state.ball.circle.pos.x;
+    this.prevBallPos.y = this.state.ball.circle.pos.y;
+    
+    // Salvar posição de cada jogador/bot
+    for (const player of this.state.players) {
+      let prev = this.prevPositions.get(player.id);
+      if (!prev) {
+        prev = { x: 0, y: 0 };
+        this.prevPositions.set(player.id, prev);
+      }
+      prev.x = player.circle.pos.x;
+      prev.y = player.circle.pos.y;
+    }
+  }
+  
+  // Interpola posições para renderização suave
+  // pos_render = prev + (current - prev) * alpha
+  // Salva as posições reais em campos temporários para restaurar depois
+  private currentPositions: Map<string, { x: number; y: number }> = new Map();
+  private currentBallPos: { x: number; y: number } = { x: 0, y: 0 };
+  
+  private interpolatePositions(alpha: number): void {
+    const ball = this.state.ball.circle;
+    
+    // Salvar posição real da bola
+    this.currentBallPos.x = ball.pos.x;
+    this.currentBallPos.y = ball.pos.y;
+    
+    // Interpolar bola
+    ball.pos.x = this.prevBallPos.x + (ball.pos.x - this.prevBallPos.x) * alpha;
+    ball.pos.y = this.prevBallPos.y + (ball.pos.y - this.prevBallPos.y) * alpha;
+    
+    // Interpolar jogadores/bots
+    for (const player of this.state.players) {
+      let curr = this.currentPositions.get(player.id);
+      if (!curr) {
+        curr = { x: 0, y: 0 };
+        this.currentPositions.set(player.id, curr);
+      }
+      
+      // Salvar posição real
+      curr.x = player.circle.pos.x;
+      curr.y = player.circle.pos.y;
+      
+      // Interpolar
+      const prev = this.prevPositions.get(player.id);
+      if (prev) {
+        player.circle.pos.x = prev.x + (player.circle.pos.x - prev.x) * alpha;
+        player.circle.pos.y = prev.y + (player.circle.pos.y - prev.y) * alpha;
+      }
+    }
+  }
+  
+  private restorePositions(): void {
+    // Restaurar posição real da bola
+    this.state.ball.circle.pos.x = this.currentBallPos.x;
+    this.state.ball.circle.pos.y = this.currentBallPos.y;
+    
+    // Restaurar posições reais dos jogadores/bots
+    for (const player of this.state.players) {
+      const curr = this.currentPositions.get(player.id);
+      if (curr) {
+        player.circle.pos.x = curr.x;
+        player.circle.pos.y = curr.y;
+      }
+    }
+  }
+
   // Métodos públicos para acesso aos dados do jogo
   getPlayers(): Player[] {
     return this.state.players;

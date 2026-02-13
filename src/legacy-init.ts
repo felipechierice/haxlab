@@ -238,7 +238,14 @@ window.addEventListener('game-play-again', handlePlayAgain);
   document.getElementById('game-info')?.classList.add('hidden');
   
   // Playlists sempre usam configurações padrão (exceto keybinds)
-  const playlistConfig = getDefaultConfig();
+  // IMPORTANTE: Usar config padrão fixo para garantir determinismo entre editor e modo de jogo
+  const baseConfig = getDefaultConfig();
+  
+  // Se a playlist contém configurações de física customizadas, aplicá-las
+  // Isso garante que a física no editor e ao jogar a playlist seja idêntica
+  const playlistConfig: GameConfig = playlist.gameConfig 
+    ? { ...baseConfig, ...playlist.gameConfig }
+    : baseConfig;
   
   currentPlaylist = new PlaylistMode(canvas, playlist, playlistConfig, {
     onScenarioComplete: (_index) => {

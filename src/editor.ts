@@ -1462,6 +1462,9 @@ export class PlaylistEditor {
         </div>
         
         <h4>Chute</h4>
+        <div class="property" style="color: #888; font-size: 11px; margin-bottom: 8px;">
+          <i class="fas fa-info-circle"></i> Estas configurações serão exportadas com a playlist para garantir física determinística
+        </div>
         <div class="property">
           <label>Modo de Chute:</label>
           <select id="prop-kick-mode">
@@ -2580,6 +2583,25 @@ export class PlaylistEditor {
           this.playlistSettings.name = data.name || 'Playlist Importada';
           this.playlistSettings.description = data.description || '';
           this.scenarios = [];
+          
+          // Importar configurações de física se existirem
+          if (data.gameConfig) {
+            if (data.gameConfig.kickStrength !== undefined) {
+              this.config.kickStrength = data.gameConfig.kickStrength;
+            }
+            if (data.gameConfig.kickMode !== undefined) {
+              this.config.kickMode = data.gameConfig.kickMode;
+            }
+            if (data.gameConfig.playerRadius !== undefined) {
+              this.config.playerRadius = data.gameConfig.playerRadius;
+            }
+            if (data.gameConfig.kickSpeedMultiplier !== undefined) {
+              this.config.kickSpeedMultiplier = data.gameConfig.kickSpeedMultiplier;
+            }
+            if (data.gameConfig.ballConfig) {
+              this.config.ballConfig = { ...this.config.ballConfig, ...data.gameConfig.ballConfig };
+            }
+          }
         }
         
         // Importar cenários
@@ -2701,10 +2723,22 @@ export class PlaylistEditor {
       return this.exportScenarioFromData(editorScenario);
     });
     
+    // Exportar configurações de física relevantes para garantir determinismo
+    const gameConfig: Partial<GameConfig> = {
+      kickStrength: this.config.kickStrength,
+      kickMode: this.config.kickMode,
+      playerRadius: this.config.playerRadius,
+      kickSpeedMultiplier: this.config.kickSpeedMultiplier,
+      ballConfig: {
+        ...this.config.ballConfig
+      }
+    };
+    
     return {
       name: this.playlistSettings.name,
       description: this.playlistSettings.description,
-      scenarios
+      scenarios,
+      gameConfig
     };
   }
 

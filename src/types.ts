@@ -259,6 +259,7 @@ export interface Playlist {
   name: string;
   description: string;
   scenarios: Scenario[];
+  gameConfig?: Partial<GameConfig>; // Configurações de física opcionais (para garantir determinismo)
 }
 
 export interface PlaylistProgress {

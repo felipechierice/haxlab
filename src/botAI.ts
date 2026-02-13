@@ -31,16 +31,20 @@ export class BotAI {
   private movementQueue: Array<{
     direction: Vector2D;
     speed: number;
-    processAt: number; // timestamp em ms quando este movimento deve ser processado
+    processAt: number; // tempo de simulação em segundos quando este movimento deve ser processado
   }> = [];
   private currentMovement: { direction: Vector2D; speed: number } = { direction: { x: 0, y: 0 }, speed: 0 };
+  private lastSimulationTime: number = 0; // Último tempo de simulação recebido
 
   constructor(bot: Player, behavior: BotBehavior) {
     this.bot = bot;
     this.behavior = behavior;
   }
 
-  update(gameState: GameState, dt: number): void {
+  update(gameState: GameState, dt: number, simulationTime: number): void {
+    // Salvar tempo de simulação para uso no queueMovement (determinístico)
+    this.lastSimulationTime = simulationTime;
+    
     // Resetar input de chute no início de cada frame
     // O chute será setado para true pelos behaviors que precisam chutar
     this.bot.input.kick = false;
@@ -51,9 +55,8 @@ export class BotAI {
       this.updateAIPreset(this.behavior.config as AIPresetBehavior, gameState, dt);
     }
     
-    // Processar fila de movimentos - retirar comandos cujo timestamp já passou
-    const now = Date.now();
-    while (this.movementQueue.length > 0 && this.movementQueue[0].processAt <= now) {
+    // Processar fila de movimentos usando tempo de simulação (determinístico)
+    while (this.movementQueue.length > 0 && this.movementQueue[0].processAt <= simulationTime) {
       const movement = this.movementQueue.shift()!;
       this.currentMovement = { direction: movement.direction, speed: movement.speed };
     }
@@ -129,6 +132,9 @@ export class BotAI {
         this.patrol(params, gameState, dt);
         break;
     }
+
+    // Guardar último tempo de simulação para uso no queueMovement
+    // (atualizado após os behaviors terem enfileirado seus movimentos)
   }
 
   private idle(params: IdleParams, gameState: GameState): void {
@@ -494,13 +500,12 @@ export class BotAI {
    * Adiciona um movimento à fila com delay baseado no reactionTime
    */
   private queueMovement(direction: Vector2D, speed: number, reactionTime?: number): void {
-    const now = Date.now();
-    const delay = (reactionTime ?? 0) * 1000; // Converter segundos para ms
+    const delay = reactionTime ?? 0; // Em segundos (determinístico)
     
     this.movementQueue.push({
       direction,
       speed,
-      processAt: now + delay
+      processAt: this.lastSimulationTime + delay
     });
     
     // Limitar tamanho da fila para evitar memory leak (manter ~2 segundos de comandos)
@@ -546,6 +551,7 @@ export class BotAI {
     this.patrolState = { currentPointIndex: 0, waitTimer: 0 };
     this.movementQueue = [];
     this.currentMovement = { direction: { x: 0, y: 0 }, speed: 0 };
+    this.lastSimulationTime = 0;
     this.stopMovement();
   }
 }
