@@ -19,8 +19,11 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
   const [loading, setLoading] = useState(false);
 
   const playlists = [
+    { name: 'TORNEIO A.D. BRK - Edição 1', value: 'TORNEIO A.D. BRK - Edição 1' },
     { name: 'Cruzamento - Fácil', value: 'Cruzamento - Fácil' },
     { name: 'Drible e Gol', value: 'Drible e Gol' },
+    { name: 'Condução - Fácil', value: 'Condução - Fácil' },
+    { name: 'Finalizações', value: 'Finalizações' },
   ];
 
   useEffect(() => {
