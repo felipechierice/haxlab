@@ -23,7 +23,7 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
     { name: 'Cruzamento - Fácil', value: 'Cruzamento - Fácil' },
     { name: 'Drible e Gol', value: 'Drible e Gol' },
     { name: 'Condução - Fácil', value: 'Condução - Fácil' },
-    { name: 'Finalizações', value: 'Finalizações' },
+    { name: 'Finalizações - Fácil', value: 'Finalizações - Fácil' },
   ];
 
   useEffect(() => {
