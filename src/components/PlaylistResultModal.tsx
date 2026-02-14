@@ -21,8 +21,8 @@ interface PlaylistResultModalProps {
 
 const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
-  const secs = (seconds % 60).toFixed(1);
-  return `${mins}:${secs.padStart(4, '0')}`;
+  const secs = (seconds % 60).toFixed(3);
+  return `${mins}:${secs.padStart(6, '0')}`;
 };
 
 function PlaylistResultModal({

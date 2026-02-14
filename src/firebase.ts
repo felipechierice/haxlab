@@ -28,6 +28,7 @@ export { db };
 
 // Lista de playlists oficiais que podem ter ranking salvo
 const OFFICIAL_PLAYLISTS = [
+  'Condução - Fácil',
   'Cruzamento - Fácil',
   'Drible e Gol',
   'TORNEIO A.D. BRK - Edição 1',
