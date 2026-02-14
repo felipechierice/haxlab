@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../hooks/useI18n';
+import { useKeyboardNav } from '../hooks/useKeyboardNav';
 import PlaylistItem from '../components/PlaylistItem';
 import PlaylistDetails from '../components/PlaylistDetails';
 import { PlaylistInfo } from '../types/playlist-ui';
 import { Playlist } from '../types';
+import { trackPageView } from '../analytics';
 
 
 const AVAILABLE_PLAYLISTS: PlaylistInfo[] = [
@@ -47,16 +49,59 @@ function PlaylistsPage() {
   const [playlistData, setPlaylistData] = useState<Playlist | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => { trackPageView('PlaylistsPage'); }, []);
+
+  const handleBack = () => {
+    navigate('/modes');
+  };
+
+  const { containerRef, getFocusableElements } = useKeyboardNav({
+    onEscape: handleBack,
+    autoFocus: true,
+    initialFocusSelector: '.playlist-item'
+  });
+
+  // Navegação Q/E entre playlists
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        handleBack();
+    const handleQENavigation = (e: KeyboardEvent) => {
+      // Ignorar se estiver em um input
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+        return;
+      }
+
+      if (e.key.toLowerCase() === 'q' || e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        
+        if (!selectedPlaylist) {
+          // Se nenhuma playlist está selecionada, selecionar a primeira
+          if (AVAILABLE_PLAYLISTS.length > 0) {
+            handleSelectPlaylist(AVAILABLE_PLAYLISTS[0]);
+          }
+          return;
+        }
+
+        const currentIndex = AVAILABLE_PLAYLISTS.findIndex(p => p.file === selectedPlaylist.file);
+        if (currentIndex === -1) return;
+
+        let newIndex: number;
+        if (e.key.toLowerCase() === 'q') {
+          // Q = anterior
+          newIndex = currentIndex - 1;
+          if (newIndex < 0) newIndex = AVAILABLE_PLAYLISTS.length - 1;
+        } else {
+          // E = próximo
+          newIndex = currentIndex + 1;
+          if (newIndex >= AVAILABLE_PLAYLISTS.length) newIndex = 0;
+        }
+
+        handleSelectPlaylist(AVAILABLE_PLAYLISTS[newIndex]);
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);
+    window.addEventListener('keydown', handleQENavigation);
+    return () => window.removeEventListener('keydown', handleQENavigation);
+  }, [selectedPlaylist]);
 
   const handleSelectPlaylist = async (playlist: PlaylistInfo) => {
     setSelectedPlaylist(playlist);
@@ -67,6 +112,17 @@ function PlaylistsPage() {
       
       const data: Playlist = await response.json();
       setPlaylistData(data);
+      
+      // Focar no botão "Jogar Playlist" após carregar
+      setTimeout(() => {
+        if (containerRef.current) {
+          const playButton = containerRef.current.querySelector('.btn-primary') as HTMLElement;
+          if (playButton) {
+            playButton.focus();
+            playButton.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
+        }
+      }, 150);
     } catch (error) {
       console.error('Error loading playlist:', error);
       alert(t('playlists.loadError'));
@@ -125,13 +181,9 @@ function PlaylistsPage() {
     reader.readAsText(file);
   };
 
-  const handleBack = () => {
-    navigate('/modes');
-  };
-
   return (
     <div className="playlists-page">
-      <div className="playlists-container-wrapper">
+      <div className="playlists-container-wrapper" ref={containerRef}>
         <div className="playlists-header">
           <h2>
             <i className="fas fa-list"></i> {t('playlists.title')}
@@ -143,29 +195,44 @@ function PlaylistsPage() {
 
         <div className="playlists-container">
           {/* Sidebar with playlist list */}
-          <div className="playlists-sidebar">
-            <div className="playlists-list">
-              {AVAILABLE_PLAYLISTS.map((playlist) => (
-                <PlaylistItem
-                  key={playlist.file}
-                  playlist={playlist}
-                  isSelected={selectedPlaylist?.file === playlist.file}
-                  onSelect={() => handleSelectPlaylist(playlist)}
-                />
-              ))}
+          <div className="playlists-sidebar-wrapper">
+            {/* Keybindings hint - fixed at top */}
+            <div className="playlists-keybindings">
+              <div className="keybinding-item">
+                <kbd className="key">Q</kbd>
+                <span className="keybinding-action">{t('playlists.previous')}</span>
+              </div>
+              <div className="keybinding-divider"></div>
+              <div className="keybinding-item">
+                <kbd className="key">E</kbd>
+                <span className="keybinding-action">{t('playlists.next')}</span>
+              </div>
             </div>
 
-            <div className="playlists-import">
-              <button onClick={handleImportPlaylist}>
-                <i className="fas fa-folder-open"></i> {t('playlists.import')}
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                style={{ display: 'none' }}
-                onChange={handleFileChange}
-              />
+            <div className="playlists-sidebar">
+              <div className="playlists-list">
+                {AVAILABLE_PLAYLISTS.map((playlist) => (
+                  <PlaylistItem
+                    key={playlist.file}
+                    playlist={playlist}
+                    isSelected={selectedPlaylist?.file === playlist.file}
+                    onSelect={() => handleSelectPlaylist(playlist)}
+                  />
+                ))}
+              </div>
+
+              <div className="playlists-import">
+                <button onClick={handleImportPlaylist}>
+                  <i className="fas fa-folder-open"></i> {t('playlists.import')}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json"
+                  style={{ display: 'none' }}
+                  onChange={handleFileChange}
+                />
+              </div>
             </div>
           </div>
 

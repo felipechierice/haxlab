@@ -6,6 +6,33 @@
 @import './GamePage.css';
 @import './Modal.css';
 
+/* Keyboard Navigation Focus Styles */
+button:focus,
+input:focus,
+select:focus,
+a:focus,
+[tabindex]:focus {
+  outline: 3px solid rgba(74, 222, 128, 0.8);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.2);
+  transition: all 0.2s ease;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid rgba(74, 222, 128, 0.9);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgba(74, 222, 128, 0.25), 0 0 20px rgba(74, 222, 128, 0.3);
+}
+
+/* Remove outline padrão mas manter acessibilidade */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
 /* Shared keyframes for container fade-in animations */
 @keyframes fadeInScaleContainer {
   from {

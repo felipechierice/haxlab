@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../hooks/useI18n';
+import { useKeyboardNav } from '../hooks/useKeyboardNav';
 import { GameConfig } from '../types';
 import { keyBindings, KeyBindings } from '../keybindings';
+import { trackPageView } from '../analytics';
 
 
 declare global {
@@ -32,6 +34,8 @@ interface SettingsFormData {
 function SettingsPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
+
+  useEffect(() => { trackPageView('SettingsPage'); }, []);
   
   const defaultSettings: SettingsFormData = {
     mapType: 'default',
@@ -54,6 +58,21 @@ function SettingsPage() {
 
   const [keybinds, setKeybinds] = useState<KeyBindings>(keyBindings.getBindings());
   const [configuringKey, setConfiguringKey] = useState<keyof KeyBindings | null>(null);
+
+  const handleResume = () => {
+    // Retomar jogo se houver um ativo
+    navigate(-1);
+  };
+
+  // Hook de navegação por teclado (desabilitado quando está configurando teclas)
+  const { containerRef } = useKeyboardNav({
+    onEscape: () => {
+      if (!configuringKey) {
+        handleResume();
+      }
+    },
+    autoFocus: true
+  });
 
   useEffect(() => {
     // Carregar configurações do localStorage se existir
@@ -124,18 +143,6 @@ function SettingsPage() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [configuringKey]);
 
-  useEffect(() => {
-    // Listener ESC para voltar (só quando não está configurando teclas)
-    const handleEscapePress = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !configuringKey) {
-        handleResume();
-      }
-    };
-
-    window.addEventListener('keydown', handleEscapePress);
-    return () => window.removeEventListener('keydown', handleEscapePress);
-  }, [configuringKey]);
-
   const handleChange = (field: keyof SettingsFormData, value: string | number) => {
     setSettings(prev => ({ ...prev, [field]: value }));
   };
@@ -173,11 +180,6 @@ function SettingsPage() {
     navigate(-1);
   };
 
-  const handleResume = () => {
-    // Retomar jogo se houver um ativo
-    navigate(-1);
-  };
-
   const formatKeyDisplay = (keys: string[]): string => {
     return keys.map(key => {
       if (key === ' ' || key === 'Space') return 'SPACE';
@@ -188,7 +190,7 @@ function SettingsPage() {
 
   return (
     <div className="settings-page">
-      <div className="settings-container">
+      <div className="settings-container" ref={containerRef}>
         <h2>
           <i className="fas fa-cog"></i> {t('settings.title')}
         </h2>

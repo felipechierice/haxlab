@@ -1,22 +1,23 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../hooks/useI18n';
+import { useKeyboardNav } from '../hooks/useKeyboardNav';
+import { trackPageView } from '../analytics';
 
 
 function GameModesPage() {
+  useEffect(() => { trackPageView('GameModesPage'); }, []);
   const navigate = useNavigate();
   const { t } = useI18n();
 
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        handleBack();
-      }
-    };
+  const handleBack = () => {
+    navigate('/');
+  };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);
+  const { containerRef } = useKeyboardNav({
+    onEscape: handleBack,
+    autoFocus: true
+  });
 
   const handleFreeTraining = () => {
     // Navega para tela de jogo em React
@@ -32,22 +33,18 @@ function GameModesPage() {
     navigate('/game', { state: { mode: 'editor' } });
   };
 
-  const handleBack = () => {
-    navigate('/');
-  };
-
   return (
     <div className="game-modes-page">
-      <div className="modes-container">
+      <div className="modes-container" ref={containerRef}>
         <h2 className="modes-title">{t('modes.title')}</h2>
         
         <div className="modes-button-group">
-          <button className="btn-mode btn-free-training" onClick={handleFreeTraining}>
-            <i className="fas fa-bullseye"></i> {t('modes.freeTraining')}
-          </button>
-          
           <button className="btn-mode btn-playlists" onClick={handlePlaylists}>
             <i className="fas fa-list"></i> {t('modes.playlists')}
+          </button>
+          
+          <button className="btn-mode btn-free-training" onClick={handleFreeTraining}>
+            <i className="fas fa-bullseye"></i> {t('modes.freeTraining')}
           </button>
           
           <button className="btn-mode btn-editor" onClick={handleEditor}>

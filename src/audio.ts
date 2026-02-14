@@ -1,5 +1,7 @@
 interface SynthNote {
   frequency: number;
+  frequencyEnd?: number;
+  type?: OscillatorType;
   startTime: number;
   duration: number;
   volume?: number;
@@ -29,15 +31,22 @@ const defaultSounds: Record<string, SynthConfig> = {
     release: 0.1
   },
   goal: {
-    type: 'square',
+    type: 'sine',
     notes: [
-      { frequency: 523, startTime: 0, duration: 0.15, volume: 0.3 },    // C5
-      { frequency: 659, startTime: 0.08, duration: 0.15, volume: 0.3 }, // E5
-      { frequency: 784, startTime: 0.16, duration: 0.25, volume: 0.35 } // G5
+      // Percussive thump (weight)
+      { frequency: 200, frequencyEnd: 80, type: 'sine', startTime: 0, duration: 0.08, volume: 0.5 },
+      // Rising sweep into ping (anticipation)
+      { frequency: 400, frequencyEnd: 880, type: 'sine', startTime: 0.03, duration: 0.1, volume: 0.2 },
+      // Main bright ping A5 (reward)
+      { frequency: 880, type: 'sine', startTime: 0.1, duration: 0.3, volume: 0.35 },
+      // Warm body A4 (fullness)
+      { frequency: 440, type: 'triangle', startTime: 0.1, duration: 0.25, volume: 0.15 },
+      // High shimmer E6 (sparkle)
+      { frequency: 1320, type: 'sine', startTime: 0.13, duration: 0.2, volume: 0.08 }
     ],
-    duration: 0.5,
-    volume: 0.3,
-    attack: 0.01,
+    duration: 0.45,
+    volume: 0.35,
+    attack: 0.001,
     release: 0.15
   },
   success: {
@@ -53,13 +62,21 @@ const defaultSounds: Record<string, SynthConfig> = {
     release: 0.08
   },
   fail: {
-    type: 'sawtooth',
-    frequency: 220,
-    frequencyEnd: 110,
-    duration: 0.25,
-    volume: 0.25,
-    attack: 0.01,
-    release: 0.15
+    type: 'sine',
+    notes: [
+      // Dull thud impact
+      { frequency: 160, frequencyEnd: 50, type: 'sine', startTime: 0, duration: 0.12, volume: 0.4 },
+      // Descending disappointed tone
+      { frequency: 440, frequencyEnd: 220, type: 'sine', startTime: 0.02, duration: 0.2, volume: 0.25 },
+      // Low muffled body
+      { frequency: 220, frequencyEnd: 130, type: 'triangle', startTime: 0.05, duration: 0.25, volume: 0.15 },
+      // Subtle dissonant color (minor feel)
+      { frequency: 466, frequencyEnd: 233, type: 'sine', startTime: 0.04, duration: 0.18, volume: 0.08 }
+    ],
+    duration: 0.35,
+    volume: 0.3,
+    attack: 0.001,
+    release: 0.12
   },
   bounce: {
     type: 'sine',
@@ -117,8 +134,15 @@ export class AudioManager {
         const osc = this.audioContext!.createOscillator();
         const gain = this.audioContext!.createGain();
         
-        osc.type = config.type;
+        osc.type = note.type || config.type;
         osc.frequency.setValueAtTime(note.frequency, now + note.startTime);
+        
+        if (note.frequencyEnd !== undefined) {
+          osc.frequency.exponentialRampToValueAtTime(
+            Math.max(20, note.frequencyEnd),
+            now + note.startTime + note.duration
+          );
+        }
         
         osc.connect(gain);
         gain.connect(this.audioContext!.destination);
@@ -127,7 +151,7 @@ export class AudioManager {
         gain.gain.setValueAtTime(0, now + note.startTime);
         gain.gain.linearRampToValueAtTime(noteVolume, now + note.startTime + attack);
         gain.gain.setValueAtTime(noteVolume, now + note.startTime + note.duration - release);
-        gain.gain.linearRampToValueAtTime(0.001, now + note.startTime + note.duration);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + note.startTime + note.duration);
         
         osc.start(now + note.startTime);
         osc.stop(now + note.startTime + note.duration);

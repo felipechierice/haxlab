@@ -4,6 +4,7 @@ import { getTopScores, RankingEntry } from '../firebase';
 import { getNickname } from '../player';
 import { Playlist } from '../types';
 import { useI18n } from '../hooks/useI18n';
+import { useKeyboardNav } from '../hooks/useKeyboardNav';
 
 
 interface PlaylistResultModalProps {
@@ -43,6 +44,16 @@ function PlaylistResultModal({
   const [loading, setLoading] = useState(false);
   const nickname = getNickname();
 
+  const handleClose = () => {
+    onClose();
+    navigate('/playlists');
+  };
+
+  const { containerRef } = useKeyboardNav({
+    onEscape: handleClose,
+    autoFocus: isOpen
+  });
+
   useEffect(() => {
     if (isOpen && isOfficial) {
       loadRankings();
@@ -66,11 +77,6 @@ function PlaylistResultModal({
     onRetry();
   };
 
-  const handleClose = () => {
-    onClose();
-    navigate('/playlists');
-  };
-
   if (!isOpen) return null;
 
   const highscoreValue = previousHighscore ? previousHighscore.score : 0;
@@ -81,6 +87,7 @@ function PlaylistResultModal({
       <div
         className="modal-content result-modal-content"
         onClick={(e) => e.stopPropagation()}
+        ref={containerRef}
       >
         <h2 className="modal-title gradient-text">
           <i className="fas fa-trophy"></i> {t('result.title')}

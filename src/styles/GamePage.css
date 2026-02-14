@@ -115,65 +115,182 @@
   color: rgba(148, 163, 184, 0.6);
 }
 
-/* HUD de Playlist */
+/* HUD de Playlist - Barra superior (info) */
 #playlist-hud {
   position: fixed;
-  top: 20px;
-  right: 20px;
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1000px;
+  max-width: 100%;
+  background: linear-gradient(180deg, rgba(15, 20, 40, 0.97) 0%, rgba(15, 20, 40, 0.92) 100%);
+  backdrop-filter: blur(16px);
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5), rgba(139, 92, 246, 0.5), rgba(99, 102, 241, 0.5), transparent) 1;
   color: #e2e8f0;
-  padding: 20px;
-  border-radius: 16px;
+  padding: 0 20px;
+  height: 36px;
   font-family: 'Inter', sans-serif;
   z-index: 1000;
-  min-width: 280px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 30px rgba(99, 102, 241, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  overflow: visible;
+}
+
+/* HUD de Playlist - Barra inferior (controles) */
+#playlist-hud-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1000px;
+  max-width: 100%;
+  background: linear-gradient(0deg, rgba(15, 20, 40, 0.97) 0%, rgba(15, 20, 40, 0.92) 100%);
+  backdrop-filter: blur(16px);
+  border-top: 2px solid transparent;
+  border-image: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5), rgba(139, 92, 246, 0.5), rgba(99, 102, 241, 0.5), transparent) 1;
+  color: #e2e8f0;
+  padding: 7px 20px;
+  font-family: 'Inter', sans-serif;
+  z-index: 1000;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.6), 0 0 30px rgba(99, 102, 241, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hud-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.hud-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hud-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.hud-divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(99, 102, 241, 0.3);
+  flex-shrink: 0;
 }
 
 .playlist-hud-name {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 800;
   color: #a5b4fc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 400px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  flex-shrink: 1;
 }
 
 .playlist-hud-scenario {
-  font-size: 15px;
-  margin-bottom: 10px;
-  color: #f1f5f9;
-  font-weight: 600;
+  font-size: 13px;
+  color: #cbd5e1;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+  direction: rtl;
 }
 
 .playlist-hud-progress {
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 600;
   color: #94a3b8;
-  margin-bottom: 16px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: rgba(51, 65, 85, 0.5);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  letter-spacing: 0.02em;
+}
+
+.playlist-hud-progress span {
+  color: #c7d2fe;
+  font-weight: 700;
 }
 
 .playlist-hud-timer {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
   color: #fbbf24;
-  margin-bottom: 10px;
-  padding: 12px;
-  background: rgba(251, 191, 36, 0.1);
-  border-radius: 8px;
-  text-align: center;
-}
-
-.playlist-hud-timer i {
-  margin-right: 8px;
+  padding: 0 24px;
+  background: linear-gradient(180deg, rgba(30, 25, 50, 0.98) 0%, rgba(20, 15, 35, 0.98) 100%);
+  border: 2px solid rgba(251, 191, 36, 0.4);
+  border-radius: 0 0 14px 14px;
+  border-top: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 0 16px rgba(251, 191, 36, 0.4), 0 0 40px rgba(251, 191, 36, 0.15);
+  letter-spacing: 0.04em;
+  align-self: flex-start;
+  height: 52px;
+  min-width: 100px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 25px rgba(251, 191, 36, 0.1), inset 0 -1px 0 rgba(251, 191, 36, 0.1);
+  z-index: 1;
 }
 
 .playlist-hud-controls {
-  font-size: 12px;
-  color: #cbd5e1;
-  margin-top: 16px;
-  border-top: 1px solid rgba(99, 102, 241, 0.3);
-  padding-top: 12px;
-  line-height: 1.6;
+  font-size: 11px;
+  color: #8892a8;
+  line-height: 1;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.01em;
+}
+
+.playlist-hud-controls kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 1px 5px;
+  background: rgba(51, 65, 85, 0.7);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 4px;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #c7d2fe;
+  text-transform: uppercase;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.hud-ctrl-sep {
+  color: rgba(99, 102, 241, 0.2);
+  font-size: 11px;
+  margin: 0 2px;
 }
 
 /* Feedback de Playlist */
@@ -384,8 +501,15 @@
   }
 
   #playlist-hud {
-    min-width: 240px;
-    padding: 16px;
+    padding: 8px 14px;
+  }
+
+  #playlist-hud-bottom {
+    padding: 6px 14px;
+  }
+
+  .playlist-hud-name {
+    max-width: 280px;
   }
 }
 
@@ -402,9 +526,23 @@
   }
 
   #playlist-hud {
-    right: 10px;
-    top: 10px;
-    min-width: 200px;
+    width: 100%;
+    padding: 6px 10px;
+    gap: 10px;
+  }
+
+  #playlist-hud-bottom {
+    width: 100%;
+    padding: 5px 10px;
+  }
+
+  .playlist-hud-name {
+    max-width: 140px;
+    font-size: 11px;
+  }
+
+  .playlist-hud-scenario {
+    font-size: 11px;
   }
 
   .game-scores {

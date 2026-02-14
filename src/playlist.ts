@@ -221,14 +221,14 @@ export class PlaylistMode {
     
     // Verificar timeout do cenário
     if (elapsedTime > scenario.timeLimit) {
-      this.failScenario('<i class="fas fa-clock"></i> Tempo esgotado!');
+      this.failScenario('Tempo esgotado!');
       return;
     }
     
     // Verificar timer de ball touch objective se existir (usa o tempo real, não frame count)
     if (this.ballTouchObjective && this.ballTouchObjective.timeLimit) {
       if (elapsedTime > this.ballTouchObjective.timeLimit) {
-        this.failScenario('<i class="fas fa-clock"></i> Tempo esgotado para tocar na bola!');
+        this.failScenario('Tempo esgotado para tocar na bola!');
         return;
       }
     }
@@ -236,7 +236,7 @@ export class PlaylistMode {
     // Validar path sempre que existe (independente de checkpoints)
     if (this.activePath) {
       if (!this.validateBallOnPath(ball.circle, this.activePath)) {
-        this.failScenario('<i class="fas fa-times"></i> Bola saiu do caminho!');
+        this.failScenario('Bola saiu do caminho!');
         return;
       }
     }
@@ -255,7 +255,7 @@ export class PlaylistMode {
       
       // Verificar se o tempo do checkpoint esgotou
       if (checkpoint.timeLimit && checkpointElapsedTime > checkpoint.timeLimit) {
-        this.failScenario(`<i class="fas fa-map-marker-alt"></i> Checkpoint ${this.currentCheckpointIndex + 1} não atingido a tempo!`);
+        this.failScenario(`Checkpoint ${this.currentCheckpointIndex + 1} não atingido a tempo!`);
         return;
       }
       
@@ -364,7 +364,7 @@ export class PlaylistMode {
     // Verificar se tocou em bot que não deveria
     if (this.preventTouchObjective) {
       if (this.preventTouchObjective.preventBotIds.includes(playerId)) {
-        this.failScenario(`<i class="fas fa-times"></i> Bola tocou em bot adversário!`);
+        this.failScenario(`Bola tocou em bot adversário!`);
         return;
       }
     }
@@ -416,7 +416,7 @@ export class PlaylistMode {
         if (goalObjective.scoredBy === 'player') {
           // Só o player pode fazer o gol
           if (!scoredBy || scoredBy.isBot) {
-            this.failScenario('<i class="fas fa-times"></i> O jogador deve fazer o gol!');
+            this.failScenario('O jogador deve fazer o gol!');
             return;
           }
         } else if (goalObjective.scoredBy === 'bot') {
@@ -426,7 +426,7 @@ export class PlaylistMode {
           // Só um bot pode fazer o gol
           if (!scoredBy || !scoredBy.isBot) {
             console.log('FALHA: não é bot');
-            this.failScenario('<i class="fas fa-times"></i> Um bot aliado deve fazer o gol!');
+            this.failScenario('Um bot aliado deve fazer o gol!');
             return;
           }
           
@@ -435,13 +435,13 @@ export class PlaylistMode {
           console.log('Comparando: scoredBy.team !== scoringTeam?', scoredBy.team !== scoringTeam);
           if (scoredBy.team !== scoringTeam) {
             console.log('FALHA: bot do time errado');
-            this.failScenario('<i class="fas fa-times"></i> Um bot aliado deve fazer o gol!');
+            this.failScenario('Um bot aliado deve fazer o gol!');
             return;
           }
           
           // Verificar se é um bot específico
           if (goalObjective.scoredByBotId && scoredBy.id !== goalObjective.scoredByBotId) {
-            this.failScenario(`<i class="fas fa-times"></i> O bot específico deve fazer o gol!`);
+            this.failScenario(`O bot específico deve fazer o gol!`);
             return;
           }
         }
@@ -466,7 +466,7 @@ export class PlaylistMode {
     if (this.kickObjective) {
       const max = this.kickObjective.exact !== undefined ? this.kickObjective.exact : this.kickObjective.max;
       if (max !== undefined && this.kickCount > max) {
-        this.failScenario(`<i class="fas fa-times"></i> Chutes demais! Máximo: ${max}`);
+        this.failScenario(`Chutes demais! Máximo: ${max}`);
       }
     }
   }

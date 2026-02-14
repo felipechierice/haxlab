@@ -63,13 +63,21 @@
   overflow: hidden;
 }
 
-.playlists-sidebar {
+.playlists-sidebar-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  height: 100%;
+  gap: 8px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.playlists-sidebar {
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 8px;
+  min-height: 0;
+  flex: 1 1 0;
 }
 
 .playlists-sidebar::-webkit-scrollbar {
@@ -94,6 +102,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  padding: 4px;
 }
 
 .playlist-item {
@@ -153,6 +162,56 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Keybindings HUD */
+.playlists-keybindings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 12px;
+}
+
+.keybinding-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.playlists-keybindings .key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  background: rgba(74, 222, 128, 0.15);
+  border: 1px solid rgba(74, 222, 128, 0.5);
+  border-radius: 4px;
+  color: #4ade80;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: bold;
+  text-shadow: 0 0 6px rgba(74, 222, 128, 0.4);
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.15);
+}
+
+.keybinding-action {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: lowercase;
+  letter-spacing: 0.3px;
+  opacity: 0.9;
+}
+
+.keybinding-divider {
+  width: 1px;
+  height: 16px;
+  background: rgba(74, 222, 128, 0.3);
+  box-shadow: 0 0 4px rgba(74, 222, 128, 0.2);
 }
 
 .playlists-import {

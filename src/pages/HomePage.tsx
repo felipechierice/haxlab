@@ -1,15 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../hooks/useI18n';
+import { useKeyboardNav } from '../hooks/useKeyboardNav';
 import { getNickname, saveNickname, generateRandomNickname, isValidNickname } from '../player.js';
 import RankingModal from '../components/RankingModal';
+import { trackPageView } from '../analytics';
 
 
 function HomePage() {
+  useEffect(() => { trackPageView('HomePage'); }, []);
   const navigate = useNavigate();
-  const { language, t, changeLanguage } = useI18n();
+  const { t } = useI18n();
   const [nickname, setNickname] = useState(getNickname());
   const [showRankingModal, setShowRankingModal] = useState(false);
+  
+  const { containerRef } = useKeyboardNav({
+    autoFocus: true,
+    initialFocusSelector: '.btn-play'
+  });
 
   const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -34,27 +42,15 @@ function HomePage() {
     setShowRankingModal(true);
   };
 
+  const handleSettings = () => {
+    navigate('/app-settings');
+  };
+
   return (
     <div className="home-page">
-      <div className="menu-container">
-        <h1 className="title">{t('menu.title')}</h1>
+      <div className="menu-container" ref={containerRef}>
+        <img src="/images/haxlab-logo.webp" alt="HaxLab" className="logo" />
         
-        {/* Language Selector */}
-        <div className="form-section">
-          <label className="form-label">
-            <i className="fas fa-globe"></i> {t('menu.language')}
-          </label>
-          <select 
-            className="form-select"
-            value={language}
-            onChange={(e) => changeLanguage(e.target.value as 'en' | 'pt' | 'es')}
-          >
-            <option value="en">English</option>
-            <option value="pt">Português</option>
-            <option value="es">Español</option>
-          </select>
-        </div>
-
         {/* Nickname */}
         <div className="nickname-section">
           <label className="form-label">
@@ -87,6 +83,9 @@ function HomePage() {
           </button>
           <button className="btn-ranking" onClick={handleRanking}>
             <i className="fas fa-trophy"></i> {t('menu.ranking')}
+          </button>
+          <button className="btn-settings" onClick={handleSettings}>
+            <i className="fas fa-cog"></i> {t('menu.settings')}
           </button>
         </div>
       </div>

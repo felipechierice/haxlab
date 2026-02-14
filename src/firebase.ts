@@ -1,5 +1,6 @@
 import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore, collection, addDoc, query, orderBy, limit, getDocs, where, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { initAnalytics } from './analytics.js';
 
 // Configuração do Firebase
 const firebaseConfig = {
@@ -9,7 +10,8 @@ const firebaseConfig = {
   storageBucket: "haxlab-ranking.firebasestorage.app",
   messagingSenderId: "757442993193",
   appId: "1:757442993193:web:9f1b084ce42afc873f5038",
-  databaseURL: "https://haxlab-ranking-default-rtdb.firebaseio.com"
+  databaseURL: "https://haxlab-ranking-default-rtdb.firebaseio.com",
+  measurementId: "G-VSD7RLYFKB"
 };
 
 // Inicializar Firebase
@@ -20,6 +22,9 @@ try {
   app = initializeApp(firebaseConfig);
   db = getFirestore(app);
   console.log('Firebase initialized successfully');
+  
+  // Inicializar Analytics (async, não bloqueia)
+  initAnalytics();
 } catch (error) {
   console.error('Error initializing Firebase:', error);
 }

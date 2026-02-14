@@ -10,6 +10,17 @@ import { PlaylistMode } from './playlist.js';
 import { PlaylistEditor } from './editor.js';
 import { getNickname } from './player.js';
 import { submitScore, getPlayerHighscore, calculateScore, isOfficialPlaylist, RankingEntry } from './firebase.js';
+import {
+  trackFreePlayStart,
+  trackFreePlayEnd,
+  trackPlaylistStart,
+  trackPlaylistComplete,
+  trackScenarioComplete,
+  trackScenarioFail,
+  trackPlaylistRestart,
+  trackScoreSubmit,
+  trackEditorOpen,
+} from './analytics.js';
 
 let currentGame: Game | null = null;
 let currentPlaylist: PlaylistMode | null = null;
@@ -91,6 +102,7 @@ function stopCurrentPlaylist(): void {
   }
   
   document.getElementById('playlist-hud')?.classList.add('hidden');
+  document.getElementById('playlist-hud-bottom')?.classList.add('hidden');
 }
 
 function startPlaylistHUDLoop(): void {
@@ -112,7 +124,7 @@ function startPlaylistHUDLoop(): void {
     
     const timerEl = document.getElementById('scenario-timer');
     if (timerEl) {
-      timerEl.textContent = remaining.toFixed(1) + 's';
+      timerEl.textContent = remaining.toFixed(1);
       
       if (remaining < 5) {
         timerEl.style.color = '#ff0000';
@@ -178,12 +190,15 @@ window.addEventListener('game-play-again', handlePlayAgain);
   isEditorMode = false;
   
   document.getElementById('playlist-hud')?.classList.add('hidden');
+  document.getElementById('playlist-hud-bottom')?.classList.add('hidden');
   document.getElementById('game-info')?.classList.remove('hidden');
   
   currentGame = new Game(canvas, map, currentConfig);
   currentGame.initPlayers();
   currentGame.reset();
   currentGame.start();
+  
+  trackFreePlayStart(currentMapType);
   
   document.body.classList.add('game-active');
 };
@@ -204,6 +219,7 @@ window.addEventListener('game-play-again', handlePlayAgain);
 
   document.getElementById('game-info')?.classList.add('hidden');
   document.getElementById('playlist-hud')?.classList.add('hidden');
+  document.getElementById('playlist-hud-bottom')?.classList.add('hidden');
 
   isPlaylistMode = false;
   isEditorMode = true;
@@ -211,6 +227,8 @@ window.addEventListener('game-play-again', handlePlayAgain);
   currentEditor = new PlaylistEditor(canvas, currentMapType);
   currentEditor.start();
 
+  trackEditorOpen();
+  
   document.body.classList.add('game-active');
 };
 
@@ -235,6 +253,7 @@ window.addEventListener('game-play-again', handlePlayAgain);
   isEditorMode = false;
   
   document.getElementById('playlist-hud')?.classList.remove('hidden');
+  document.getElementById('playlist-hud-bottom')?.classList.remove('hidden');
   document.getElementById('game-info')?.classList.add('hidden');
   
   // Playlists sempre usam configurações padrão (exceto keybinds)
@@ -260,6 +279,7 @@ window.addEventListener('game-play-again', handlePlayAgain);
   currentPlaylist = new PlaylistMode(canvas, playlist, playlistConfig, {
     onScenarioComplete: (_index) => {
       showFeedback('<i class="fas fa-check"></i> Cenário Completo!', '#00ff00');
+      trackScenarioComplete(playlist.name, _index);
     },
     onPlaylistComplete: async () => {
       showFeedback('<i class="fas fa-trophy"></i> Playlist Completa!', '#ffff00', true);
@@ -276,9 +296,14 @@ window.addEventListener('game-play-again', handlePlayAgain);
         console.error('Failed to get previous highscore:', error);
       }
       
+      const isOfficial = isOfficialPlaylist(playlist.name);
+      trackPlaylistComplete(playlist.name, kicks, time, score, isOfficial);
+      
       try {
         await submitScore(nickname, playlist.name, kicks, time);
         console.log('Score submitted!');
+        const isNewHighscore = !previousHighscore || score > previousHighscore.score;
+        trackScoreSubmit(playlist.name, score, isNewHighscore);
       } catch (error) {
         console.error('Failed to submit score:', error);
       }
@@ -293,7 +318,7 @@ window.addEventListener('game-play-again', handlePlayAgain);
             time,
             score,
             previousHighscore,
-            isOfficial: isOfficialPlaylist(playlist.name),
+            isOfficial,
             playlistData: playlist,
           }
         }));
@@ -301,6 +326,7 @@ window.addEventListener('game-play-again', handlePlayAgain);
     },
     onScenarioFail: (reason) => {
       showFeedback(`<i class="fas fa-times"></i> ${reason}`, '#ff0000');
+      trackScenarioFail(playlist.name, currentPlaylist?.getProgress().currentScenarioIndex ?? 0, reason);
     },
     onScenarioStart: (_index) => {
       updatePlaylistHUD();
@@ -311,6 +337,8 @@ window.addEventListener('game-play-again', handlePlayAgain);
   currentPlaylist.resetPlaylistStats();
   currentPlaylist.startScenario(0);
   startPlaylistHUDLoop();
+  
+  trackPlaylistStart(playlist.name, playlist.scenarios.length);
   
   document.body.classList.add('game-active');
 };
@@ -357,6 +385,7 @@ window.addEventListener('game-play-again', handlePlayAgain);
 (window as any).playlistRestart = () => {
   if (currentPlaylist) {
     hideFeedback();
+    trackPlaylistRestart(currentPlaylist.getPlaylist().name);
     currentPlaylist.restartPlaylist();
     updatePlaylistHUD();
   }
@@ -374,6 +403,7 @@ window.addEventListener('game-play-again', handlePlayAgain);
     isPlaylistMode = false;
     isEditorMode = true;
     document.getElementById('playlist-hud')?.classList.add('hidden');
+    document.getElementById('playlist-hud-bottom')?.classList.add('hidden');
     document.getElementById('game-info')?.classList.add('hidden');
   }
 };

@@ -55,12 +55,19 @@
 }
 
 .btn-editor {
-  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+  background: transparent;
+  border: 2px solid #ec4899;
+  color: #f9a8d4;
 }
 
 .btn-mode:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+}
+
+.btn-editor:hover {
+  background: rgba(236, 72, 153, 0.1);
+  box-shadow: 0 10px 15px -3px rgba(236, 72, 153, 0.3);
 }
 
 .btn-mode:active {

@@ -3,6 +3,7 @@ import HomePage from './pages/HomePage';
 import GameModesPage from './pages/GameModesPage';
 import PlaylistsPage from './pages/PlaylistsPage';
 import SettingsPage from './pages/SettingsPage';
+import AppSettingsPage from './pages/AppSettingsPage';
 import GamePage from './pages/GamePage';
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
         <Route path="/modes" element={<GameModesPage />} />
         <Route path="/playlists" element={<PlaylistsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/app-settings" element={<AppSettingsPage />} />
         <Route path="/game" element={<GamePage />} />
       </Routes>
     </BrowserRouter>

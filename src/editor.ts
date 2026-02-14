@@ -2950,6 +2950,7 @@ export class PlaylistEditor {
     
     // Esconder HUD da playlist
     document.getElementById('playlist-hud')?.classList.add('hidden');
+    document.getElementById('playlist-hud-bottom')?.classList.add('hidden');
     document.getElementById('playlist-feedback')?.classList.add('hidden');
     
     // Prevenir que ESC abra o menu de configurações

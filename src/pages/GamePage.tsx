@@ -4,6 +4,7 @@ import { useI18n } from '../hooks/useI18n';
 import { Playlist } from '../types';
 import { RankingEntry } from '../firebase';
 import PlaylistResultModal from '../components/PlaylistResultModal';
+import { trackPageView, trackFreePlayEnd } from '../analytics';
 
 
 declare global {
@@ -49,6 +50,11 @@ function GamePage() {
   const location = useLocation();
   const { t } = useI18n();
   const state = location.state as LocationState;
+
+  useEffect(() => {
+    const mode = state?.mode || 'free';
+    trackPageView(`GamePage_${mode}`);
+  }, [state?.mode]);
 
   const [showResultModal, setShowResultModal] = useState(false);
   const [playlistResult, setPlaylistResult] = useState<PlaylistResult | null>(null);
@@ -142,6 +148,7 @@ function GamePage() {
     const handleGameOver = (e: Event) => {
       const detail = (e as CustomEvent).detail as GameOverInfo;
       setGameOver(detail);
+      trackFreePlayEnd(detail.winner, detail.score.red, detail.score.blue);
     };
     window.addEventListener('game-over', handleGameOver);
 
@@ -206,22 +213,37 @@ function GamePage() {
         </div>
       </div>
 
-      {/* HUD para modo Playlist */}
+      {/* HUD para modo Playlist - Info (topo) */}
       <div id="playlist-hud" className="hidden">
-        <div className="playlist-hud-name" id="playlist-name">Playlist</div>
-        <div className="playlist-hud-scenario" id="scenario-name">Cenário</div>
-        <div className="playlist-hud-progress">
-          <span id="scenario-progress">1/5</span> cenários
+        <div className="hud-left">
+          <div className="playlist-hud-name" id="playlist-name">Playlist</div>
         </div>
-        <div className="playlist-hud-timer">
-          <i className="fas fa-stopwatch"></i> <span id="scenario-timer">30.0s</span>
+        <div className="hud-center">
+          <div className="playlist-hud-timer">
+            <span id="scenario-timer">30.0</span>
+          </div>
         </div>
+        <div className="hud-right">
+          <div className="playlist-hud-scenario" id="scenario-name">Cenário</div>
+          <div className="hud-divider"></div>
+          <div className="playlist-hud-progress">
+            <span id="scenario-progress">1/5</span> cenários
+          </div>
+        </div>
+      </div>
+
+      {/* HUD para modo Playlist - Controles (baixo) */}
+      <div id="playlist-hud-bottom" className="hidden">
         <div className="playlist-hud-controls">
-          <div>R - Resetar cenário</div>
-          <div>N - Próximo cenário</div>
-          <div>P - Cenário anterior</div>
-          <div>Backspace - Resetar playlist</div>
-          <div>ESC - Sair</div>
+          <kbd>R</kbd> Resetar
+          <span className="hud-ctrl-sep">│</span>
+          <kbd>N</kbd> Próximo
+          <span className="hud-ctrl-sep">│</span>
+          <kbd>P</kbd> Anterior
+          <span className="hud-ctrl-sep">│</span>
+          <kbd>⌫</kbd> Restart
+          <span className="hud-ctrl-sep">│</span>
+          <kbd>ESC</kbd> Sair
         </div>
       </div>
 

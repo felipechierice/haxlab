@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getTopScores, getGlobalRanking, RankingEntry } from '../firebase';
 import { useI18n } from '../hooks/useI18n';
+import { useKeyboardNav } from '../hooks/useKeyboardNav';
 
 
 interface RankingModalProps {
@@ -20,6 +21,11 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const { containerRef } = useKeyboardNav({
+    onEscape: onClose,
+    autoFocus: isOpen
+  });
+
   const playlists = [
     { name: 'TORNEIO A.D. BRK - Edição 1', value: 'TORNEIO A.D. BRK - Edição 1' },
     { name: 'Cruzamento - Fácil', value: 'Cruzamento - Fácil' },
@@ -33,19 +39,6 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
       loadRankings();
     }
   }, [isOpen, selectedPlaylist]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleEscapePress = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    window.addEventListener('keydown', handleEscapePress);
-    return () => window.removeEventListener('keydown', handleEscapePress);
-  }, [isOpen, onClose]);
 
   const loadRankings = async () => {
     setLoading(true);

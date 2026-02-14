@@ -45,6 +45,33 @@ export const translations: Translations = {
     pt: 'Ranking',
     es: 'Clasificación'
   },
+  'menu.settings': {
+    en: 'Settings',
+    pt: 'Configurações',
+    es: 'Configuración'
+  },
+
+  // App Settings
+  'appSettings.title': {
+    en: 'Settings',
+    pt: 'Configurações',
+    es: 'Configuración'
+  },
+  'appSettings.language': {
+    en: 'Language',
+    pt: 'Idioma',
+    es: 'Idioma'
+  },
+  'appSettings.soundVolume': {
+    en: 'Sound Effects Volume',
+    pt: 'Volume dos Efeitos Sonoros',
+    es: 'Volumen de Efectos de Sonido'
+  },
+  'appSettings.back': {
+    en: 'Back',
+    pt: 'Voltar',
+    es: 'Volver'
+  },
 
   // Game Modes Menu
   'modes.title': {
@@ -88,6 +115,16 @@ export const translations: Translations = {
     en: 'Import Playlist JSON',
     pt: 'Importar Playlist JSON',
     es: 'Importar Lista JSON'
+  },
+  'playlists.previous': {
+    en: 'previous',
+    pt: 'anterior',
+    es: 'anterior'
+  },
+  'playlists.next': {
+    en: 'next',
+    pt: 'próxima',
+    es: 'siguiente'
   },
   'playlists.importError': {
     en: 'Error importing playlist! Check if the JSON file is in the correct format.',
