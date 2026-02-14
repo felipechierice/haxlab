@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../hooks/useI18n';
 
@@ -5,6 +6,17 @@ import { useI18n } from '../hooks/useI18n';
 function GameModesPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
+
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleBack();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
 
   const handleFreeTraining = () => {
     // Navega para tela de jogo em React

@@ -124,6 +124,18 @@ function SettingsPage() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [configuringKey]);
 
+  useEffect(() => {
+    // Listener ESC para voltar (só quando não está configurando teclas)
+    const handleEscapePress = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !configuringKey) {
+        handleResume();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscapePress);
+    return () => window.removeEventListener('keydown', handleEscapePress);
+  }, [configuringKey]);
+
   const handleChange = (field: keyof SettingsFormData, value: string | number) => {
     setSettings(prev => ({ ...prev, [field]: value }));
   };

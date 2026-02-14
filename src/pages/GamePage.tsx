@@ -19,6 +19,8 @@ declare global {
     getIsPlaylistMode: () => boolean;
     getIsEditorMode: () => boolean;
     returnToEditor: () => void;
+    editorExit: () => void;
+    getIsEditorTestMode: () => boolean;
   }
 }
 
@@ -55,21 +57,31 @@ function GamePage() {
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     const isPlaylist = window.getIsPlaylistMode?.();
     const isEditor = window.getIsEditorMode?.();
+    const isEditorTestMode = window.getIsEditorTestMode?.();
 
     if (e.key === 'Escape') {
+      // Se está em modo editor testando, deixa o editor tratar ESC (sai do teste)
+      if (isEditor && isEditorTestMode) {
+        // Não fazer nada, o editor já trata ESC no modo teste
+        return;
+      }
+      
       e.preventDefault();
       
-      // Se está em modo editor (puro ou testando), não faz nada ou volta ao editor
+      // Se está em modo editor (puro), trigger confirmação de saída
       if (isEditor) {
-        // Não faz nada no modo editor puro
+        // Trigger confirmação de saída do editor
+        window.editorExit?.();
         return;
       } else if (isPlaylist && state?.mode === 'editor') {
         // Se está testando playlist do editor, volta para o editor
         window.returnToEditor?.();
         return;
       } else if (isPlaylist) {
-        // Se está em playlist normal, volta para playlists
-        navigate('/playlists');
+        // Se está em playlist normal, mostrar confirmação antes de sair
+        if (confirm('Deseja sair da playlist? O progresso será perdido.')) {
+          navigate('/playlists');
+        }
       } else {
         // Treino livre, abre settings
         navigate('/settings');
@@ -97,7 +109,7 @@ function GamePage() {
           break;
       }
     }
-  }, [navigate]);
+  }, [navigate, state]);
 
   useEffect(() => {
     // Inicializar canvas baseado no modo
@@ -208,6 +220,7 @@ function GamePage() {
           <div>R - Resetar cenário</div>
           <div>N - Próximo cenário</div>
           <div>P - Cenário anterior</div>
+          <div>Backspace - Resetar playlist</div>
           <div>ESC - Sair</div>
         </div>
       </div>

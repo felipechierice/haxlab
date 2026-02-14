@@ -34,6 +34,19 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
     }
   }, [isOpen, selectedPlaylist]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscapePress = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscapePress);
+    return () => window.removeEventListener('keydown', handleEscapePress);
+  }, [isOpen, onClose]);
+
   const loadRankings = async () => {
     setLoading(true);
     try {

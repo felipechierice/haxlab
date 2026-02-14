@@ -377,3 +377,11 @@ window.addEventListener('game-play-again', handlePlayAgain);
     document.getElementById('game-info')?.classList.add('hidden');
   }
 };
+(window as any).editorExit = () => {
+  if (currentEditor) {
+    currentEditor.requestExit();
+  }
+};
+(window as any).getIsEditorTestMode = () => {
+  return currentEditor ? currentEditor.getIsTestMode() : false;
+};

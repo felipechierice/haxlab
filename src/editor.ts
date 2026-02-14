@@ -68,7 +68,7 @@ export class PlaylistEditor {
   private scenarioSettings: ScenarioSettings = {
     name: 'Cenário Customizado',
     timeLimit: 60,
-    goalObjective: { team: 'blue' }
+    goalObjective: { team: 'red' }
   };
   
   // Playlist management
@@ -275,11 +275,13 @@ export class PlaylistEditor {
           this.capturingPatrolPoint = null;
           this.canvas.style.cursor = 'default';
           document.getElementById('capture-overlay')?.remove();
+          e.stopImmediatePropagation();
           return;
         }
         
         // Sair do modo de teste se estiver ativo
         if (this.isTestMode) {
+          e.stopImmediatePropagation();
           this.exitTestMode();
           return;
         }
@@ -289,10 +291,13 @@ export class PlaylistEditor {
           this.pathBeingDrawn = null;
         }
       } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
         // Resetar cenário no modo de teste
         if (this.isTestMode && this.testPlaylistMode) {
-          e.preventDefault();
           this.testPlaylistMode.resetScenario();
+        } else {
+          // Entrar no modo teste quando não está testando
+          this.testScenario();
         }
       } else if (e.key === 'Enter') {
         // Finalizar caminho
@@ -1794,7 +1799,8 @@ export class PlaylistEditor {
     const newScenario: EditorScenario = {
       settings: {
         name: `Cenário ${this.scenarios.length + 1}`,
-        timeLimit: 60
+        timeLimit: 60,
+        goalObjective: { team: 'red' }
       },
       entities: []
     };
@@ -2899,13 +2905,28 @@ export class PlaylistEditor {
     // Criar e iniciar PlaylistMode
     this.testPlaylistMode = new PlaylistMode(this.canvas, playlist, testConfig, {
       onScenarioComplete: () => {
-        setTimeout(() => this.exitTestMode(), 1500);
+        // Resetar cenário ao invés de sair
+        setTimeout(() => {
+          if (this.testPlaylistMode) {
+            this.testPlaylistMode.resetScenario();
+          }
+        }, 1500);
       },
       onPlaylistComplete: () => {
-        setTimeout(() => this.exitTestMode(), 1500);
+        // Resetar cenário ao invés de sair
+        setTimeout(() => {
+          if (this.testPlaylistMode) {
+            this.testPlaylistMode.resetScenario();
+          }
+        }, 1500);
       },
       onScenarioFail: (reason) => {
-        setTimeout(() => this.exitTestMode(), 2000);
+        // Resetar cenário ao invés de sair
+        setTimeout(() => {
+          if (this.testPlaylistMode) {
+            this.testPlaylistMode.resetScenario();
+          }
+        }, 2000);
       },
       onScenarioStart: () => {}
     });
@@ -2965,5 +2986,13 @@ export class PlaylistEditor {
 
   public start(): void {
     // Editor está pronto para uso
+  }
+
+  public requestExit(): void {
+    this.exit();
+  }
+
+  public getIsTestMode(): boolean {
+    return this.isTestMode;
   }
 }
