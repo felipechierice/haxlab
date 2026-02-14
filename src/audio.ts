@@ -157,6 +157,17 @@ export class AudioManager {
     }
   }
 
+  /**
+   * Pré-inicializa o AudioContext para evitar stutter no primeiro som.
+   * Deve ser chamado durante uma interação do usuário (click/keypress).
+   */
+  warmUp(): void {
+    this.initAudioContext();
+    if (this.audioContext && this.audioContext.state === 'suspended') {
+      this.audioContext.resume();
+    }
+  }
+
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
   }

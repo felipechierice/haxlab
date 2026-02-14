@@ -39,7 +39,7 @@ function GameModesPage() {
           </button>
           
           <button className="btn-mode btn-editor" onClick={handleEditor}>
-            <i className="fas fa-palette"></i> Playlist Editor
+            <i className="fas fa-palette"></i> {t('modes.playlistEditor')}
           </button>
         </div>
         

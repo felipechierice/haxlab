@@ -58,7 +58,7 @@ function PlaylistsPage() {
       setPlaylistData(data);
     } catch (error) {
       console.error('Error loading playlist:', error);
-      alert('Erro ao carregar detalhes da playlist!');
+      alert(t('playlists.loadError'));
       setPlaylistData(null);
     }
   };
@@ -105,7 +105,7 @@ function PlaylistsPage() {
         navigate('/game', { state: { mode: 'playlist', playlist } });
       } catch (error) {
         console.error('Error parsing playlist:', error);
-        alert('Erro ao importar playlist! Verifique se o arquivo JSON está no formato correto.');
+        alert(t('playlists.importError'));
       }
 
       e.target.value = '';
@@ -146,7 +146,7 @@ function PlaylistsPage() {
 
             <div className="playlists-import">
               <button onClick={handleImportPlaylist}>
-                <i className="fas fa-folder-open"></i> Import Playlist JSON
+                <i className="fas fa-folder-open"></i> {t('playlists.import')}
               </button>
               <input
                 ref={fileInputRef}

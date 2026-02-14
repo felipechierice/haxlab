@@ -44,14 +44,8 @@ export class Game {
   // Cache de estado anterior para evitar atualizações DOM desnecessárias
   private lastUIState = { redScore: -1, blueScore: -1, time: -1 };
   
-  // Fixed timestep para física determinística
-  private readonly FIXED_DT = 1 / 60; // 60 updates por segundo
-  private accumulator: number = 0;
-  private simulationTime: number = 0; // Tempo acumulado da simulação em segundos
-  
-  // Interpolação visual: posições anteriores para suavizar renderização em qualquer refresh rate
-  private prevPositions: Map<string, { x: number; y: number }> = new Map();
-  private prevBallPos: { x: number; y: number } = { x: 0, y: 0 };
+  // Tempo acumulado da simulação em segundos (usado pela BotAI para timing)
+  private simulationTime: number = 0;
 
   constructor(canvas: HTMLCanvasElement, map: GameMap, config: GameConfig) {
     this.renderer = new Renderer(canvas);
@@ -641,8 +635,6 @@ export class Game {
       if (Physics.checkCircleCollision(player.circle, this.state.ball.circle)) {
         Physics.resolveCircleCollision(player.circle, this.state.ball.circle);
         
-        console.log('Colisão detectada:', player.id, 'isBot:', player.isBot);
-        
         // Se o player está segurando a tecla de chute, executa o chute automaticamente
         if (player.isChargingKick && player.id === this.controlledPlayerId) {
           const chargeAmount = this.config.kickMode === 'chargeable' ? player.kickCharge : 1;
@@ -814,8 +806,11 @@ export class Game {
     this.state.running = true;
     this.isPaused = false;
     this.lastTime = 0;
-    this.accumulator = 0;
     this.simulationTime = 0;
+    
+    // Pré-inicializa AudioContext para evitar stutter no primeiro som
+    audioManager.warmUp();
+    
     this.animationId = requestAnimationFrame(this.gameLoop);
   }
 
@@ -839,7 +834,7 @@ export class Game {
     this.isPaused = false;
     this.state.running = true;
     this.lastTime = 0;
-    this.accumulator = 0;
+    
     this.animationId = requestAnimationFrame(this.gameLoop);
   }
 
@@ -852,39 +847,30 @@ export class Game {
     this.updateUI();
   }
 
+  // ── FPS tracking ──
+  private fpsFrameTimes: number[] = [];
+  private fpsDisplay: number = 0;
+  private fpsLastUpdate: number = 0;
+  private frameTimeDisplay: number = 0;
+
   private gameLoop = (timestamp: number): void => {
-    const frameDt = this.lastTime ? (timestamp - this.lastTime) / 1000 : 0;
+    // Calcular dt diretamente do frame — sem acumulador, sem interpolação
+    let dt = this.lastTime ? (timestamp - this.lastTime) / 1000 : 1 / 60;
     this.lastTime = timestamp;
 
-    // Limitar acumulador para evitar espiral da morte (ex: tab inativa)
-    if (frameDt > 0 && frameDt < 0.1) {
-      this.accumulator += frameDt;
-    }
+    // Clamp dt para evitar saltos (tab inativa, lag spike)
+    if (dt > 0.05) dt = 0.05;
+    if (dt <= 0) dt = 1 / 60;
 
-    // Salvar posições anteriores antes dos physics steps (para interpolação visual)
-    this.savePreviousPositions();
+    // Atualizar física e lógica com o dt real do frame
+    this.update(dt);
+    this.simulationTime += dt;
 
-    // Fixed timestep: avançar simulação em passos fixos de FIXED_DT
-    // Garante que a física é 100% determinística independente do frame rate
-    while (this.accumulator >= this.FIXED_DT) {
-      this.update(this.FIXED_DT);
-      this.simulationTime += this.FIXED_DT;
-      this.accumulator -= this.FIXED_DT;
-      
-      // Executar callback customizado de update
-      if (this.customUpdateCallback) {
-        this.customUpdateCallback();
-      }
-    }
-
-    // Interpolação visual: suavizar posições para renderização
-    // alpha = fração do próximo passo de física já acumulada (0..1)
-    // Interpola entre posição anterior e atual para eliminar micro-stutters
-    // em monitores com refresh rate diferente de 60Hz
-    const alpha = this.accumulator / this.FIXED_DT;
-    this.interpolatePositions(alpha);
-
+    // Renderizar
     this.renderer.drawState(this.state, this.map, this.controlledPlayerId, this.state.time, this.config.ballConfig);
+    
+    // FPS tracking e display
+    this.updateAndDrawFPS(timestamp);
     
     // Executar callback customizado de renderização
     if (this.customRenderCallback) {
@@ -893,9 +879,6 @@ export class Game {
         this.customRenderCallback(ctx);
       }
     }
-
-    // Restaurar posições reais da física após renderização
-    this.restorePositions();
     
     this.updateUI();
 
@@ -904,76 +887,39 @@ export class Game {
     }
   };
   
-  // ── Interpolação Visual ──
-  // Salva posições da física antes dos steps para poder interpolar na renderização
+  // ── FPS Display ──
   
-  private savePreviousPositions(): void {
-    // Salvar posição da bola
-    this.prevBallPos.x = this.state.ball.circle.pos.x;
-    this.prevBallPos.y = this.state.ball.circle.pos.y;
+  private updateAndDrawFPS(timestamp: number): void {
+    // Rastreia tempos de frame para cálculo de FPS
+    this.fpsFrameTimes.push(timestamp);
     
-    // Salvar posição de cada jogador/bot
-    for (const player of this.state.players) {
-      let prev = this.prevPositions.get(player.id);
-      if (!prev) {
-        prev = { x: 0, y: 0 };
-        this.prevPositions.set(player.id, prev);
-      }
-      prev.x = player.circle.pos.x;
-      prev.y = player.circle.pos.y;
+    // Mantém apenas os últimos 500ms de amostras
+    const cutoff = timestamp - 500;
+    while (this.fpsFrameTimes.length > 0 && this.fpsFrameTimes[0] < cutoff) {
+      this.fpsFrameTimes.shift();
     }
-  }
-  
-  // Interpola posições para renderização suave
-  // pos_render = prev + (current - prev) * alpha
-  // Salva as posições reais em campos temporários para restaurar depois
-  private currentPositions: Map<string, { x: number; y: number }> = new Map();
-  private currentBallPos: { x: number; y: number } = { x: 0, y: 0 };
-  
-  private interpolatePositions(alpha: number): void {
-    const ball = this.state.ball.circle;
     
-    // Salvar posição real da bola
-    this.currentBallPos.x = ball.pos.x;
-    this.currentBallPos.y = ball.pos.y;
-    
-    // Interpolar bola
-    ball.pos.x = this.prevBallPos.x + (ball.pos.x - this.prevBallPos.x) * alpha;
-    ball.pos.y = this.prevBallPos.y + (ball.pos.y - this.prevBallPos.y) * alpha;
-    
-    // Interpolar jogadores/bots
-    for (const player of this.state.players) {
-      let curr = this.currentPositions.get(player.id);
-      if (!curr) {
-        curr = { x: 0, y: 0 };
-        this.currentPositions.set(player.id, curr);
+    // Atualiza o valor exibido a cada 250ms para não piscar demais
+    if (timestamp - this.fpsLastUpdate > 250) {
+      if (this.fpsFrameTimes.length > 1) {
+        const elapsed = this.fpsFrameTimes[this.fpsFrameTimes.length - 1] - this.fpsFrameTimes[0];
+        this.fpsDisplay = Math.round((this.fpsFrameTimes.length - 1) / (elapsed / 1000));
+        this.frameTimeDisplay = Math.round(elapsed / (this.fpsFrameTimes.length - 1) * 10) / 10;
       }
-      
-      // Salvar posição real
-      curr.x = player.circle.pos.x;
-      curr.y = player.circle.pos.y;
-      
-      // Interpolar
-      const prev = this.prevPositions.get(player.id);
-      if (prev) {
-        player.circle.pos.x = prev.x + (player.circle.pos.x - prev.x) * alpha;
-        player.circle.pos.y = prev.y + (player.circle.pos.y - prev.y) * alpha;
-      }
+      this.fpsLastUpdate = timestamp;
     }
-  }
-  
-  private restorePositions(): void {
-    // Restaurar posição real da bola
-    this.state.ball.circle.pos.x = this.currentBallPos.x;
-    this.state.ball.circle.pos.y = this.currentBallPos.y;
     
-    // Restaurar posições reais dos jogadores/bots
-    for (const player of this.state.players) {
-      const curr = this.currentPositions.get(player.id);
-      if (curr) {
-        player.circle.pos.x = curr.x;
-        player.circle.pos.y = curr.y;
-      }
+    // Desenha FPS + frametime no canto superior esquerdo
+    const ctx = this.renderer.getContext();
+    if (ctx && this.fpsDisplay > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(`${this.fpsDisplay} FPS  ${this.frameTimeDisplay}ms`, 8, 8);
+      ctx.restore();
     }
   }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { PlaylistInfo, PlaylistStats, PlayerHighscore, RankingEntry } from '../types/playlist-ui';
 import { Playlist } from '../types';
+import { useI18n } from '../hooks/useI18n';
 
 interface PlaylistDetailsProps {
   playlist: PlaylistInfo | null;
@@ -9,6 +10,7 @@ interface PlaylistDetailsProps {
 }
 
 function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDetailsProps) {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'info' | 'ranking'>('info');
   const [stats, setStats] = useState<PlaylistStats | null>(null);
   const [playerHighscore, setPlayerHighscore] = useState<PlayerHighscore | null>(null);
@@ -124,7 +126,7 @@ function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDe
           <div className="empty-icon">
             <i className="fas fa-clipboard-list" style={{ fontSize: '48px' }}></i>
           </div>
-          <p>Selecione uma playlist para ver detalhes</p>
+          <p>{t('playlists.selectPrompt')}</p>
         </div>
       </div>
     );
@@ -138,7 +140,7 @@ function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDe
           <i className={`fas ${playlist.icon}`}></i> {playlist.name}
         </h3>
         <button className="btn-primary" onClick={onStartPlaylist}>
-          <i className="fas fa-play"></i> Iniciar Playlist
+          <i className="fas fa-play"></i> {t('playlists.startPlaylist')}
         </button>
       </div>
 
@@ -148,13 +150,13 @@ function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDe
           className={`tab-button ${activeTab === 'info' ? 'active' : ''}`}
           onClick={() => setActiveTab('info')}
         >
-          <i className="fas fa-info-circle"></i> Informações
+          <i className="fas fa-info-circle"></i> {t('playlists.info')}
         </button>
         <button 
           className={`tab-button ${activeTab === 'ranking' ? 'active' : ''}`}
           onClick={() => setActiveTab('ranking')}
         >
-          <i className="fas fa-trophy"></i> Ranking
+          <i className="fas fa-trophy"></i> {t('playlists.ranking')}
         </button>
       </div>
 
@@ -164,27 +166,27 @@ function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDe
           <div className="info-section">
             <div className="info-item">
               <span className="info-label">
-                <i className="fas fa-align-left"></i> Descrição:
+                <i className="fas fa-align-left"></i> {t('playlists.description')}
               </span>
-              <p>{playlistData.description || 'Sem descrição disponível'}</p>
+              <p>{playlistData.description || t('playlists.noDescription')}</p>
             </div>
             {stats && (
               <div className="info-grid">
                 <div className="info-item">
                   <span className="info-label">
-                    <i className="fas fa-map-marked-alt"></i> Cenários:
+                    <i className="fas fa-map-marked-alt"></i> {t('playlists.scenarios')}
                   </span>
-                  <span className="info-value">{stats.scenariosCount} cenários</span>
+                  <span className="info-value">{stats.scenariosCount} {t('playlists.scenariosCount')}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">
-                    <i className="fas fa-stopwatch"></i> Tempo médio:
+                    <i className="fas fa-stopwatch"></i> {t('playlists.avgTime')}
                   </span>
                   <span className="info-value">{stats.avgTime}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">
-                    <i className="fas fa-shoe-prints"></i> Média de chutes:
+                    <i className="fas fa-shoe-prints"></i> {t('playlists.avgKicks')}
                   </span>
                   <span className="info-value">{stats.avgKicks}</span>
                 </div>
@@ -200,23 +202,23 @@ function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDe
           {playerHighscore && (
             <div className="player-highscore">
               <div className="highscore-header">
-                <i className="fas fa-medal"></i> Seu Melhor Score
+                <i className="fas fa-medal"></i> {t('playlists.yourBestScore')}
               </div>
               <div className="highscore-content">
                 <div className="highscore-item">
-                  <span>Pontuação:</span>
+                  <span>{t('playlists.score')}</span>
                   <span className="highscore-value">{playerHighscore.score.toLocaleString()}</span>
                 </div>
                 <div className="highscore-item">
-                  <span>Posição:</span>
+                  <span>{t('playlists.position')}</span>
                   <span className="highscore-value">{playerHighscore.rank}</span>
                 </div>
                 <div className="highscore-item">
-                  <span>Chutes:</span>
+                  <span>{t('playlists.kicks')}</span>
                   <span className="highscore-value">{playerHighscore.kicks}</span>
                 </div>
                 <div className="highscore-item">
-                  <span>Tempo:</span>
+                  <span>{t('playlists.time')}</span>
                   <span className="highscore-value">{formatTime(playerHighscore.time)}</span>
                 </div>
               </div>
@@ -224,7 +226,7 @@ function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDe
           )}
 
           <div className="ranking-header">
-            <h4><i className="fas fa-trophy"></i> Top Players</h4>
+            <h4><i className="fas fa-trophy"></i> {t('playlists.topPlayers')}</h4>
           </div>
 
           <div className="ranking-list" ref={rankingListRef}>
@@ -247,9 +249,9 @@ function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDe
                   </div>
                   <div className="ranking-nickname">{entry.nickname}</div>
                   <div className="ranking-stat">
-                    <strong>{entry.score.toLocaleString()}</strong> pts
+                    <strong>{entry.score.toLocaleString()}</strong> {t('playlists.pts')}
                   </div>
-                  <div className="ranking-stat">{entry.kicks} chutes</div>
+                  <div className="ranking-stat">{entry.kicks} {t('playlists.kicksUnit')}</div>
                   <div className="ranking-stat">{formatTime(entry.time)}</div>
                 </div>
               );
@@ -258,7 +260,7 @@ function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDe
 
           {isLoadingRanking && (
             <div className="ranking-loading">
-              Carregando...
+              {t('playlists.loading')}
             </div>
           )}
         </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getTopScores, getGlobalRanking, RankingEntry } from '../firebase';
+import { useI18n } from '../hooks/useI18n';
 
 
 interface RankingModalProps {
@@ -14,6 +15,7 @@ const formatTime = (seconds: number): string => {
 };
 
 function RankingModal({ isOpen, onClose }: RankingModalProps) {
+  const { t } = useI18n();
   const [selectedPlaylist, setSelectedPlaylist] = useState<string>('');
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -56,16 +58,16 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content ranking-modal-content" onClick={(e) => e.stopPropagation()}>
         <h2 className="modal-title gradient-text">
-          <i className="fas fa-trophy"></i> Ranking
+          <i className="fas fa-trophy"></i> {t('ranking.title')}
         </h2>
 
         <div className="ranking-filter">
-          <label>Playlist:</label>
+          <label>{t('ranking.playlist')}</label>
           <select
             value={selectedPlaylist}
             onChange={(e) => setSelectedPlaylist(e.target.value)}
           >
-            <option value="">Global (All Playlists)</option>
+            <option value="">{t('ranking.global')}</option>
             {playlists.map((playlist) => (
               <option key={playlist.value} value={playlist.value}>
                 {playlist.name}
@@ -77,25 +79,25 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
         <div className="ranking-list">
           {loading ? (
             <div className="ranking-loading">
-              <div>Loading...</div>
+              <div>{t('ranking.loading')}</div>
             </div>
           ) : (
             <table className="ranking-table">
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Nickname</th>
-                  <th>Playlist</th>
-                  <th>Chutes</th>
-                  <th>Tempo</th>
-                  <th>Score</th>
+                  <th>{t('result.rank')}</th>
+                  <th>{t('ranking.nickname')}</th>
+                  <th>{t('ranking.playlistName')}</th>
+                  <th>{t('result.kicks')}</th>
+                  <th>{t('result.time')}</th>
+                  <th>{t('result.score')}</th>
                 </tr>
               </thead>
               <tbody>
                 {rankings.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="no-rankings">
-                      No rankings yet
+                      {t('ranking.noRankings')}
                     </td>
                   </tr>
                 ) : (
@@ -119,7 +121,7 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
 
         <div className="modal-actions">
           <button className="btn-secondary" onClick={onClose}>
-            Close
+            {t('ranking.close')}
           </button>
         </div>
       </div>

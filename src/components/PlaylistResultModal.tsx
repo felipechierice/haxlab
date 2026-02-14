@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getTopScores, RankingEntry } from '../firebase';
 import { getNickname } from '../player';
 import { Playlist } from '../types';
+import { useI18n } from '../hooks/useI18n';
 
 
 interface PlaylistResultModalProps {
@@ -37,6 +38,7 @@ function PlaylistResultModal({
   onClose,
 }: PlaylistResultModalProps) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const nickname = getNickname();
@@ -81,25 +83,25 @@ function PlaylistResultModal({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="modal-title gradient-text">
-          <i className="fas fa-trophy"></i> Playlist Completa!
+          <i className="fas fa-trophy"></i> {t('result.title')}
         </h2>
 
         {/* Seu Score */}
         <div className="result-score-card">
           <h3>
-            <i className="fas fa-chart-bar"></i> Seu Resultado
+            <i className="fas fa-chart-bar"></i> {t('result.yourResult')}
           </h3>
           <div className="result-stats">
             <div className="stat">
-              <div className="stat-label">Chutes</div>
+              <div className="stat-label">{t('result.kicks')}</div>
               <div className="stat-value">{kicks}</div>
             </div>
             <div className="stat">
-              <div className="stat-label">Tempo</div>
+              <div className="stat-label">{t('result.time')}</div>
               <div className="stat-value">{formatTime(time)}</div>
             </div>
             <div className="stat">
-              <div className="stat-label">Score</div>
+              <div className="stat-label">{t('result.score')}</div>
               <div className="stat-value highlight">{score.toLocaleString()}</div>
             </div>
           </div>
@@ -109,18 +111,18 @@ function PlaylistResultModal({
         {isOfficial && (
           <div className="result-highscore-card">
             <h3>
-              <i className="fas fa-star"></i> Seu Highscore
+              <i className="fas fa-star"></i> {t('result.yourHighscore')}
             </h3>
             <div className="highscore-content">
               <div>
-                <span className="highscore-label">Melhor pontuação:</span>
+                <span className="highscore-label">{t('result.bestScore')}</span>
                 <span className="highscore-value">
                   {isNewRecord ? score.toLocaleString() : highscoreValue.toLocaleString()}
                 </span>
               </div>
               {isNewRecord && (
                 <div className="new-record-badge">
-                  <i className="fas fa-fire"></i> NOVO RECORDE!
+                  <i className="fas fa-fire"></i> {t('result.newRecord')}
                 </div>
               )}
             </div>
@@ -132,26 +134,26 @@ function PlaylistResultModal({
           {isOfficial ? (
             <>
               <h3>
-                <i className="fas fa-trophy"></i> Top 10 - {playlistName}
+                <i className="fas fa-trophy"></i> {t('result.top10')} - {playlistName}
               </h3>
               {loading ? (
-                <div className="ranking-loading">Carregando ranking...</div>
+                <div className="ranking-loading">{t('result.loadingRanking')}</div>
               ) : (
                 <table className="result-ranking-table">
                   <thead>
                     <tr>
-                      <th>#</th>
-                      <th>Jogador</th>
-                      <th>Chutes</th>
-                      <th>Tempo</th>
-                      <th>Score</th>
+                      <th>{t('result.rank')}</th>
+                      <th>{t('result.player')}</th>
+                      <th>{t('result.kicks')}</th>
+                      <th>{t('result.time')}</th>
+                      <th>{t('result.score')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rankings.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="no-rankings">
-                          Nenhum ranking ainda. Seja o primeiro!
+                          {t('result.noRankings')}
                         </td>
                       </tr>
                     ) : (
@@ -191,10 +193,10 @@ function PlaylistResultModal({
                 <i className="fas fa-clipboard-list"></i>
               </div>
               <div className="custom-playlist-text">
-                Esta é uma playlist customizada.
+                {t('result.customPlaylist')}
               </div>
               <div className="custom-playlist-subtext">
-                Rankings são salvos apenas para playlists oficiais.
+                {t('result.customPlaylistNote')}
               </div>
             </div>
           )}
@@ -202,10 +204,10 @@ function PlaylistResultModal({
 
         <div className="modal-actions">
           <button className="btn-primary" onClick={handleRetry}>
-            <i className="fas fa-redo"></i> Tentar Novamente
+            <i className="fas fa-redo"></i> {t('result.tryAgain')}
           </button>
           <button className="btn-secondary" onClick={handleClose}>
-            <i className="fas fa-list"></i> Voltar às Playlists
+            <i className="fas fa-list"></i> {t('result.backToPlaylists')}
           </button>
         </div>
       </div>

@@ -183,7 +183,7 @@ function SettingsPage() {
 
         {/* Regras da Partida */}
         <div className="settings-category">
-          <h3><i className="fas fa-gamepad"></i> Regras da Partida</h3>
+          <h3><i className="fas fa-gamepad"></i> {t('settings.matchRules')}</h3>
           <div className="settings-grid">
             <div className="form-group">
               <label htmlFor="settings-map-select">{t('settings.map')}</label>
@@ -234,16 +234,16 @@ function SettingsPage() {
 
         {/* Jogador */}
         <div className="settings-category">
-          <h3><i className="fas fa-running"></i> Jogador</h3>
+          <h3><i className="fas fa-running"></i> {t('settings.player')}</h3>
           <div className="settings-grid">
             <div className="form-group">
               <label htmlFor="settings-player-radius">
-                <span>Tamanho</span>
+                <span>{t('settings.playerSize')}</span>
                 <button 
                   type="button"
                   className="reset-field-btn" 
                   onClick={() => resetField('playerRadius')}
-                  title="Restaurar padrão"
+                  title={t('settings.resetDefault')}
                 >
                   <i className="fas fa-undo"></i>
                 </button>
@@ -261,12 +261,12 @@ function SettingsPage() {
             </div>
             <div className="form-group">
               <label htmlFor="settings-player-speed">
-                <span>Velocidade</span>
+                <span>{t('settings.playerSpeed')}</span>
                 <button 
                   type="button"
                   className="reset-field-btn" 
                   onClick={() => resetField('playerSpeed')}
-                  title="Restaurar padrão"
+                  title={t('settings.resetDefault')}
                 >
                   <i className="fas fa-undo"></i>
                 </button>
@@ -284,12 +284,12 @@ function SettingsPage() {
             </div>
             <div className="form-group">
               <label htmlFor="settings-player-acceleration">
-                <span>Aceleração</span>
+                <span>{t('settings.playerAcceleration')}</span>
                 <button 
                   type="button"
                   className="reset-field-btn" 
                   onClick={() => resetField('playerAcceleration')}
-                  title="Restaurar padrão"
+                  title={t('settings.resetDefault')}
                 >
                   <i className="fas fa-undo"></i>
                 </button>
@@ -307,12 +307,12 @@ function SettingsPage() {
             </div>
             <div className="form-group">
               <label htmlFor="settings-kick-strength">
-                <span>Força do Chute</span>
+                <span>{t('settings.kickStrength')}</span>
                 <button 
                   type="button"
                   className="reset-field-btn" 
                   onClick={() => resetField('kickStrength')}
-                  title="Restaurar padrão"
+                  title={t('settings.resetDefault')}
                 >
                   <i className="fas fa-undo"></i>
                 </button>
@@ -330,12 +330,12 @@ function SettingsPage() {
             </div>
             <div className="form-group">
               <label htmlFor="settings-kick-speed-multiplier">
-                <span>Velocidade ao Segurar Chute</span>
+                <span>{t('settings.kickSpeedMultiplier')}</span>
                 <button 
                   type="button"
                   className="reset-field-btn" 
                   onClick={() => resetField('kickSpeedMultiplier')}
-                  title="Restaurar padrão"
+                  title={t('settings.resetDefault')}
                 >
                   <i className="fas fa-undo"></i>
                 </button>
@@ -356,7 +356,7 @@ function SettingsPage() {
 
         {/* Bola */}
         <div className="settings-category">
-          <h3><i className="fas fa-futbol"></i> Bola</h3>
+          <h3><i className="fas fa-futbol"></i> {t('settings.ball')}</h3>
           <div className="settings-grid">
             <div className="form-group">
               <label htmlFor="settings-ball-radius">
@@ -411,7 +411,7 @@ function SettingsPage() {
                   type="button"
                   className="reset-field-btn" 
                   onClick={() => resetField('ballColor')}
-                  title="Restaurar padrão"
+                  title={t('settings.resetDefault')}
                 >
                   <i className="fas fa-undo"></i>
                 </button>
@@ -430,7 +430,7 @@ function SettingsPage() {
                   type="button"
                   className="reset-field-btn" 
                   onClick={() => resetField('ballBorderColor')}
-                  title="Restaurar padrão"
+                  title={t('settings.resetDefault')}
                 >
                   <i className="fas fa-undo"></i>
                 </button>
@@ -470,14 +470,14 @@ function SettingsPage() {
 
         {/* Controles */}
         <div className="settings-category">
-          <h3><i className="fas fa-keyboard"></i> Controles</h3>
+          <h3><i className="fas fa-keyboard"></i> {t('settings.controls')}</h3>
           <div className="settings-grid-3">
             <div className="form-group">
-              <label>Mover Cima</label>
+              <label>{t('settings.moveUp')}</label>
               <div className="keybind-container">
                 <input
                   type="text"
-                  value={configuringKey === 'up' ? 'Pressione uma tecla...' : formatKeyDisplay(keybinds.up)}
+                  value={configuringKey === 'up' ? t('settings.pressKey') : formatKeyDisplay(keybinds.up)}
                   readOnly
                   className={configuringKey === 'up' ? 'configuring' : ''}
                 />
@@ -485,16 +485,16 @@ function SettingsPage() {
                   className="secondary"
                   onClick={() => setConfiguringKey('up')}
                 >
-                  Mudar
+                  {t('settings.change')}
                 </button>
               </div>
             </div>
             <div className="form-group">
-              <label>Mover Baixo</label>
+              <label>{t('settings.moveDown')}</label>
               <div className="keybind-container">
                 <input
                   type="text"
-                  value={configuringKey === 'down' ? 'Pressione uma tecla...' : formatKeyDisplay(keybinds.down)}
+                  value={configuringKey === 'down' ? t('settings.pressKey') : formatKeyDisplay(keybinds.down)}
                   readOnly
                   className={configuringKey === 'down' ? 'configuring' : ''}
                 />
@@ -502,16 +502,16 @@ function SettingsPage() {
                   className="secondary"
                   onClick={() => setConfiguringKey('down')}
                 >
-                  Mudar
+                  {t('settings.change')}
                 </button>
               </div>
             </div>
             <div className="form-group">
-              <label>Mover Esquerda</label>
+              <label>{t('settings.moveLeft')}</label>
               <div className="keybind-container">
                 <input
                   type="text"
-                  value={configuringKey === 'left' ? 'Pressione uma tecla...' : formatKeyDisplay(keybinds.left)}
+                  value={configuringKey === 'left' ? t('settings.pressKey') : formatKeyDisplay(keybinds.left)}
                   readOnly
                   className={configuringKey === 'left' ? 'configuring' : ''}
                 />
@@ -519,16 +519,16 @@ function SettingsPage() {
                   className="secondary"
                   onClick={() => setConfiguringKey('left')}
                 >
-                  Mudar
+                  {t('settings.change')}
                 </button>
               </div>
             </div>
             <div className="form-group">
-              <label>Mover Direita</label>
+              <label>{t('settings.moveRight')}</label>
               <div className="keybind-container">
                 <input
                   type="text"
-                  value={configuringKey === 'right' ? 'Pressione uma tecla...' : formatKeyDisplay(keybinds.right)}
+                  value={configuringKey === 'right' ? t('settings.pressKey') : formatKeyDisplay(keybinds.right)}
                   readOnly
                   className={configuringKey === 'right' ? 'configuring' : ''}
                 />
@@ -536,16 +536,16 @@ function SettingsPage() {
                   className="secondary"
                   onClick={() => setConfiguringKey('right')}
                 >
-                  Mudar
+                  {t('settings.change')}
                 </button>
               </div>
             </div>
             <div className="form-group">
-              <label>Chutar</label>
+              <label>{t('settings.kick')}</label>
               <div className="keybind-container">
                 <input
                   type="text"
-                  value={configuringKey === 'kick' ? 'Pressione uma tecla...' : formatKeyDisplay(keybinds.kick)}
+                  value={configuringKey === 'kick' ? t('settings.pressKey') : formatKeyDisplay(keybinds.kick)}
                   readOnly
                   className={configuringKey === 'kick' ? 'configuring' : ''}
                 />
@@ -553,16 +553,16 @@ function SettingsPage() {
                   className="secondary"
                   onClick={() => setConfiguringKey('kick')}
                 >
-                  Mudar
+                  {t('settings.change')}
                 </button>
               </div>
             </div>
             <div className="form-group">
-              <label>Trocar Jogador</label>
+              <label>{t('settings.switchPlayer')}</label>
               <div className="keybind-container">
                 <input
                   type="text"
-                  value={configuringKey === 'switchPlayer' ? 'Pressione uma tecla...' : formatKeyDisplay(keybinds.switchPlayer)}
+                  value={configuringKey === 'switchPlayer' ? t('settings.pressKey') : formatKeyDisplay(keybinds.switchPlayer)}
                   readOnly
                   className={configuringKey === 'switchPlayer' ? 'configuring' : ''}
                 />
@@ -570,7 +570,7 @@ function SettingsPage() {
                   className="secondary"
                   onClick={() => setConfiguringKey('switchPlayer')}
                 >
-                  Mudar
+                  {t('settings.change')}
                 </button>
               </div>
             </div>
@@ -583,7 +583,7 @@ function SettingsPage() {
                 }}
                 style={{ width: '100%', marginTop: '8px' }}
               >
-                <i className="fas fa-redo"></i> Restaurar Padrões
+                <i className="fas fa-redo"></i> {t('settings.resetDefaults')}
               </button>
             </div>
           </div>

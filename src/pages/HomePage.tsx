@@ -47,23 +47,24 @@ function HomePage() {
           <select 
             className="form-select"
             value={language}
-            onChange={(e) => changeLanguage(e.target.value as 'en' | 'pt')}
+            onChange={(e) => changeLanguage(e.target.value as 'en' | 'pt' | 'es')}
           >
             <option value="en">English</option>
             <option value="pt">Português</option>
+            <option value="es">Español</option>
           </select>
         </div>
 
         {/* Nickname */}
         <div className="nickname-section">
           <label className="form-label">
-            <i className="fas fa-user"></i> Nickname
+            <i className="fas fa-user"></i> {t('menu.nickname')}
           </label>
           <div className="nickname-input-group">
             <input
               type="text"
               className="nickname-input"
-              placeholder="Enter your nickname"
+              placeholder={t('menu.nickname.placeholder')}
               value={nickname}
               onChange={handleNicknameChange}
               maxLength={16}
@@ -72,7 +73,7 @@ function HomePage() {
             <button 
               className="btn-random"
               onClick={handleRandomNickname}
-              title="Random nickname"
+              title={t('menu.nickname.random')}
             >
               <i className="fas fa-dice"></i>
             </button>
@@ -85,7 +86,7 @@ function HomePage() {
             <i className="fas fa-play"></i> {t('menu.play')}
           </button>
           <button className="btn-ranking" onClick={handleRanking}>
-            <i className="fas fa-trophy"></i> Ranking
+            <i className="fas fa-trophy"></i> {t('menu.ranking')}
           </button>
         </div>
       </div>

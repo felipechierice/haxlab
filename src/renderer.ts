@@ -10,8 +10,10 @@ export class Renderer {
   private readonly halfWidth: number;
   private readonly halfHeight: number;
   
-  // Rastro da bola
+  // Rastro da bola (circular buffer para evitar unshift O(n))
   private ballTrail: Vector2D[] = [];
+  private trailHead: number = 0; // Índice do elemento mais recente (cabeça)
+  private trailLength: number = 0; // Quantidade atual de elementos no trail
   private readonly TRAIL_MAX_LENGTH = 25;
   private readonly TRAIL_MIN_SPEED_SQ = 400; // velocidade mínima² para mostrar rastro (20²)
   
@@ -24,6 +26,10 @@ export class Renderer {
     line: '#444',
     indicator: '#fff700'
   };
+  
+  // Cache de arrays para evitar alocações por frame
+  private readonly lineDashPattern = [10, 10];
+  private readonly lineDashEmpty: number[] = [];
 
   constructor(canvas: HTMLCanvasElement) {
     const ctx = canvas.getContext('2d', { alpha: false });
@@ -66,13 +72,13 @@ export class Renderer {
 
     // Linha central
     ctx.strokeStyle = this.colors.line;
-    ctx.setLineDash([10, 10]);
+    ctx.setLineDash(this.lineDashPattern);
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(this.halfWidth, 50);
     ctx.lineTo(this.halfWidth, this.height - 50);
     ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.setLineDash(this.lineDashEmpty);
 
     // Círculo central
     ctx.beginPath();
@@ -99,25 +105,45 @@ export class Renderer {
     
     // Só adiciona ao rastro se a bola estiver em movimento
     if (speedSq > this.TRAIL_MIN_SPEED_SQ) {
-      // Adiciona nova posição no início
-      this.ballTrail.unshift({ x: ball.pos.x, y: ball.pos.y });
-      
-      // Limita o tamanho do rastro
-      if (this.ballTrail.length > this.TRAIL_MAX_LENGTH) {
-        this.ballTrail.pop();
+      // Circular buffer: avança o head e escreve a posição
+      if (this.trailLength < this.TRAIL_MAX_LENGTH) {
+        // Buffer ainda não está cheio, adiciona ao final
+        if (!this.ballTrail[this.trailLength]) {
+          this.ballTrail[this.trailLength] = { x: ball.pos.x, y: ball.pos.y };
+        } else {
+          this.ballTrail[this.trailLength].x = ball.pos.x;
+          this.ballTrail[this.trailLength].y = ball.pos.y;
+        }
+        this.trailHead = this.trailLength;
+        this.trailLength++;
+      } else {
+        // Buffer cheio: sobrescreve o mais antigo
+        this.trailHead = (this.trailHead + 1) % this.TRAIL_MAX_LENGTH;
+        this.ballTrail[this.trailHead].x = ball.pos.x;
+        this.ballTrail[this.trailHead].y = ball.pos.y;
       }
     } else {
       // Se a bola parou, vai apagando o rastro gradualmente
-      if (this.ballTrail.length > 0) {
-        this.ballTrail.pop();
+      if (this.trailLength > 0) {
+        this.trailLength--;
       }
     }
   }
 
+  /**
+   * Retorna o elemento do trail no índice lógico i (0 = mais recente, trailLength-1 = mais antigo)
+   */
+  private getTrailPoint(i: number): Vector2D {
+    // i=0 é o mais recente (head), i=trailLength-1 é o mais antigo
+    const idx = (this.trailHead - i + this.TRAIL_MAX_LENGTH) % this.TRAIL_MAX_LENGTH;
+    return this.ballTrail[idx];
+  }
+
   private drawBallTrail(ballRadius: number): void {
-    if (this.ballTrail.length < 2) return;
+    if (this.trailLength < 2) return;
     
     const ctx = this.ctx;
+    const len = this.trailLength;
     
     ctx.save();
     
@@ -128,23 +154,23 @@ export class Renderer {
     const maxWidth = ballRadius;
     
     // Lado "direito" do rastro (indo da bola para a cauda)
-    for (let i = 0; i < this.ballTrail.length - 1; i++) {
-      const curr = this.ballTrail[i];
-      const next = this.ballTrail[i + 1];
+    for (let i = 0; i < len - 1; i++) {
+      const curr = this.getTrailPoint(i);
+      const next = this.getTrailPoint(i + 1);
       
       // Direção perpendicular ao movimento
       const dx = next.x - curr.x;
       const dy = next.y - curr.y;
-      const len = Math.sqrt(dx * dx + dy * dy);
+      const segLen = Math.sqrt(dx * dx + dy * dy);
       
-      if (len === 0) continue;
+      if (segLen === 0) continue;
       
       // Normal perpendicular
-      const nx = -dy / len;
-      const ny = dx / len;
+      const nx = -dy / segLen;
+      const ny = dx / segLen;
       
       // Largura diminui ao longo do rastro
-      const t = i / (this.ballTrail.length - 1);
+      const t = i / (len - 1);
       const width = maxWidth * (1 - t);
       
       const px = curr.x + nx * width;
@@ -158,24 +184,24 @@ export class Renderer {
     }
     
     // Ponta da cauda (ponto final)
-    const lastPoint = this.ballTrail[this.ballTrail.length - 1];
+    const lastPoint = this.getTrailPoint(len - 1);
     ctx.lineTo(lastPoint.x, lastPoint.y);
     
     // Lado "esquerdo" do rastro (voltando da cauda para a bola)
-    for (let i = this.ballTrail.length - 2; i >= 0; i--) {
-      const curr = this.ballTrail[i];
-      const next = this.ballTrail[i + 1];
+    for (let i = len - 2; i >= 0; i--) {
+      const curr = this.getTrailPoint(i);
+      const next = this.getTrailPoint(i + 1);
       
       const dx = next.x - curr.x;
       const dy = next.y - curr.y;
-      const len = Math.sqrt(dx * dx + dy * dy);
+      const segLen = Math.sqrt(dx * dx + dy * dy);
       
-      if (len === 0) continue;
+      if (segLen === 0) continue;
       
-      const nx = -dy / len;
-      const ny = dx / len;
+      const nx = -dy / segLen;
+      const ny = dx / segLen;
       
-      const t = i / (this.ballTrail.length - 1);
+      const t = i / (len - 1);
       const width = maxWidth * (1 - t);
       
       const px = curr.x - nx * width;
@@ -187,22 +213,20 @@ export class Renderer {
     ctx.closePath();
     
     // Gradiente de opacidade linear da bola até o fim do rastro
-    if (this.ballTrail.length > 0) {
-      const firstPoint = this.ballTrail[0];
-      const lastPoint = this.ballTrail[this.ballTrail.length - 1];
-      
-      const gradient = ctx.createLinearGradient(
-        firstPoint.x, firstPoint.y,
-        lastPoint.x, lastPoint.y
-      );
-      
-      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');    // Mais opaco perto da bola
-      gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');  // Meio do rastro
-      gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');      // Transparente no final
-      
-      ctx.fillStyle = gradient;
-      ctx.fill();
-    }
+    const firstPoint = this.getTrailPoint(0);
+    const gradLastPoint = this.getTrailPoint(len - 1);
+    
+    const gradient = ctx.createLinearGradient(
+      firstPoint.x, firstPoint.y,
+      gradLastPoint.x, gradLastPoint.y
+    );
+    
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');    // Mais opaco perto da bola
+    gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');  // Meio do rastro
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');      // Transparente no final
+    
+    ctx.fillStyle = gradient;
+    ctx.fill();
     
     ctx.restore();
   }
@@ -333,7 +357,8 @@ export class Renderer {
   }
 
   clearBallTrail(): void {
-    this.ballTrail = [];
+    this.trailLength = 0;
+    this.trailHead = 0;
   }
   
   getContext(): CanvasRenderingContext2D {
