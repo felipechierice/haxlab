@@ -6,6 +6,7 @@ import PlaylistItem from '../components/PlaylistItem';
 import PlaylistDetails from '../components/PlaylistDetails';
 import { PlaylistInfo } from '../types/playlist-ui';
 import { Playlist } from '../types';
+import { audioManager } from '../audio';
 import { trackPageView } from '../analytics';
 
 
@@ -52,6 +53,7 @@ function PlaylistsPage() {
   useEffect(() => { trackPageView('PlaylistsPage'); }, []);
 
   const handleBack = () => {
+    audioManager.play('menuBack');
     navigate('/modes');
   };
 
@@ -104,6 +106,7 @@ function PlaylistsPage() {
   }, [selectedPlaylist]);
 
   const handleSelectPlaylist = async (playlist: PlaylistInfo) => {
+    audioManager.play('menuSelect');
     setSelectedPlaylist(playlist);
     
     try {
@@ -132,6 +135,7 @@ function PlaylistsPage() {
 
   const handleStartPlaylist = () => {
     if (playlistData) {
+      audioManager.play('menuSelect');
       // Navegar para página de jogo com dados da playlist
       navigate('/game', { state: { playlist: playlistData, mode: 'playlist' } });
     }

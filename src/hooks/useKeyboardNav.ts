@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { audioManager } from '../audio';
 
 export interface KeyboardNavOptions {
   onEscape?: () => void;
@@ -73,6 +74,10 @@ export function useKeyboardNav(options: KeyboardNavOptions = {}) {
         break;
     }
 
+    const boundedNew = ((newIndex % elements.length) + elements.length) % elements.length;
+    if (boundedNew !== currentIndexRef.current || currentIndex === -1) {
+      audioManager.play('menuNav');
+    }
     focusElement(newIndex);
   }, [getFocusableElements, focusElement]);
 
@@ -104,17 +109,26 @@ export function useKeyboardNav(options: KeyboardNavOptions = {}) {
       const target = e.target as HTMLElement;
       const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT';
 
-      // ESC ou Backspace para voltar
-      if ((e.key === 'Escape' || e.key === 'Backspace') && onEscape) {
+      // ESC sempre volta
+      if (e.key === 'Escape' && onEscape) {
         e.preventDefault();
+        audioManager.play('menuBack');
+        onEscape();
+        return;
+      }
+
+      // Backspace volta, MAS não se estiver num input
+      if (e.key === 'Backspace' && !isInput && onEscape) {
+        e.preventDefault();
+        audioManager.play('menuBack');
         onEscape();
         return;
       }
 
       // Se está em um input de texto, não interceptar algumas teclas
       if (isInput && target instanceof HTMLInputElement && target.type === 'text') {
-        // Permitir navegação apenas com Tab, Escape, Backspace e Enter
-        if (!['Tab', 'Escape', 'Backspace', 'Enter'].includes(e.key)) {
+        // Permitir navegação apenas com Tab, Escape e Enter
+        if (!['Tab', 'Escape', 'Enter'].includes(e.key)) {
           return;
         }
       }
@@ -151,6 +165,7 @@ export function useKeyboardNav(options: KeyboardNavOptions = {}) {
       // Enter ou Space para ativar elemento focado
       else if ((e.key === 'Enter' || e.key === ' ') && !isInput) {
         e.preventDefault();
+        audioManager.play('menuSelect');
         handleActivate();
       }
     };

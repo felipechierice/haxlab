@@ -95,6 +95,36 @@ const defaultSounds: Record<string, SynthConfig> = {
     volume: 0.3,
     attack: 0.001,
     release: 0.06
+  },
+  // --- Menu UI sounds ---
+  menuNav: {
+    type: 'sine',
+    frequency: 660,
+    frequencyEnd: 600,
+    duration: 0.04,
+    volume: 0.12,
+    attack: 0.001,
+    release: 0.03
+  },
+  menuSelect: {
+    type: 'sine',
+    notes: [
+      { frequency: 500, type: 'sine', startTime: 0, duration: 0.06, volume: 0.25 },
+      { frequency: 750, type: 'sine', startTime: 0.04, duration: 0.08, volume: 0.2 }
+    ],
+    duration: 0.12,
+    volume: 0.2,
+    attack: 0.001,
+    release: 0.04
+  },
+  menuBack: {
+    type: 'sine',
+    frequency: 500,
+    frequencyEnd: 300,
+    duration: 0.08,
+    volume: 0.15,
+    attack: 0.001,
+    release: 0.05
   }
 };
 

@@ -4,6 +4,7 @@ import { useI18n } from '../hooks/useI18n';
 import { useKeyboardNav } from '../hooks/useKeyboardNav';
 import { GameConfig } from '../types';
 import { keyBindings, KeyBindings } from '../keybindings';
+import { audioManager } from '../audio';
 import { trackPageView } from '../analytics';
 
 
@@ -61,6 +62,7 @@ function SettingsPage() {
 
   const handleResume = () => {
     // Retomar jogo se houver um ativo
+    audioManager.play('menuBack');
     navigate(-1);
   };
 

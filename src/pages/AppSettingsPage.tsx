@@ -16,6 +16,7 @@ function AppSettingsPage() {
   });
 
   const handleBack = () => {
+    audioManager.play('menuBack');
     navigate('/');
   };
 

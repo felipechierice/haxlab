@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../hooks/useI18n';
 import { useKeyboardNav } from '../hooks/useKeyboardNav';
 import { getNickname, saveNickname, generateRandomNickname, isValidNickname } from '../player.js';
+import { audioManager } from '../audio';
 import RankingModal from '../components/RankingModal';
 import { trackPageView } from '../analytics';
 
@@ -34,15 +35,17 @@ function HomePage() {
   };
 
   const handlePlay = () => {
-    // Navega para a página de modos de jogo (React)
+    audioManager.play('menuSelect');
     navigate('/modes');
   };
 
   const handleRanking = () => {
+    audioManager.play('menuSelect');
     setShowRankingModal(true);
   };
 
   const handleSettings = () => {
+    audioManager.play('menuSelect');
     navigate('/app-settings');
   };
 

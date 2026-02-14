@@ -360,6 +360,46 @@ export const translations: Translations = {
     pt: 'Fechar',
     es: 'Cerrar'
   },
+  'ranking.search': {
+    en: 'Search Player:',
+    pt: 'Buscar Jogador:',
+    es: 'Buscar Jugador:'
+  },
+  'ranking.searchPlaceholder': {
+    en: 'Type a nickname...',
+    pt: 'Digite um nickname...',
+    es: 'Escribe un apodo...'
+  },
+  'ranking.topPlayers': {
+    en: 'Top Players',
+    pt: 'Melhores Jogadores',
+    es: 'Mejores Jugadores'
+  },
+  'ranking.resultsFound': {
+    en: 'results found',
+    pt: 'resultados encontrados',
+    es: 'resultados encontrados'
+  },
+  'ranking.noResults': {
+    en: 'No players found with that name',
+    pt: 'Nenhum jogador encontrado com esse nome',
+    es: 'No se encontraron jugadores con ese nombre'
+  },
+  'ranking.playlists': {
+    en: 'Playlists',
+    pt: 'Playlists',
+    es: 'Listas'
+  },
+  'ranking.loadingMore': {
+    en: 'Loading more...',
+    pt: 'Carregando mais...',
+    es: 'Cargando más...'
+  },
+  'ranking.endOfList': {
+    en: '— End of ranking —',
+    pt: '— Fim do ranking —',
+    es: '— Fin de la clasificación —'
+  },
 
   // Settings Menu
   'settings.title': {

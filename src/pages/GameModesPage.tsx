@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../hooks/useI18n';
 import { useKeyboardNav } from '../hooks/useKeyboardNav';
+import { audioManager } from '../audio';
 import { trackPageView } from '../analytics';
 
 
@@ -11,6 +12,7 @@ function GameModesPage() {
   const { t } = useI18n();
 
   const handleBack = () => {
+    audioManager.play('menuBack');
     navigate('/');
   };
 
@@ -20,16 +22,17 @@ function GameModesPage() {
   });
 
   const handleFreeTraining = () => {
-    // Navega para tela de jogo em React
+    audioManager.play('menuSelect');
     navigate('/game');
   };
 
   const handlePlaylists = () => {
-    // Navega para tela de playlists em React
+    audioManager.play('menuSelect');
     navigate('/playlists');
   };
 
   const handleEditor = () => {
+    audioManager.play('menuSelect');
     navigate('/game', { state: { mode: 'editor' } });
   };
 

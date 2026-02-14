@@ -199,6 +199,30 @@ export async function getGlobalRanking(limitCount: number = 50): Promise<Ranking
 }
 
 /**
+ * Obtém todos os rankings (sem limite) para agregação client-side
+ */
+export async function getAllRankings(): Promise<RankingEntry[]> {
+  try {
+    const q = query(
+      collection(db, 'rankings'),
+      orderBy('score', 'desc')
+    );
+
+    const querySnapshot = await getDocs(q);
+    const scores: RankingEntry[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      scores.push(doc.data() as RankingEntry);
+    });
+
+    return scores;
+  } catch (error) {
+    console.error('Error getting all rankings:', error);
+    throw error;
+  }
+}
+
+/**
  * Obtém scores de um jogador específico
  */
 export async function getPlayerScores(nickname: string, limitCount: number = 20): Promise<RankingEntry[]> {
