@@ -80,8 +80,9 @@ export class Physics {
    * @param segments - Segmentos para verificar colisão (paredes)
    * @param maxVelocity - Velocidade máxima antes de aplicar sub-steps (padrão: MAX_SAFE_VELOCITY)
    */
-  static updateCircleWithSubsteps(circle: Circle, dt: number, segments: Segment[], maxVelocity: number = Physics.MAX_SAFE_VELOCITY): void {
+  static updateCircleWithSubsteps(circle: Circle, dt: number, segments: Segment[], maxVelocity: number = Physics.MAX_SAFE_VELOCITY): number {
     const speed = Math.sqrt(circle.vel.x * circle.vel.x + circle.vel.y * circle.vel.y);
+    let maxImpactNormal = 0; // Maior componente de velocidade perpendicular à parede no impacto
     
     // Se velocidade é baixa, usa atualização normal
     if (speed <= maxVelocity) {
@@ -91,6 +92,9 @@ export class Physics {
       // Verifica colisões com segmentos
       for (const segment of segments) {
         if (Physics.checkSegmentCollision(circle, segment)) {
+          // Calcular componente normal da velocidade ANTES de resolver
+          const impactNormal = Physics.getWallImpactSpeed(circle, segment);
+          if (impactNormal > maxImpactNormal) maxImpactNormal = impactNormal;
           Physics.resolveSegmentCollision(circle, segment);
         }
       }
@@ -107,6 +111,8 @@ export class Physics {
         // Verifica colisões após cada sub-step
         for (const segment of segments) {
           if (Physics.checkSegmentCollision(circle, segment)) {
+            const impactNormal = Physics.getWallImpactSpeed(circle, segment);
+            if (impactNormal > maxImpactNormal) maxImpactNormal = impactNormal;
             Physics.resolveSegmentCollision(circle, segment);
           }
         }
@@ -117,6 +123,47 @@ export class Physics {
     const dampingFactor = Math.pow(circle.damping, dt * 60);
     circle.vel.x *= dampingFactor;
     circle.vel.y *= dampingFactor;
+    
+    return maxImpactNormal;
+  }
+  
+  /**
+   * Calcula a componente da velocidade perpendicular à parede (força real do impacto).
+   * Retorna 0 se a bola está se movendo paralelo ou se afastando da parede.
+   */
+  static getWallImpactSpeed(circle: Circle, segment: Segment): number {
+    const toStartX = circle.pos.x - segment.p1.x;
+    const toStartY = circle.pos.y - segment.p1.y;
+    const segDirX = segment.p2.x - segment.p1.x;
+    const segDirY = segment.p2.y - segment.p1.y;
+    const segmentLengthSq = segDirX * segDirX + segDirY * segDirY;
+    const segmentLength = Math.sqrt(segmentLengthSq);
+    
+    if (segmentLength === 0) return 0;
+    
+    const invSegLen = 1 / segmentLength;
+    const segNormX = segDirX * invSegLen;
+    const segNormY = segDirY * invSegLen;
+    
+    const projection = toStartX * segNormX + toStartY * segNormY;
+    const closestPoint = Math.max(0, Math.min(segmentLength, projection));
+    
+    const closestX = segment.p1.x + segNormX * closestPoint;
+    const closestY = segment.p1.y + segNormY * closestPoint;
+    
+    const deltaX = circle.pos.x - closestX;
+    const deltaY = circle.pos.y - closestY;
+    const dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    
+    if (dist === 0) return 0;
+    
+    const normalX = deltaX / dist;
+    const normalY = deltaY / dist;
+    
+    // Componente da velocidade na direção da normal (negativa = indo em direção à parede)
+    const velAlongNormal = circle.vel.x * normalX + circle.vel.y * normalY;
+    
+    return Math.abs(Math.min(0, velAlongNormal));
   }
 
   static checkCircleCollision(c1: Circle, c2: Circle): boolean {

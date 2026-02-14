@@ -26,6 +26,8 @@ export class Game {
   private ballTouches: Map<string, number> = new Map(); // Rastreia toques na bola por bot/jogador
   private customBallTouchCallback: ((playerId: string) => void) | null = null;
   private customGoalCallback: ((team: 'red' | 'blue', scoredBy?: { id: string, name: string, team: 'red' | 'blue', isBot: boolean }) => void) | null = null;
+  private lastBounceTime: number = 0;
+  private lastBallHitTime: number = 0;
   
   // Event handlers (guardados para poder remover depois)
   private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
@@ -621,7 +623,18 @@ export class Game {
     }
 
     // Atualiza bola com sub-stepping para evitar tunneling através das paredes
-    Physics.updateCircleWithSubsteps(this.state.ball.circle, dt, this.map.segments);
+    const hitSpeed = Physics.updateCircleWithSubsteps(this.state.ball.circle, dt, this.map.segments);
+    
+    // Som de quique na parede (intensidade varia com a velocidade do impacto)
+    if (hitSpeed > 30) {
+      const now = this.simulationTime;
+      if (now - this.lastBounceTime > 0.08) {
+        // Intensidade: 0.3 em speed=30, 1.0 em speed=200+
+        const intensity = Math.min(1.5, 0.3 + (hitSpeed - 30) / 250);
+        audioManager.play('bounce', intensity);
+        this.lastBounceTime = now;
+      }
+    }
 
     for (let i = 0; i < this.state.players.length; i++) {
       for (let j = i + 1; j < this.state.players.length; j++) {
@@ -633,6 +646,28 @@ export class Game {
 
     for (const player of this.state.players) {
       if (Physics.checkCircleCollision(player.circle, this.state.ball.circle)) {
+        // Calcular velocidade relativa do impacto ANTES de resolver a colisão
+        const ball = this.state.ball.circle;
+        const dx = ball.pos.x - player.circle.pos.x;
+        const dy = ball.pos.y - player.circle.pos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > 0) {
+          const nx = dx / dist;
+          const ny = dy / dist;
+          const relVelX = ball.vel.x - player.circle.vel.x;
+          const relVelY = ball.vel.y - player.circle.vel.y;
+          const impactSpeed = Math.abs(relVelX * nx + relVelY * ny);
+          
+          // Som de impacto (threshold para ignorar arrasto/condução)
+          const now = this.simulationTime;
+          if (impactSpeed > 60 && now - this.lastBallHitTime > 0.1) {
+            // Intensidade: 0.3 em impact=60, 1.0 em impact=200+
+            const intensity = Math.min(1.5, 0.3 + (impactSpeed - 60) / 200);
+            audioManager.play('ballHit', intensity);
+            this.lastBallHitTime = now;
+          }
+        }
+        
         Physics.resolveCircleCollision(player.circle, this.state.ball.circle);
         
         // Se o player está segurando a tecla de chute, executa o chute automaticamente

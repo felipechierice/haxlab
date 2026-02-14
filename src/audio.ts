@@ -60,6 +60,24 @@ const defaultSounds: Record<string, SynthConfig> = {
     volume: 0.25,
     attack: 0.01,
     release: 0.15
+  },
+  bounce: {
+    type: 'sine',
+    frequency: 300,
+    frequencyEnd: 180,
+    duration: 0.07,
+    volume: 0.3,
+    attack: 0.001,
+    release: 0.05
+  },
+  ballHit: {
+    type: 'sine',
+    frequency: 220,
+    frequencyEnd: 120,
+    duration: 0.09,
+    volume: 0.3,
+    attack: 0.001,
+    release: 0.06
   }
 };
 
@@ -142,7 +160,7 @@ export class AudioManager {
     }
   }
 
-  play(soundName: string): void {
+  play(soundName: string, intensity: number = 1): void {
     if (!this.enabled) return;
     
     this.initAudioContext();
@@ -153,7 +171,19 @@ export class AudioManager {
       if (this.audioContext.state === 'suspended') {
         this.audioContext.resume();
       }
-      this.synthesize(config);
+      if (intensity === 1) {
+        this.synthesize(config);
+      } else {
+        // Cria config temporária com volume e frequência escalados pela intensidade
+        const scaled: SynthConfig = {
+          ...config,
+          volume: config.volume * intensity,
+          frequency: config.frequency ? config.frequency * (0.85 + 0.3 * intensity) : config.frequency,
+          frequencyEnd: config.frequencyEnd ? config.frequencyEnd * (0.85 + 0.3 * intensity) : config.frequencyEnd,
+          duration: config.duration * Math.max(0.6, Math.min(1.2, 0.7 + 0.4 * intensity)),
+        };
+        this.synthesize(scaled);
+      }
     }
   }
 

@@ -275,9 +275,11 @@ export class Renderer {
     this.drawMap(map);
 
     // Atualiza e desenha o rastro da bola (antes da bola, para ficar atrás)
+    // DESABILITADO: trail da bola
+    // const ball = state.ball.circle;
+    // this.updateBallTrail(ball);
+    // this.drawBallTrail(ball.radius);
     const ball = state.ball.circle;
-    this.updateBallTrail(ball);
-    this.drawBallTrail(ball.radius);
 
     // Bola
     if (ballConfig) {
