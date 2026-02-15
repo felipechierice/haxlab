@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../hooks/useI18n';
 import { useKeyboardNav } from '../hooks/useKeyboardNav';
+import { keyBindings, KeyBindings } from '../keybindings';
 import { audioManager } from '../audio';
 import { trackPageView } from '../analytics';
 import '../styles/AppSettingsPage.css';
@@ -15,15 +16,51 @@ function AppSettingsPage() {
     return saved ? parseFloat(saved) : 0.7;
   });
 
+  const [keybinds, setKeybinds] = useState<KeyBindings>(keyBindings.getBindings());
+  const [configuringKey, setConfiguringKey] = useState<keyof KeyBindings | null>(null);
+
   const handleBack = () => {
     audioManager.play('menuBack');
     navigate('/');
   };
 
   const { containerRef } = useKeyboardNav({
-    onEscape: handleBack,
+    onEscape: () => {
+      if (!configuringKey) {
+        handleBack();
+      }
+    },
     autoFocus: true
   });
+
+  useEffect(() => {
+    if (!configuringKey) return;
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (e.key === 'Escape') {
+        setConfiguringKey(null);
+        return;
+      }
+
+      keyBindings.setBinding(configuringKey, [e.key]);
+      setKeybinds(keyBindings.getBindings());
+      setConfiguringKey(null);
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [configuringKey]);
+
+  const formatKeyDisplay = (keys: string[]): string => {
+    return keys.map(key => {
+      if (key === ' ' || key === 'Space') return 'SPACE';
+      if (key.startsWith('Arrow')) return key.replace('Arrow', '').toUpperCase();
+      return key.toUpperCase();
+    }).join(' / ');
+  };
 
   useEffect(() => {
     // Aplicar volume salvo ao carregar
@@ -85,6 +122,108 @@ function AppSettingsPage() {
               />
               <span className="volume-value">{Math.round(soundVolume * 100)}%</span>
             </div>
+          </div>
+
+          {/* Controls / Keybindings */}
+          <div className="setting-section">
+            <label className="setting-label">
+              <i className="fas fa-keyboard"></i> {t('settings.controls')}
+            </label>
+            <div className="keybinds-grid">
+              <div className="keybind-row">
+                <span className="keybind-label">{t('settings.moveUp')}</span>
+                <div className="keybind-control">
+                  <input
+                    type="text"
+                    value={configuringKey === 'up' ? t('settings.pressKey') : formatKeyDisplay(keybinds.up)}
+                    readOnly
+                    className={`keybind-input${configuringKey === 'up' ? ' configuring' : ''}`}
+                  />
+                  <button className="keybind-btn" onClick={() => setConfiguringKey('up')}>
+                    {t('settings.change')}
+                  </button>
+                </div>
+              </div>
+              <div className="keybind-row">
+                <span className="keybind-label">{t('settings.moveDown')}</span>
+                <div className="keybind-control">
+                  <input
+                    type="text"
+                    value={configuringKey === 'down' ? t('settings.pressKey') : formatKeyDisplay(keybinds.down)}
+                    readOnly
+                    className={`keybind-input${configuringKey === 'down' ? ' configuring' : ''}`}
+                  />
+                  <button className="keybind-btn" onClick={() => setConfiguringKey('down')}>
+                    {t('settings.change')}
+                  </button>
+                </div>
+              </div>
+              <div className="keybind-row">
+                <span className="keybind-label">{t('settings.moveLeft')}</span>
+                <div className="keybind-control">
+                  <input
+                    type="text"
+                    value={configuringKey === 'left' ? t('settings.pressKey') : formatKeyDisplay(keybinds.left)}
+                    readOnly
+                    className={`keybind-input${configuringKey === 'left' ? ' configuring' : ''}`}
+                  />
+                  <button className="keybind-btn" onClick={() => setConfiguringKey('left')}>
+                    {t('settings.change')}
+                  </button>
+                </div>
+              </div>
+              <div className="keybind-row">
+                <span className="keybind-label">{t('settings.moveRight')}</span>
+                <div className="keybind-control">
+                  <input
+                    type="text"
+                    value={configuringKey === 'right' ? t('settings.pressKey') : formatKeyDisplay(keybinds.right)}
+                    readOnly
+                    className={`keybind-input${configuringKey === 'right' ? ' configuring' : ''}`}
+                  />
+                  <button className="keybind-btn" onClick={() => setConfiguringKey('right')}>
+                    {t('settings.change')}
+                  </button>
+                </div>
+              </div>
+              <div className="keybind-row">
+                <span className="keybind-label">{t('settings.kick')}</span>
+                <div className="keybind-control">
+                  <input
+                    type="text"
+                    value={configuringKey === 'kick' ? t('settings.pressKey') : formatKeyDisplay(keybinds.kick)}
+                    readOnly
+                    className={`keybind-input${configuringKey === 'kick' ? ' configuring' : ''}`}
+                  />
+                  <button className="keybind-btn" onClick={() => setConfiguringKey('kick')}>
+                    {t('settings.change')}
+                  </button>
+                </div>
+              </div>
+              <div className="keybind-row">
+                <span className="keybind-label">{t('settings.switchPlayer')}</span>
+                <div className="keybind-control">
+                  <input
+                    type="text"
+                    value={configuringKey === 'switchPlayer' ? t('settings.pressKey') : formatKeyDisplay(keybinds.switchPlayer)}
+                    readOnly
+                    className={`keybind-input${configuringKey === 'switchPlayer' ? ' configuring' : ''}`}
+                  />
+                  <button className="keybind-btn" onClick={() => setConfiguringKey('switchPlayer')}>
+                    {t('settings.change')}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button
+              className="keybind-reset-btn"
+              onClick={() => {
+                keyBindings.resetToDefault();
+                setKeybinds(keyBindings.getBindings());
+              }}
+            >
+              <i className="fas fa-redo"></i> {t('settings.resetDefaults')}
+            </button>
           </div>
         </div>
 

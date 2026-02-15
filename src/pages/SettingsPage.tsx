@@ -3,17 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../hooks/useI18n';
 import { useKeyboardNav } from '../hooks/useKeyboardNav';
 import { GameConfig } from '../types';
-import { keyBindings, KeyBindings } from '../keybindings';
 import { audioManager } from '../audio';
 import { trackPageView } from '../analytics';
-
-
-declare global {
-  interface Window {
-    configureKeybind: (action: keyof KeyBindings) => void;
-    resetKeybindings: () => void;
-  }
-}
 
 interface SettingsFormData {
   mapType: string;
@@ -57,22 +48,14 @@ function SettingsPage() {
   
   const [settings, setSettings] = useState<SettingsFormData>(defaultSettings);
 
-  const [keybinds, setKeybinds] = useState<KeyBindings>(keyBindings.getBindings());
-  const [configuringKey, setConfiguringKey] = useState<keyof KeyBindings | null>(null);
-
   const handleResume = () => {
     // Retomar jogo se houver um ativo
     audioManager.play('menuBack');
     navigate(-1);
   };
 
-  // Hook de navegação por teclado (desabilitado quando está configurando teclas)
   const { containerRef } = useKeyboardNav({
-    onEscape: () => {
-      if (!configuringKey) {
-        handleResume();
-      }
-    },
+    onEscape: handleResume,
     autoFocus: true
   });
 
@@ -105,45 +88,6 @@ function SettingsPage() {
       }
     }
   }, []);
-
-  useEffect(() => {
-    // Expor função para configurar keybind
-    (window as any).configureKeybind = (action: keyof KeyBindings) => {
-      setConfiguringKey(action);
-    };
-
-    (window as any).resetKeybindings = () => {
-      keyBindings.resetToDefault();
-      setKeybinds(keyBindings.getBindings());
-    };
-
-    return () => {
-      delete (window as any).configureKeybind;
-      delete (window as any).resetKeybindings;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!configuringKey) return;
-
-    const handleKeyPress = (e: KeyboardEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      if (e.key === 'Escape') {
-        setConfiguringKey(null);
-        return;
-      }
-
-      // Configurar nova tecla
-      keyBindings.setBinding(configuringKey, [e.key]);
-      setKeybinds(keyBindings.getBindings());
-      setConfiguringKey(null);
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [configuringKey]);
 
   const handleChange = (field: keyof SettingsFormData, value: string | number) => {
     setSettings(prev => ({ ...prev, [field]: value }));
@@ -180,14 +124,6 @@ function SettingsPage() {
 
     // Voltar para a tela anterior (reinicia o jogo se estava em jogo)
     navigate(-1);
-  };
-
-  const formatKeyDisplay = (keys: string[]): string => {
-    return keys.map(key => {
-      if (key === ' ' || key === 'Space') return 'SPACE';
-      if (key.startsWith('Arrow')) return key.replace('Arrow', '').toUpperCase();
-      return key.toUpperCase();
-    }).join(' / ');
   };
 
   return (
@@ -480,127 +416,6 @@ function SettingsPage() {
                 onChange={(e) => handleChange('ballDamping', parseFloat(e.target.value))}
               />
               <span>{settings.ballDamping.toFixed(3)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Controles */}
-        <div className="settings-category">
-          <h3><i className="fas fa-keyboard"></i> {t('settings.controls')}</h3>
-          <div className="settings-grid-3">
-            <div className="form-group">
-              <label>{t('settings.moveUp')}</label>
-              <div className="keybind-container">
-                <input
-                  type="text"
-                  value={configuringKey === 'up' ? t('settings.pressKey') : formatKeyDisplay(keybinds.up)}
-                  readOnly
-                  className={configuringKey === 'up' ? 'configuring' : ''}
-                />
-                <button
-                  className="secondary"
-                  onClick={() => setConfiguringKey('up')}
-                >
-                  {t('settings.change')}
-                </button>
-              </div>
-            </div>
-            <div className="form-group">
-              <label>{t('settings.moveDown')}</label>
-              <div className="keybind-container">
-                <input
-                  type="text"
-                  value={configuringKey === 'down' ? t('settings.pressKey') : formatKeyDisplay(keybinds.down)}
-                  readOnly
-                  className={configuringKey === 'down' ? 'configuring' : ''}
-                />
-                <button
-                  className="secondary"
-                  onClick={() => setConfiguringKey('down')}
-                >
-                  {t('settings.change')}
-                </button>
-              </div>
-            </div>
-            <div className="form-group">
-              <label>{t('settings.moveLeft')}</label>
-              <div className="keybind-container">
-                <input
-                  type="text"
-                  value={configuringKey === 'left' ? t('settings.pressKey') : formatKeyDisplay(keybinds.left)}
-                  readOnly
-                  className={configuringKey === 'left' ? 'configuring' : ''}
-                />
-                <button
-                  className="secondary"
-                  onClick={() => setConfiguringKey('left')}
-                >
-                  {t('settings.change')}
-                </button>
-              </div>
-            </div>
-            <div className="form-group">
-              <label>{t('settings.moveRight')}</label>
-              <div className="keybind-container">
-                <input
-                  type="text"
-                  value={configuringKey === 'right' ? t('settings.pressKey') : formatKeyDisplay(keybinds.right)}
-                  readOnly
-                  className={configuringKey === 'right' ? 'configuring' : ''}
-                />
-                <button
-                  className="secondary"
-                  onClick={() => setConfiguringKey('right')}
-                >
-                  {t('settings.change')}
-                </button>
-              </div>
-            </div>
-            <div className="form-group">
-              <label>{t('settings.kick')}</label>
-              <div className="keybind-container">
-                <input
-                  type="text"
-                  value={configuringKey === 'kick' ? t('settings.pressKey') : formatKeyDisplay(keybinds.kick)}
-                  readOnly
-                  className={configuringKey === 'kick' ? 'configuring' : ''}
-                />
-                <button
-                  className="secondary"
-                  onClick={() => setConfiguringKey('kick')}
-                >
-                  {t('settings.change')}
-                </button>
-              </div>
-            </div>
-            <div className="form-group">
-              <label>{t('settings.switchPlayer')}</label>
-              <div className="keybind-container">
-                <input
-                  type="text"
-                  value={configuringKey === 'switchPlayer' ? t('settings.pressKey') : formatKeyDisplay(keybinds.switchPlayer)}
-                  readOnly
-                  className={configuringKey === 'switchPlayer' ? 'configuring' : ''}
-                />
-                <button
-                  className="secondary"
-                  onClick={() => setConfiguringKey('switchPlayer')}
-                >
-                  {t('settings.change')}
-                </button>
-              </div>
-            </div>
-            <div className="form-group settings-full-width">
-              <button
-                className="secondary"
-                onClick={() => {
-                  keyBindings.resetToDefault();
-                  setKeybinds(keyBindings.getBindings());
-                }}
-                style={{ width: '100%', marginTop: '8px' }}
-              >
-                <i className="fas fa-redo"></i> {t('settings.resetDefaults')}
-              </button>
             </div>
           </div>
         </div>

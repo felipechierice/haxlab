@@ -620,6 +620,46 @@ export const translations: Translations = {
     en: 'Back to Menu',
     pt: 'Voltar ao Menu',
     es: 'Volver al Menú'
+  },
+  'game.settings': {
+    en: 'Settings',
+    pt: 'Configurações',
+    es: 'Configuración'
+  },
+  'game.toExit': {
+    en: 'to exit',
+    pt: 'para sair',
+    es: 'para salir'
+  },
+  'game.exitConfirmTitle': {
+    en: 'Exit Training?',
+    pt: 'Sair do Treino?',
+    es: '¿Salir del Entrenamiento?'
+  },
+  'game.exitConfirmMessage': {
+    en: 'Do you want to leave free training and go back to the menu?',
+    pt: 'Deseja sair do treino livre e voltar ao menu?',
+    es: '¿Desea salir del entrenamiento libre y volver al menú?'
+  },
+  'game.exitPlaylistTitle': {
+    en: 'Exit Playlist?',
+    pt: 'Sair da Playlist?',
+    es: '¿Salir de la Playlist?'
+  },
+  'game.exitPlaylistMessage': {
+    en: 'Do you want to leave the playlist? Your progress will be lost.',
+    pt: 'Deseja sair da playlist? O progresso será perdido.',
+    es: '¿Desea salir de la playlist? El progreso se perderá.'
+  },
+  'game.exitYes': {
+    en: 'Yes, exit',
+    pt: 'Sim, sair',
+    es: 'Sí, salir'
+  },
+  'game.exitNo': {
+    en: 'Cancel',
+    pt: 'Cancelar',
+    es: 'Cancelar'
   }
 };
 

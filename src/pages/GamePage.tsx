@@ -59,6 +59,7 @@ function GamePage() {
   const [showResultModal, setShowResultModal] = useState(false);
   const [playlistResult, setPlaylistResult] = useState<PlaylistResult | null>(null);
   const [gameOver, setGameOver] = useState<GameOverInfo | null>(null);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     const isPlaylist = window.getIsPlaylistMode?.();
@@ -85,12 +86,10 @@ function GamePage() {
         return;
       } else if (isPlaylist) {
         // Se está em playlist normal, mostrar confirmação antes de sair
-        if (confirm('Deseja sair da playlist? O progresso será perdido.')) {
-          navigate('/playlists');
-        }
+        setShowExitConfirm(prev => !prev);
       } else {
-        // Treino livre, abre settings
-        navigate('/settings');
+        // Treino livre, mostra confirmação de saída
+        setShowExitConfirm(prev => !prev);
       }
       return;
     }
@@ -198,6 +197,16 @@ function GamePage() {
     navigate('/modes');
   };
 
+  const handleOpenSettings = () => {
+    navigate('/settings');
+  };
+
+  const handleConfirmExit = () => {
+    setShowExitConfirm(false);
+    const isPlaylist = state?.mode === 'playlist';
+    navigate(isPlaylist ? '/playlists' : '/modes');
+  };
+
   return (
     <div className="game-page">
       {/* Console de chat */}
@@ -285,14 +294,32 @@ function GamePage() {
           
           <div className="game-controls">
             <div className="game-hint">
-              <span>Pressione <kbd>ESC</kbd> para configurar</span>
+              <span>Pressione <kbd>ESC</kbd> {t('game.toExit')}</span>
             </div>
-            <button onClick={handleBackToMenu}>
-              {t('game.backToMenu')}
+            <button onClick={handleOpenSettings}>
+              <i className="fas fa-cog"></i> {t('game.settings')}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Modal de confirmação de saída */}
+      {showExitConfirm && (
+        <div className="exit-confirm-overlay" onClick={() => setShowExitConfirm(false)}>
+          <div className="exit-confirm-modal" onClick={e => e.stopPropagation()}>
+            <h2>{state?.mode === 'playlist' ? t('game.exitPlaylistTitle') : t('game.exitConfirmTitle')}</h2>
+            <p>{state?.mode === 'playlist' ? t('game.exitPlaylistMessage') : t('game.exitConfirmMessage')}</p>
+            <div className="exit-confirm-buttons">
+              <button className="btn-exit-confirm" onClick={handleConfirmExit}>
+                <i className="fas fa-sign-out-alt"></i> {t('game.exitYes')}
+              </button>
+              <button className="btn-exit-cancel" onClick={() => setShowExitConfirm(false)}>
+                {t('game.exitNo')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de resultado de playlist */}
       {playlistResult && (
