@@ -50,7 +50,8 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
 
   const { containerRef } = useKeyboardNav({
     onEscape: onClose,
-    autoFocus: isOpen
+    autoFocus: isOpen,
+    enabled: isOpen
   });
 
   const playlists = [

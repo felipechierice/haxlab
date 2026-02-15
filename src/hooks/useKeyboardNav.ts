@@ -7,6 +7,7 @@ export interface KeyboardNavOptions {
   autoFocus?: boolean;
   onEnter?: (element: HTMLElement) => void;
   initialFocusSelector?: string;
+  enabled?: boolean;
 }
 
 /**
@@ -19,7 +20,8 @@ export function useKeyboardNav(options: KeyboardNavOptions = {}) {
     selector = 'button:not(:disabled), input:not(:disabled), select:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])',
     autoFocus = true,
     onEnter,
-    initialFocusSelector
+    initialFocusSelector,
+    enabled = true
   } = options;
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -105,6 +107,9 @@ export function useKeyboardNav(options: KeyboardNavOptions = {}) {
   }, [onEnter]);
 
   useEffect(() => {
+    // Não adicionar listeners se o hook estiver desabilitado
+    if (!enabled) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT';
@@ -172,7 +177,7 @@ export function useKeyboardNav(options: KeyboardNavOptions = {}) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [navigate, handleActivate, onEscape]);
+  }, [enabled, navigate, handleActivate, onEscape]);
 
   // Auto-focus no primeiro elemento ao montar
   useEffect(() => {

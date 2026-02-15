@@ -51,7 +51,8 @@ function PlaylistResultModal({
 
   const { containerRef } = useKeyboardNav({
     onEscape: handleClose,
-    autoFocus: isOpen
+    autoFocus: isOpen,
+    enabled: isOpen
   });
 
   useEffect(() => {

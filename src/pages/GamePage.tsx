@@ -4,6 +4,7 @@ import { useI18n } from '../hooks/useI18n';
 import { Playlist } from '../types';
 import { RankingEntry } from '../firebase';
 import PlaylistResultModal from '../components/PlaylistResultModal';
+import ExitConfirmModal from '../components/ExitConfirmModal';
 import { trackPageView, trackFreePlayEnd } from '../analytics';
 
 
@@ -304,22 +305,12 @@ function GamePage() {
       </div>
 
       {/* Modal de confirmação de saída */}
-      {showExitConfirm && (
-        <div className="exit-confirm-overlay" onClick={() => setShowExitConfirm(false)}>
-          <div className="exit-confirm-modal" onClick={e => e.stopPropagation()}>
-            <h2>{state?.mode === 'playlist' ? t('game.exitPlaylistTitle') : t('game.exitConfirmTitle')}</h2>
-            <p>{state?.mode === 'playlist' ? t('game.exitPlaylistMessage') : t('game.exitConfirmMessage')}</p>
-            <div className="exit-confirm-buttons">
-              <button className="btn-exit-confirm" onClick={handleConfirmExit}>
-                <i className="fas fa-sign-out-alt"></i> {t('game.exitYes')}
-              </button>
-              <button className="btn-exit-cancel" onClick={() => setShowExitConfirm(false)}>
-                {t('game.exitNo')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ExitConfirmModal
+        isOpen={showExitConfirm}
+        isPlaylist={state?.mode === 'playlist'}
+        onConfirm={handleConfirmExit}
+        onCancel={() => setShowExitConfirm(false)}
+      />
 
       {/* Modal de resultado de playlist */}
       {playlistResult && (

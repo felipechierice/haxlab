@@ -155,6 +155,7 @@ export class Extrapolation {
     this.cachedResult.ball.x = this.simState.ballPos.x;
     this.cachedResult.ball.y = this.simState.ballPos.y;
     
+    // Todos os jogadores usam posição extrapolada (player e bots)
     this.cachedResult.players.clear();
     for (const [playerId, pos] of this.simState.playerPos) {
       this.cachedResult.players.set(playerId, { x: pos.x, y: pos.y });
@@ -191,6 +192,7 @@ export class Extrapolation {
 
   /**
    * Executa um step de simulação
+   * Simula player controlado e bots baseado em seus inputs atuais.
    */
   private simulateStep(
     state: GameState,
@@ -200,17 +202,17 @@ export class Extrapolation {
     config: GameConfig,
     dt: number
   ): void {
-    // 1. Atualiza jogadores
+    // 1. Atualiza todos os jogadores (player e bots)
     for (const player of state.players) {
       const pos = this.simState.playerPos.get(player.id)!;
       const vel = this.simState.playerVel.get(player.id)!;
       
-      // Aplica input do jogador controlado
+      // Aplica input: player controlado usa input do teclado, bots usam seu próprio input
       if (player.id === controlledPlayerId) {
         this.applyPlayerInput(vel, playerInput, config, dt);
-      } else if (player.isBot) {
-        // Bots mantêm sua direção atual (input já aplicado no frame real)
-        // Não precisamos simular a IA, apenas continuar o movimento
+      } else if (player.isBot && player.input) {
+        // Bots: usa o input atual definido pela IA (patrulhar, perseguir, marcar, etc)
+        this.applyPlayerInput(vel, player.input, config, dt);
       }
       
       // Limita velocidade máxima

@@ -15,7 +15,7 @@
         },
         {
           "type": "no_goal",
-          "team": "blue"
+          "team": "red"
         },
         {
           "type": "kick_count",
@@ -146,7 +146,7 @@
         },
         {
           "type": "no_goal",
-          "team": "blue"
+          "team": "red"
         },
         {
           "type": "kick_count",
@@ -264,5 +264,21 @@
         "y": 100.5
       }
     }
-  ]
+  ],
+  "gameConfig": {
+    "kickStrength": 500,
+    "kickMode": "classic",
+    "playerRadius": 15,
+    "playerSpeed": 150,
+    "playerAcceleration": 7.5,
+    "kickSpeedMultiplier": 1,
+    "ballConfig": {
+      "radius": 8,
+      "mass": 5,
+      "damping": 0.99,
+      "color": "#ffff00",
+      "borderColor": "#000000",
+      "borderWidth": 2
+    }
+  }
 }
