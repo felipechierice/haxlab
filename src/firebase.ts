@@ -37,7 +37,8 @@ const OFFICIAL_PLAYLISTS = [
   'Cruzamento - Fácil',
   'Drible e Gol',
   'TORNEIO A.D. BRK - Edição 1',
-  'Finalizações - Fácil'
+  'Finalizações - Fácil',
+//   'Treino de Goleiro'
 ];
 
 /**

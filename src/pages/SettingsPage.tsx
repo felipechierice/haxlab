@@ -5,6 +5,7 @@ import { useKeyboardNav } from '../hooks/useKeyboardNav';
 import { GameConfig } from '../types';
 import { audioManager } from '../audio';
 import { trackPageView } from '../analytics';
+import { extrapolation } from '../extrapolation';
 
 interface SettingsFormData {
   mapType: string;
@@ -21,6 +22,7 @@ interface SettingsFormData {
   ballColor: string;
   ballBorderColor: string;
   kickSpeedMultiplier: number;
+  extrapolationMs: number;
 }
 
 function SettingsPage() {
@@ -36,14 +38,15 @@ function SettingsPage() {
     kickMode: 'classic',
     kickStrength: 500,
     playerRadius: 15,
-    playerSpeed: 260,
-    playerAcceleration: 6.5,
+    playerSpeed: 150,
+    playerAcceleration: 7.5,
     ballRadius: 8,
-    ballMass: 2,
+    ballMass: 5,
     ballDamping: 0.99,
     ballColor: '#ffff00',
     ballBorderColor: '#000000',
-    kickSpeedMultiplier: 0.5,
+    kickSpeedMultiplier: 1.0,
+    extrapolationMs: 0,
   };
   
   const [settings, setSettings] = useState<SettingsFormData>(defaultSettings);
@@ -63,7 +66,7 @@ function SettingsPage() {
     // Carregar configurações do localStorage se existir
     const savedConfig = localStorage.getItem('gameConfig');
     const savedMapType = localStorage.getItem('mapType');
-    
+
     if (savedConfig) {
       try {
         const config: GameConfig = JSON.parse(savedConfig);
@@ -74,14 +77,15 @@ function SettingsPage() {
           kickMode: config.kickMode,
           kickStrength: config.kickStrength,
           playerRadius: config.playerRadius,
-          playerSpeed: config.playerSpeed ?? 260,
-          playerAcceleration: config.playerAcceleration ?? 6.5,
+          playerSpeed: config.playerSpeed ?? 150,
+          playerAcceleration: config.playerAcceleration ?? 7.5,
           ballRadius: config.ballConfig.radius,
           ballMass: config.ballConfig.mass,
           ballDamping: config.ballConfig.damping,
           ballColor: config.ballConfig.color,
           ballBorderColor: config.ballConfig.borderColor,
-          kickSpeedMultiplier: config.kickSpeedMultiplier ?? 0.5,
+          kickSpeedMultiplier: config.kickSpeedMultiplier ?? 1.0,
+          extrapolationMs: parseInt(localStorage.getItem('extrapolation') || '0'),
         });
       } catch (e) {
         console.error('Error loading saved config:', e);
@@ -121,6 +125,10 @@ function SettingsPage() {
 
     localStorage.setItem('gameConfig', JSON.stringify(config));
     localStorage.setItem('mapType', settings.mapType);
+    
+    // Salvar e aplicar extrapolation
+    localStorage.setItem('extrapolation', settings.extrapolationMs.toString());
+    extrapolation.setExtrapolation(settings.extrapolationMs);
 
     // Voltar para a tela anterior (reinicia o jogo se estava em jogo)
     navigate(-1);
@@ -420,13 +428,54 @@ function SettingsPage() {
           </div>
         </div>
 
+        {/* Extrapolation */}
+        <div className="settings-category">
+          <h3><i className="fas fa-forward"></i> {t('appSettings.extrapolation')}</h3>
+          <div className="settings-grid">
+            <div className="form-group">
+              <label htmlFor="settings-extrapolation">
+                <span>{t('appSettings.extrapolation')}</span>
+                <button 
+                  type="button"
+                  className="reset-field-btn" 
+                  onClick={() => handleChange('extrapolationMs', 0)}
+                  title={t('settings.resetDefault')}
+                >
+                  <i className="fas fa-undo"></i>
+                </button>
+              </label>
+              <input
+                type="range"
+                id="settings-extrapolation"
+                min="0"
+                max="200"
+                step="10"
+                value={settings.extrapolationMs}
+                onChange={(e) => handleChange('extrapolationMs', parseInt(e.target.value))}
+              />
+              <span>{settings.extrapolationMs}ms</span>
+            </div>
+            <div className="form-group full-width">
+              <p className="setting-hint-inline">{t('appSettings.extrapolationHint')}</p>
+            </div>
+          </div>
+        </div>
+
         <div className="button-group">
-          <button
-            className="btn-apply"
-            onClick={handleApply}
-          >
-            <i className="fas fa-check"></i> {t('settings.apply')}
-          </button>
+          <div className="button-row">
+            <button
+              className="btn-apply"
+              onClick={handleApply}
+            >
+              <i className="fas fa-check"></i> {t('settings.apply')}
+            </button>
+            <button
+              className="btn-reset-all"
+              onClick={() => setSettings(defaultSettings)}
+            >
+              <i className="fas fa-undo"></i> {t('settings.resetDefaults')}
+            </button>
+          </div>
           <button
             className="secondary"
             onClick={handleResume}

@@ -5,6 +5,7 @@ import { useKeyboardNav } from '../hooks/useKeyboardNav';
 import { keyBindings, KeyBindings } from '../keybindings';
 import { audioManager } from '../audio';
 import { trackPageView } from '../analytics';
+import { extrapolation } from '../extrapolation';
 import '../styles/AppSettingsPage.css';
 
 function AppSettingsPage() {
@@ -14,6 +15,11 @@ function AppSettingsPage() {
   const [soundVolume, setSoundVolume] = useState<number>(() => {
     const saved = localStorage.getItem('soundVolume');
     return saved ? parseFloat(saved) : 0.7;
+  });
+  
+  const [extrapolationMs, setExtrapolationMs] = useState<number>(() => {
+    const saved = localStorage.getItem('extrapolation');
+    return saved ? parseInt(saved) : 0;
   });
 
   const [keybinds, setKeybinds] = useState<KeyBindings>(keyBindings.getBindings());
@@ -65,6 +71,8 @@ function AppSettingsPage() {
   useEffect(() => {
     // Aplicar volume salvo ao carregar
     audioManager.setVolume(soundVolume);
+    // Aplicar extrapolation salvo ao carregar
+    extrapolation.setExtrapolation(extrapolationMs);
   }, []);
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,6 +83,13 @@ function AppSettingsPage() {
     
     // Tocar som de teste
     audioManager.play('kick');
+  };
+  
+  const handleExtrapolationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const ms = parseInt(e.target.value);
+    setExtrapolationMs(ms);
+    extrapolation.setExtrapolation(ms);
+    localStorage.setItem('extrapolation', ms.toString());
   };
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -122,6 +137,26 @@ function AppSettingsPage() {
               />
               <span className="volume-value">{Math.round(soundVolume * 100)}%</span>
             </div>
+          </div>
+          
+          {/* Extrapolation */}
+          <div className="setting-section">
+            <label className="setting-label">
+              <i className="fas fa-forward"></i> {t('appSettings.extrapolation')}
+            </label>
+            <div className="volume-control">
+              <input
+                type="range"
+                className="volume-slider"
+                min="0"
+                max="200"
+                step="10"
+                value={extrapolationMs}
+                onChange={handleExtrapolationChange}
+              />
+              <span className="volume-value">{extrapolationMs}ms</span>
+            </div>
+            <p className="setting-hint">{t('appSettings.extrapolationHint')}</p>
           </div>
 
           {/* Controls / Keybindings */}

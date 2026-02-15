@@ -1,4 +1,5 @@
-import { GameState, GameMap, Circle, Segment, Goal, Vector2D, BallConfig } from './types.js';
+import { GameState, GameMap, Circle, Segment, Goal, Vector2D, BallConfig, Player } from './types.js';
+import { ExtrapolatedPositions } from './extrapolation.js';
 
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
@@ -270,47 +271,58 @@ export class Renderer {
     ctx.restore();
   }
 
-  drawState(state: GameState, map: GameMap, controlledPlayerId?: string, time: number = 0, ballConfig?: BallConfig): void {
+  drawState(
+    state: GameState, 
+    map: GameMap, 
+    controlledPlayerId?: string, 
+    time: number = 0, 
+    ballConfig?: BallConfig,
+    extrapolatedPositions?: ExtrapolatedPositions
+  ): void {
     this.clear();
     this.drawMap(map);
 
-    // Atualiza e desenha o rastro da bola (antes da bola, para ficar atrás)
-    // DESABILITADO: trail da bola
-    // const ball = state.ball.circle;
-    // this.updateBallTrail(ball);
-    // this.drawBallTrail(ball.radius);
     const ball = state.ball.circle;
+    
+    // Usa posição extrapolada se disponível, senão usa posição real
+    const ballX = extrapolatedPositions?.ball.x ?? ball.pos.x;
+    const ballY = extrapolatedPositions?.ball.y ?? ball.pos.y;
 
-    // Bola
+    // Desenha a bola
     if (ballConfig) {
-      this.drawBallWithConfig(ball.pos.x, ball.pos.y, ball.radius, ballConfig);
+      this.drawBallWithConfig(ballX, ballY, ball.radius, ballConfig);
     } else {
-      this.drawCircle(ball.pos.x, ball.pos.y, ball.radius, this.colors.white, true);
+      this.drawCircle(ballX, ballY, ball.radius, this.colors.white, true);
     }
 
-    // Jogadores
+    // Desenha jogadores
     const rotation = time * 3;
     for (let i = 0; i < state.players.length; i++) {
       const player = state.players[i];
       const color = player.team === 'red' ? this.colors.red : this.colors.blue;
       const circle = player.circle;
       
-      this.drawCircle(circle.pos.x, circle.pos.y, circle.radius, color, true);
+      // Usa posição extrapolada se disponível, senão usa posição real
+      const playerPos = extrapolatedPositions?.players.get(player.id);
+      const drawX = playerPos?.x ?? circle.pos.x;
+      const drawY = playerPos?.y ?? circle.pos.y;
+      
+      this.drawCircle(drawX, drawY, circle.radius, color, true);
       
       // Desenha círculo de carregamento de chute (só se não tiver chutado ainda ou se está no feedback visual)
       const shouldShowKickIndicator = (player.isChargingKick && !player.hasKickedThisPress) || player.kickFeedbackTime > 0;
       if (shouldShowKickIndicator) {
         // Se está no feedback visual (após chute), mostra círculo completo
         const chargeToShow = player.kickFeedbackTime > 0 ? 1 : player.kickCharge;
-        this.drawKickChargeIndicator(circle.pos.x, circle.pos.y, circle.radius, chargeToShow);
+        this.drawKickChargeIndicator(drawX, drawY, circle.radius, chargeToShow);
       }
       
       if (player.id === controlledPlayerId) {
-        this.drawControlIndicator(circle.pos.x, circle.pos.y, circle.radius, rotation);
+        this.drawControlIndicator(drawX, drawY, circle.radius, rotation);
       }
       
       // Desenha nome do jogador
-      this.drawPlayerName(circle.pos.x, circle.pos.y, circle.radius, player.name);
+      this.drawPlayerName(drawX, drawY, circle.radius, player.name);
     }
   }
 

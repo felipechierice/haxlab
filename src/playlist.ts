@@ -7,6 +7,7 @@ import {
   CheckpointObjective,
   PathObjective,
   GoalObjective,
+  NoGoalObjective,
   KickCountObjective,
   BallTouchObjective,
   PreventTouchObjective,
@@ -41,6 +42,7 @@ export class PlaylistMode {
   private kickObjective: KickCountObjective | null = null;
   private ballTouchObjective: BallTouchObjective | null = null;
   private preventTouchObjective: PreventTouchObjective | null = null;
+  private noGoalObjectives: NoGoalObjective[] = [];
   private ballTouchTimer: number = 0;
   private resetTimeoutId: number | null = null; // ID do timeout de reset automático
   private nextScenarioTimeoutId: number | null = null; // ID do timeout para próximo cenário
@@ -189,6 +191,7 @@ export class PlaylistMode {
     this.kickObjective = null;
     this.ballTouchObjective = null;
     this.preventTouchObjective = null;
+    this.noGoalObjectives = [];
     this.ballTouchTimer = 0;
     this.goalScored = false;
     
@@ -205,6 +208,8 @@ export class PlaylistMode {
         this.ballTouchObjective = objective;
       } else if (objective.type === 'prevent_touch') {
         this.preventTouchObjective = objective;
+      } else if (objective.type === 'no_goal') {
+        this.noGoalObjectives.push(objective);
       }
     }
   }
@@ -221,6 +226,13 @@ export class PlaylistMode {
     
     // Verificar timeout do cenário
     if (elapsedTime > scenario.timeLimit) {
+      // Se o cenário tem no_goal e NÃO tem goal objective, timeout = sucesso (sobreviveu)
+      const hasGoalObjective = scenario.objectives.some(obj => obj.type === 'goal');
+      const hasNoGoalObjective = this.noGoalObjectives.length > 0;
+      if (hasNoGoalObjective && !hasGoalObjective) {
+        this.completeScenario();
+        return;
+      }
       this.failScenario('Tempo esgotado!');
       return;
     }
@@ -338,6 +350,12 @@ export class PlaylistMode {
       allCompleted = false;
     }
     
+    // Se tem no_goal sem goal, cenário só completa por timeout (sobreviver até o fim)
+    const hasNoGoalObjective = this.noGoalObjectives.length > 0;
+    if (hasNoGoalObjective && !hasGoalObjective) {
+      allCompleted = false;
+    }
+    
     // Validar objetivo de chutes se existe
     if (this.kickObjective) {
       if (!this.validateKickObjective()) {
@@ -403,6 +421,16 @@ export class PlaylistMode {
     // Se a bola entrou no gol AZUL, o time VERMELHO marca ponto
     const scoringTeam = team === 'red' ? 'blue' : 'red';
     console.log('scoringTeam (time que marcou ponto):', scoringTeam);
+    
+    // Verificar objetivos no_goal - falhar se gol marcado no gol protegido
+    for (const noGoalObj of this.noGoalObjectives) {
+      // noGoalObj.team = qual gol não pode tomar gol
+      // team = qual gol a bola entrou
+      if (noGoalObj.team === team) {
+        this.failScenario('Gol sofrido!');
+        return;
+      }
+    }
     
     const goalObjective = scenario.objectives.find(obj => obj.type === 'goal') as GoalObjective | undefined;
     console.log('goalObjective:', goalObjective);

@@ -1,0 +1,392 @@
+{
+  "name": "Treino de Goleiro",
+  "description": "Treine suas habilidades de goleiro! Defenda seu gol contra chutes cada vez mais difíceis. Dos tiros centrais simples até ataques coordenados com múltiplos jogadores.",
+  "scenarios": [
+    {
+      "name": "Defesa Central",
+      "map": "default",
+      "timeLimit": 3,
+      "objectives": [
+        {
+          "type": "no_goal",
+          "team": "red"
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-gk-1-attacker",
+          "name": "Atacante",
+          "team": "blue",
+          "spawn": {
+            "x": 420,
+            "y": 300
+          },
+          "behavior": {
+            "type": "ai_preset",
+            "config": {
+              "type": "ai_preset",
+              "preset": "patrol",
+              "params": {
+                "type": "patrol",
+                "points": [
+                  {
+                    "x": 420,
+                    "y": 300
+                  },
+                  {
+                    "x": 341,
+                    "y": 300
+                  },
+                  {
+                    "x": 268,
+                    "y": 290
+                  }
+                ],
+                "speed": 1,
+                "loop": false,
+                "waitTime": 0,
+                "reactionTime": 0,
+                "kickOnContact": true
+              }
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 300,
+        "y": 300
+      },
+      "playerSpawn": {
+        "x": 70,
+        "y": 300
+      }
+    },
+    {
+      "name": "Defesa Central (Espelhado)",
+      "map": "default",
+      "timeLimit": 3,
+      "objectives": [
+        {
+          "type": "no_goal",
+          "team": "red"
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-gk-2-attacker",
+          "name": "Atacante",
+          "team": "blue",
+          "spawn": {
+            "x": 420,
+            "y": 300
+          },
+          "behavior": {
+            "type": "ai_preset",
+            "config": {
+              "type": "ai_preset",
+              "preset": "patrol",
+              "params": {
+                "type": "patrol",
+                "points": [
+                  {
+                    "x": 420,
+                    "y": 300
+                  },
+                  {
+                    "x": 341,
+                    "y": 300
+                  },
+                  {
+                    "x": 268,
+                    "y": 310
+                  }
+                ],
+                "speed": 1,
+                "loop": false,
+                "waitTime": 0,
+                "reactionTime": 0,
+                "kickOnContact": true
+              }
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 300,
+        "y": 300
+      },
+      "playerSpawn": {
+        "x": 70,
+        "y": 300
+      }
+    },
+    {
+      "name": "Defesa Central (Reto)",
+      "map": "default",
+      "timeLimit": 3,
+      "objectives": [
+        {
+          "type": "no_goal",
+          "team": "red"
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-gk-3-attacker",
+          "name": "Atacante",
+          "team": "blue",
+          "spawn": {
+            "x": 420,
+            "y": 300
+          },
+          "behavior": {
+            "type": "ai_preset",
+            "config": {
+              "type": "ai_preset",
+              "preset": "patrol",
+              "params": {
+                "type": "patrol",
+                "points": [
+                  {
+                    "x": 420,
+                    "y": 300
+                  },
+                  {
+                    "x": 341,
+                    "y": 300
+                  },
+                  {
+                    "x": 264,
+                    "y": 300
+                  }
+                ],
+                "speed": 1,
+                "loop": false,
+                "waitTime": 0,
+                "reactionTime": 0,
+                "kickOnContact": true
+              }
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 300,
+        "y": 300
+      },
+      "playerSpawn": {
+        "x": 70,
+        "y": 300
+      }
+    },
+    {
+      "name": "Cenário 4",
+      "map": "default",
+      "timeLimit": 60,
+      "objectives": [
+        {
+          "type": "goal",
+          "team": "red"
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771116089721",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 455,
+            "y": 423.89999771118164
+          },
+          "behavior": {
+            "type": "ai_preset",
+            "config": {
+              "type": "ai_preset",
+              "preset": "patrol",
+              "params": {
+                "type": "patrol",
+                "points": [
+                  {
+                    "x": 457,
+                    "y": 425
+                  },
+                  {
+                    "x": 306,
+                    "y": 426
+                  }
+                ],
+                "speed": 0.6,
+                "loop": false,
+                "waitTime": 0,
+                "reactionTime": 0,
+                "kickOnContact": true
+              }
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771116232786",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 414,
+            "y": 142.89999771118164
+          },
+          "behavior": {
+            "type": "ai_preset",
+            "config": {
+              "type": "ai_preset",
+              "preset": "patrol",
+              "params": {
+                "type": "patrol",
+                "points": [
+                  {
+                    "x": 417,
+                    "y": 144
+                  },
+                  {
+                    "x": 227,
+                    "y": 152
+                  }
+                ],
+                "speed": 1,
+                "loop": false,
+                "waitTime": 0,
+                "reactionTime": 0,
+                "kickOnContact": true
+              }
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 449,
+        "y": 389
+      },
+      "playerSpawn": {
+        "x": 70,
+        "y": 300
+      },
+      "initialBallVelocity": {
+        "x": -111,
+        "y": 16.89999771118164
+      }
+    },
+    {
+      "name": "Cenário 5",
+      "map": "default",
+      "timeLimit": 60,
+      "objectives": [
+        {
+          "type": "goal",
+          "team": "red"
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771116089721-clone",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 455,
+            "y": 423.89999771118164
+          },
+          "behavior": {
+            "type": "ai_preset",
+            "config": {
+              "type": "ai_preset",
+              "preset": "patrol",
+              "params": {
+                "type": "patrol",
+                "points": [
+                  {
+                    "x": 457,
+                    "y": 425
+                  },
+                  {
+                    "x": 306,
+                    "y": 426
+                  }
+                ],
+                "speed": 0.6,
+                "loop": false,
+                "waitTime": 0,
+                "reactionTime": 0,
+                "kickOnContact": true
+              }
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771116232786-clone",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 414,
+            "y": 142.89999771118164
+          },
+          "behavior": {
+            "type": "ai_preset",
+            "config": {
+              "type": "ai_preset",
+              "preset": "patrol",
+              "params": {
+                "type": "patrol",
+                "points": [
+                  {
+                    "x": 417,
+                    "y": 144
+                  },
+                  {
+                    "x": 227,
+                    "y": 152
+                  }
+                ],
+                "speed": 1,
+                "loop": false,
+                "waitTime": 0,
+                "reactionTime": 0,
+                "kickOnContact": true
+              }
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 449,
+        "y": 389
+      },
+      "playerSpawn": {
+        "x": 70,
+        "y": 300
+      },
+      "initialBallVelocity": {
+        "x": -111,
+        "y": 16.89999771118164
+      }
+    }
+  ],
+  "gameConfig": {
+    "kickStrength": 500,
+    "kickMode": "classic",
+    "playerRadius": 15,
+    "playerSpeed": 280,
+    "playerAcceleration": 7,
+    "kickSpeedMultiplier": 0.5,
+    "ballConfig": {
+      "radius": 8,
+      "mass": 2,
+      "damping": 0.99,
+      "color": "#ffff00",
+      "borderColor": "#000000",
+      "borderWidth": 2
+    }
+  }
+}

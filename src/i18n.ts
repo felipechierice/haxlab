@@ -67,6 +67,16 @@ export const translations: Translations = {
     pt: 'Volume dos Efeitos Sonoros',
     es: 'Volumen de Efectos de Sonido'
   },
+  'appSettings.extrapolation': {
+    en: 'Extrapolation',
+    pt: 'Extrapolação',
+    es: 'Extrapolación'
+  },
+  'appSettings.extrapolationHint': {
+    en: 'Predicts future positions to reduce perceived input lag. 0 = off, 20-60ms = recommended.',
+    pt: 'Prevê posições futuras para reduzir input lag percebido. 0 = desligado, 20-60ms = recomendado.',
+    es: 'Predice posiciones futuras para reducir el lag de entrada percibido. 0 = apagado, 20-60ms = recomendado.'
+  },
   'appSettings.back': {
     en: 'Back',
     pt: 'Voltar',

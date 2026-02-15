@@ -8,7 +8,7 @@ export class Physics {
   static readonly FRICTION = 0.98;
   static readonly AIR_DAMPING = 0.985;
   static readonly PLAYER_ACCELERATION = 7.5;
-  static readonly PLAYER_MAX_SPEED = 260;
+  static readonly PLAYER_MAX_SPEED = 150;
   static readonly PLAYER_DAMPING = 0.96;
   static readonly BALL_DAMPING = 0.992;
   static readonly KICK_STRENGTH = 500;
@@ -206,7 +206,7 @@ export class Physics {
 
     if (velAlongNormal > 0) return;
 
-    const restitution = 0.2;
+    const restitution = 0.35;
     const impulse = -(1 + restitution) * velAlongNormal;
     const impulseMagnitude = impulse / (c1.invMass + c2.invMass);
 

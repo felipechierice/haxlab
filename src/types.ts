@@ -178,12 +178,13 @@ export interface GameConfig {
   kickMode: 'classic' | 'chargeable';
   kickStrength: number;
   playerRadius: number;
-  playerSpeed?: number; // Velocidade máxima do jogador (padrão 260)
-  playerAcceleration?: number; // Aceleração do jogador (padrão 6.5)
+  playerSpeed?: number; // Velocidade máxima do jogador (padrão 150)
+  playerAcceleration?: number; // Aceleração do jogador (padrão 7.5)
   ballConfig: BallConfig;
   disableGoalReset?: boolean; // Se true, não reseta posições após gol
-  kickSpeedMultiplier?: number; // Multiplicador de velocidade ao segurar chute (padrão 0.5)
+  kickSpeedMultiplier?: number; // Multiplicador de velocidade ao segurar chute (padrão 1.0)
   disableGameOver?: boolean; // Se true, não mostra tela de game over
+  extrapolation?: number; // Tempo de extrapolation em ms (0-200, padrão 0 = desligado)
 }
 
 // Playlist System Types

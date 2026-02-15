@@ -5,6 +5,7 @@ import { GameConsole } from './console.js';
 import { BotAI } from './botAI.js';
 import { audioManager } from './audio.js';
 import { keyBindings } from './keybindings.js';
+import { extrapolation, ExtrapolatedPositions } from './extrapolation.js';
 
 export class Game {
   private state: GameState;
@@ -72,6 +73,11 @@ export class Game {
       finished: false,
       winner: null
     };
+
+    // Inicializa extrapolation se configurado
+    if (config.extrapolation !== undefined) {
+      extrapolation.setExtrapolation(config.extrapolation);
+    }
 
     this.setupControls();
     this.setupConsole();
@@ -314,7 +320,7 @@ export class Game {
     const baseMaxSpeed = (this.config.playerSpeed ?? Physics.PLAYER_MAX_SPEED) * baseSpeedMultiplier;
     
     // Calcula velocidade máxima reduzida quando está segurando chute
-    const kickSpeedMult = this.config.kickSpeedMultiplier ?? 0.5;
+    const kickSpeedMult = this.config.kickSpeedMultiplier ?? 1.0;
     const reducedMaxSpeed = baseMaxSpeed * kickSpeedMult;
     
     // Usa a velocidade máxima reduzida se estiver carregando chute
@@ -901,8 +907,36 @@ export class Game {
     this.update(dt);
     this.simulationTime += dt;
 
-    // Renderizar
-    this.renderer.drawState(this.state, this.map, this.controlledPlayerId, this.state.time, this.config.ballConfig);
+    // Calcular posições extrapoladas se habilitado
+    let extrapolatedPositions = undefined;
+    if (extrapolation.isEnabled()) {
+      // Captura o input atual do jogador
+      const binds = keyBindings.getBindings();
+      const currentInput = {
+        up: binds.up.some(key => this.keyState[key]),
+        down: binds.down.some(key => this.keyState[key]),
+        left: binds.left.some(key => this.keyState[key]),
+        right: binds.right.some(key => this.keyState[key])
+      };
+      
+      extrapolatedPositions = extrapolation.extrapolate(
+        this.state,
+        this.map.segments,
+        this.controlledPlayerId,
+        currentInput,
+        this.config
+      );
+    }
+
+    // Renderizar (com posições extrapoladas se habilitadas)
+    this.renderer.drawState(
+      this.state, 
+      this.map, 
+      this.controlledPlayerId, 
+      this.state.time, 
+      this.config.ballConfig,
+      extrapolatedPositions
+    );
     
     // FPS tracking e display
     this.updateAndDrawFPS(timestamp);
@@ -1000,5 +1034,29 @@ export class Game {
     for (const player of this.state.players) {
       this.ballTouches.set(player.id, 0);
     }
+  }
+
+  // ── Extrapolation Controls ──
+  
+  /**
+   * Define o tempo de extrapolation em milissegundos
+   * @param ms Tempo de extrapolation (0-200, 0 = desligado)
+   */
+  setExtrapolation(ms: number): void {
+    extrapolation.setExtrapolation(ms);
+  }
+
+  /**
+   * Obtém o tempo de extrapolation atual
+   */
+  getExtrapolation(): number {
+    return extrapolation.getExtrapolation();
+  }
+
+  /**
+   * Verifica se extrapolation está habilitado
+   */
+  isExtrapolationEnabled(): boolean {
+    return extrapolation.isEnabled();
   }
 }

@@ -125,12 +125,12 @@ export class PlaylistEditor {
       kickMode: 'classic',
       kickStrength: 500,
       playerRadius: 15,
-      playerSpeed: 260,
-      playerAcceleration: 6.5,
-      kickSpeedMultiplier: 0.5,
+      playerSpeed: 150,
+      playerAcceleration: 7.5,
+      kickSpeedMultiplier: 1.0,
       ballConfig: {
         radius: 8,
-        mass: 2,
+        mass: 5,
         damping: 0.99,
         color: '#ffff00',
         borderColor: '#000000',
@@ -873,6 +873,17 @@ export class PlaylistEditor {
           <option value="blue" ${bot.team === 'blue' ? 'selected' : ''}>Azul</option>
         </select>
       </div>
+      
+      <h4>Posição Inicial</h4>
+      <div class="property">
+        <label>Posição X:</label>
+        <input type="number" id="prop-bot-x" value="${Math.round(bot.spawn.x)}" />
+      </div>
+      <div class="property">
+        <label>Posição Y:</label>
+        <input type="number" id="prop-bot-y" value="${Math.round(bot.spawn.y)}" />
+      </div>
+      
       <div class="property">
         <label>Tamanho (Raio):</label>
         <input type="range" id="prop-bot-radius" min="8" max="40" value="${bot.radius ?? 15}" step="1" />
@@ -976,6 +987,21 @@ export class PlaylistEditor {
     
     document.getElementById('prop-bot-name')?.addEventListener('input', (e) => {
       bot.name = (e.target as HTMLInputElement).value;
+    });
+    
+    // Event listeners para posição do bot
+    document.getElementById('prop-bot-x')?.addEventListener('input', (e) => {
+      const x = parseFloat((e.target as HTMLInputElement).value);
+      if (!isNaN(x)) {
+        bot.spawn.x = x;
+      }
+    });
+    
+    document.getElementById('prop-bot-y')?.addEventListener('input', (e) => {
+      const y = parseFloat((e.target as HTMLInputElement).value);
+      if (!isNaN(y)) {
+        bot.spawn.y = y;
+      }
     });
     
     // Event listener para copiar ID do bot
@@ -1568,7 +1594,7 @@ export class PlaylistEditor {
         this.config.playerRadius = 15;
         this.config.kickMode = 'classic';
         this.config.kickStrength = 500;
-        this.config.kickSpeedMultiplier = 0.5;
+        this.config.kickSpeedMultiplier = 1.0;
         this.selectedEntity = null;
         this.hidePropertiesPanel();
       });
@@ -1732,7 +1758,7 @@ export class PlaylistEditor {
         delete this.scenarioSettings.initialBallVelocity;
         this.config.ballConfig = {
           radius: 8,
-          mass: 2,
+          mass: 5,
           damping: 0.99,
           color: '#ffff00',
           borderColor: '#000000',

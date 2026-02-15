@@ -214,6 +214,16 @@
   padding: 4px;
 }
 
+.settings-hint {
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  font-style: italic;
+  opacity: 0.85;
+}
+
 .keybind-container {
   display: flex;
   gap: 8px;
@@ -255,6 +265,12 @@
 
 .button-group {
   margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.button-row {
   display: flex;
   gap: 12px;
 }
@@ -312,6 +328,45 @@
   transform: translateY(0) scale(0.98);
 }
 
+.btn-reset-all {
+  flex: 1;
+  background: rgba(239, 68, 68, 0.15);
+  border: 2px solid #ef4444;
+  color: #fca5a5;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 0;
+}
+
+.btn-reset-all:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fecaca;
+  transform: translateY(-2px);
+}
+
+.btn-reset-all:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.btn-reset-all i {
+  margin-right: 8px;
+}
+
+.setting-hint-inline {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 768px) {
   .settings-grid,
   .settings-grid-3 {
@@ -319,6 +374,10 @@
   }
 
   .button-group {
+    flex-direction: column;
+  }
+
+  .button-row {
     flex-direction: column;
   }
 

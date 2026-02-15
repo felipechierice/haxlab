@@ -262,6 +262,13 @@
   margin-right: 8px;
 }
 
+.setting-hint {
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 @media (max-width: 480px) {
   .keybinds-grid {
     grid-template-columns: 1fr;
