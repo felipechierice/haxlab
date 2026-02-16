@@ -50,6 +50,16 @@ export const translations: Translations = {
     pt: 'Configurações',
     es: 'Configuración'
   },
+  'menu.credits': {
+    en: 'Credits',
+    pt: 'Créditos',
+    es: 'Créditos'
+  },
+  'menu.changelogs': {
+    en: 'Changelogs',
+    pt: 'Changelogs',
+    es: 'Cambios'
+  },
 
   // App Settings
   'appSettings.title': {
@@ -670,6 +680,145 @@ export const translations: Translations = {
     en: 'Cancel',
     pt: 'Cancelar',
     es: 'Cancelar'
+  },
+
+  // Credits Page
+  'credits.title': {
+    en: 'Credits',
+    pt: 'Créditos',
+    es: 'Créditos'
+  },
+  'credits.back': {
+    en: 'Back',
+    pt: 'Voltar',
+    es: 'Volver'
+  },
+  'credits.team': {
+    en: 'Team',
+    pt: 'Equipe',
+    es: 'Equipo'
+  },
+  'credits.mainDeveloper': {
+    en: 'Creator and Main Developer',
+    pt: 'Criador e Desenvolvedor Principal',
+    es: 'Creador y Desarrollador Principal'
+  },
+  'credits.developerAndPlaylists': {
+    en: 'Developer and Playlist Creator',
+    pt: 'Desenvolvedor e Criador de Playlists',
+    es: 'Desarrollador y Creador de Listas'
+  },
+  'credits.acknowledgments': {
+    en: 'Acknowledgments',
+    pt: 'Agradecimentos',
+    es: 'Agradecimientos'
+  },
+  'credits.acknowledgmentsText': {
+    en: 'Special thanks to the community for the continuous support and feedback that makes HaxLab better every day!',
+    pt: 'Agradecimentos especiais à comunidade pelo apoio contínuo e feedback que torna o HaxLab melhor a cada dia!',
+    es: '¡Agradecimientos especiales a la comunidad por el apoyo continuo y la retroalimentación que hace que HaxLab mejore cada día!'
+  },
+  'credits.basroThankYou': {
+    en: 'Creator of Haxball, the main inspiration for this game',
+    pt: 'Criador do Haxball, a principal inspiração deste jogo',
+    es: 'Creador de Haxball, la principal inspiración de este juego'
+  },
+  'credits.testerThankYou': {
+    en: 'For helping test and improve the game',
+    pt: 'Por ajudar a testar e melhorar o jogo',
+    es: 'Por ayudar a probar y mejorar el juego'
+  },
+  'credits.communityTestersThankYou': {
+    en: 'And many other members of the Haxball community who played the early versions, helping to test and validate the game.',
+    pt: 'E vários outros membros da comunidade Haxball que jogaram nas primeiras versões, ajudando a testar e validar o jogo.',
+    es: 'Y muchos otros miembros de la comunidad Haxball que jugaron las primeras versiones, ayudando a probar y validar el juego.'
+  },
+  'credits.technologies': {
+    en: 'Technologies Used',
+    pt: 'Tecnologias Utilizadas',
+    es: 'Tecnologías Utilizadas'
+  },
+  'credits.supportTitle': {
+    en: 'Support the Project',
+    pt: 'Apoie o Projeto',
+    es: 'Apoya el Proyecto'
+  },
+  'credits.supportDescription': {
+    en: 'If you enjoy HaxLab and want to support its development, consider sending a Pix!',
+    pt: 'Se você gosta do HaxLab e quer apoiar seu desenvolvimento, considere enviar um Pix!',
+    es: 'Si disfrutas de HaxLab y quieres apoyar su desarrollo, ¡considera enviar un Pix!'
+  },
+  'credits.pixKey': {
+    en: 'Pix Key',
+    pt: 'Chave Pix',
+    es: 'Clave Pix'
+  },
+  'credits.copyPixKey': {
+    en: 'Copy Pix key',
+    pt: 'Copiar chave Pix',
+    es: 'Copiar clave Pix'
+  },
+  'credits.buyCoffee': {
+    en: 'Buy Me a Coffee',
+    pt: 'Me Pague um Café',
+    es: 'Cómprame un Café'
+  },
+  'credits.madeWith': {
+    en: 'Made with',
+    pt: 'Feito com',
+    es: 'Hecho con'
+  },
+  'credits.forCommunity': {
+    en: 'for the community',
+    pt: 'para a comunidade',
+    es: 'para la comunidad'
+  },
+  'credits.allRightsReserved': {
+    en: 'All Rights Reserved',
+    pt: 'Todos os Direitos Reservados',
+    es: 'Todos los Derechos Reservados'
+  },
+
+  // Changelogs Page
+  'changelogs.title': {
+    en: 'Changelogs',
+    pt: 'Changelogs',
+    es: 'Registro de Cambios'
+  },
+  'changelogs.back': {
+    en: 'Back',
+    pt: 'Voltar',
+    es: 'Volver'
+  },
+  'changelogs.currentVersion': {
+    en: 'Current Version',
+    pt: 'Versão Atual',
+    es: 'Versión Actual'
+  },
+  'changelogs.latest': {
+    en: 'Latest',
+    pt: 'Mais Recente',
+    es: 'Más Reciente'
+  },
+  'changelogs.types.feature': {
+    en: 'New Feature',
+    pt: 'Nova Funcionalidade',
+    es: 'Nueva Función'
+  },
+  'changelogs.types.improvement': {
+    en: 'Improvement',
+    pt: 'Melhoria',
+    es: 'Mejora'
+  },
+  'changelogs.types.bugfix': {
+    en: 'Bug Fix',
+    pt: 'Correção de Bug',
+    es: 'Corrección de Error'
+  },
+  'changelogs.types.breaking': {
+    en: 'Breaking Change',
+    pt: 'Mudança Importante',
+    es: 'Cambio Importante'
   }
 };
 

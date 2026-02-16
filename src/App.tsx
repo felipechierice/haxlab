@@ -6,6 +6,8 @@ import PlaylistsPage from './pages/PlaylistsPage';
 import SettingsPage from './pages/SettingsPage';
 import AppSettingsPage from './pages/AppSettingsPage';
 import GamePage from './pages/GamePage';
+import CreditsPage from './pages/CreditsPage';
+import ChangelogsPage from './pages/ChangelogsPage';
 import { extrapolation } from './extrapolation';
 import { checkVersionAndResetIfNeeded } from './version';
 
@@ -31,6 +33,8 @@ function App() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/app-settings" element={<AppSettingsPage />} />
         <Route path="/game" element={<GamePage />} />
+        <Route path="/credits" element={<CreditsPage />} />
+        <Route path="/changelogs" element={<ChangelogsPage />} />
       </Routes>
     </BrowserRouter>
   );

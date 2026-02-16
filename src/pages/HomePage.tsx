@@ -6,6 +6,7 @@ import { getNickname, saveNickname, generateRandomNickname, isValidNickname } fr
 import { audioManager } from '../audio';
 import RankingModal from '../components/RankingModal';
 import { trackPageView } from '../analytics';
+import { GAME_VERSION } from '../version';
 
 
 function HomePage() {
@@ -49,6 +50,16 @@ function HomePage() {
     navigate('/app-settings');
   };
 
+  const handleCredits = () => {
+    audioManager.play('menuSelect');
+    navigate('/credits');
+  };
+
+  const handleChangelogs = () => {
+    audioManager.play('menuSelect');
+    navigate('/changelogs');
+  };
+
   return (
     <div className="home-page">
       <div className="menu-container" ref={containerRef}>
@@ -90,6 +101,22 @@ function HomePage() {
           <button className="btn-settings" onClick={handleSettings}>
             <i className="fas fa-cog"></i> {t('menu.settings')}
           </button>
+        </div>
+
+        {/* Footer Links */}
+        <div className="menu-footer">
+          <button className="btn-link" onClick={handleCredits}>
+            <i className="fas fa-heart"></i> {t('menu.credits')}
+          </button>
+          <span className="footer-separator">•</span>
+          <button className="btn-link" onClick={handleChangelogs}>
+            <i className="fas fa-history"></i> {t('menu.changelogs')}
+          </button>
+        </div>
+
+        {/* Version Display */}
+        <div className="version-display">
+          v{GAME_VERSION}
         </div>
       </div>
 

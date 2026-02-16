@@ -185,3 +185,48 @@
 .btn-ranking:active {
   transform: translateY(0) scale(0.98);
 }
+
+.menu-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.btn-link:hover,
+.btn-link:focus {
+  color: #6366f1;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.footer-separator {
+  color: #475569;
+  font-weight: 600;
+}
+
+.version-display {
+  margin-top: 16px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  opacity: 0.7;
+}
