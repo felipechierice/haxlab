@@ -1,15 +1,19 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../hooks/useI18n';
 import { useKeyboardNav } from '../hooks/useKeyboardNav';
+import { useAuth } from '../contexts/AuthContext';
 import { audioManager } from '../audio';
 import { trackPageView } from '../analytics';
+import AuthModal from '../components/AuthModal';
 
 
 function GameModesPage() {
   useEffect(() => { trackPageView('GameModesPage'); }, []);
   const navigate = useNavigate();
   const { t } = useI18n();
+  const { userProfile } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const handleBack = () => {
     audioManager.play('menuBack');
@@ -21,7 +25,17 @@ function GameModesPage() {
     autoFocus: true
   });
 
+  const validateNickname = () => {
+    if (!userProfile || !userProfile.nickname || userProfile.nickname.trim().length === 0) {
+      audioManager.play('menuBack');
+      setShowAuthModal(true);
+      return false;
+    }
+    return true;
+  };
+
   const handleFreeTraining = () => {
+    if (!validateNickname()) return;
     audioManager.play('menuSelect');
     navigate('/game');
   };
@@ -38,6 +52,10 @@ function GameModesPage() {
 
   return (
     <div className="game-modes-page">
+      {showAuthModal && (
+        <AuthModal onClose={() => setShowAuthModal(false)} allowGuest={true} />
+      )}
+      
       <div className="modes-container" ref={containerRef}>
         <h2 className="modes-title">{t('modes.title')}</h2>
         

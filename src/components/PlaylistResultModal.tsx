@@ -10,12 +10,12 @@ import { useKeyboardNav } from '../hooks/useKeyboardNav';
 interface PlaylistResultModalProps {
   isOpen: boolean;
   playlistName: string;
-  kicks: number;
   time: number;
   score: number;
   previousHighscore: RankingEntry | null;
   isOfficial: boolean;
   playlistData: Playlist | null;
+  communityPlaylistId?: string;
   onRetry: () => void;
   onClose: () => void;
 }
@@ -29,12 +29,12 @@ const formatTime = (seconds: number): string => {
 function PlaylistResultModal({
   isOpen,
   playlistName,
-  kicks,
   time,
   score,
   previousHighscore,
   isOfficial,
   playlistData,
+  communityPlaylistId,
   onRetry,
   onClose,
 }: PlaylistResultModalProps) {
@@ -59,12 +59,21 @@ function PlaylistResultModal({
     if (isOpen && isOfficial) {
       loadRankings();
     }
-  }, [isOpen, playlistName, isOfficial]);
+  }, [isOpen, playlistName, isOfficial, communityPlaylistId]);
 
   const loadRankings = async () => {
     setLoading(true);
     try {
-      const data = await getTopScores(playlistName, 10);
+      let data: RankingEntry[];
+      
+      // Se for playlist da comunidade, buscar ranking da comunidade
+      if (communityPlaylistId) {
+        const { getCommunityPlaylistRanking } = await import('../firebase.js');
+        data = await getCommunityPlaylistRanking(communityPlaylistId, 10);
+      } else {
+        data = await getTopScores(playlistName, 10);
+      }
+      
       setRankings(data);
     } catch (error) {
       console.error('Error loading rankings:', error);
@@ -100,10 +109,6 @@ function PlaylistResultModal({
             <i className="fas fa-chart-bar"></i> {t('result.yourResult')}
           </h3>
           <div className="result-stats">
-            <div className="stat">
-              <div className="stat-label">{t('result.kicks')}</div>
-              <div className="stat-value">{kicks}</div>
-            </div>
             <div className="stat">
               <div className="stat-label">{t('result.time')}</div>
               <div className="stat-value">{formatTime(time)}</div>
@@ -152,7 +157,6 @@ function PlaylistResultModal({
                     <tr>
                       <th>{t('result.rank')}</th>
                       <th>{t('result.player')}</th>
-                      <th>{t('result.kicks')}</th>
                       <th>{t('result.time')}</th>
                       <th>{t('result.score')}</th>
                     </tr>
@@ -160,7 +164,7 @@ function PlaylistResultModal({
                   <tbody>
                     {rankings.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="no-rankings">
+                        <td colSpan={4} className="no-rankings">
                           {t('result.noRankings')}
                         </td>
                       </tr>
@@ -184,7 +188,6 @@ function PlaylistResultModal({
                           >
                             <td className="rank">{rankDisplay}</td>
                             <td className="nickname">{entry.nickname}</td>
-                            <td className="center">{entry.kicks}</td>
                             <td className="center">{formatTime(entry.time)}</td>
                             <td className="score">{entry.score.toLocaleString()}</td>
                           </tr>

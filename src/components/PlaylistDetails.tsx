@@ -1,16 +1,33 @@
 import { useState, useEffect, useRef } from 'react';
 import { PlaylistInfo, PlaylistStats, PlayerHighscore, RankingEntry } from '../types/playlist-ui';
 import { Playlist } from '../types';
+import { CommunityPlaylist } from '../community-playlists';
 import { useI18n } from '../hooks/useI18n';
+import { useAuth } from '../contexts/AuthContext';
 
 interface PlaylistDetailsProps {
   playlist: PlaylistInfo | null;
+  communityPlaylist?: CommunityPlaylist | null;
   playlistData: Playlist | null;
   onStartPlaylist: () => void;
+  onLike?: () => void;
+  onDislike?: () => void;
+  userLike?: 'like' | 'dislike';
+  onDelete?: () => void;
 }
 
-function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDetailsProps) {
+function PlaylistDetails({ 
+  playlist, 
+  communityPlaylist,
+  playlistData, 
+  onStartPlaylist,
+  onLike,
+  onDislike,
+  userLike,
+  onDelete
+}: PlaylistDetailsProps) {
   const { t } = useI18n();
+  const { userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<'info' | 'ranking'>('info');
   const [stats, setStats] = useState<PlaylistStats | null>(null);
   const [playerHighscore, setPlayerHighscore] = useState<PlayerHighscore | null>(null);
@@ -19,7 +36,7 @@ function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDe
   const rankingListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!playlist || !playlistData) {
+    if ((!playlist && !communityPlaylist) || !playlistData) {
       setStats(null);
       setPlayerHighscore(null);
       setRankings([]);
@@ -29,65 +46,104 @@ function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDe
     loadStats();
     loadPlayerHighscore();
     loadRankings();
-  }, [playlist, playlistData]);
+  }, [playlist, communityPlaylist, playlistData]);
 
   const loadStats = async () => {
-    if (!playlist || !playlistData) return;
+    if ((!playlist && !communityPlaylist) || !playlistData) return;
 
     try {
-      const { getTopScores } = await import('../firebase.js');
-      const scores = await getTopScores(playlist.name, 100);
+      const playlistName = playlist?.name || communityPlaylist?.name || '';
       
-      if (scores.length > 0) {
-        const avgTime = scores.reduce((sum, s) => sum + s.time, 0) / scores.length;
-        const avgKicks = scores.reduce((sum, s) => sum + s.kicks, 0) / scores.length;
+      if (communityPlaylist) {
+        // Para playlists da comunidade, buscar estatísticas do ranking
+        const { getCommunityPlaylistRanking } = await import('../firebase.js');
+        const scores = await getCommunityPlaylistRanking(communityPlaylist.id, 100);
         
-        setStats({
-          scenariosCount: playlistData.scenarios.length,
-          avgTime: `${avgTime.toFixed(1)}s`,
-          avgKicks: `${avgKicks.toFixed(1)} chutes`
-        });
+        if (scores.length > 0) {
+          const avgTime = scores.reduce((sum, s) => sum + s.time, 0) / scores.length;
+          
+          setStats({
+            scenariosCount: playlistData.scenarios.length,
+            avgTime: `${avgTime.toFixed(1)}s`
+          });
+        } else {
+          // Sem dados ainda
+          setStats({
+            scenariosCount: playlistData.scenarios.length,
+            avgTime: 'N/A'
+          });
+        }
       } else {
-        const totalTime = playlistData.scenarios.reduce((sum, s) => sum + (s.timeLimit || 0), 0);
-        setStats({
-          scenariosCount: playlistData.scenarios.length,
-          avgTime: `~${Math.ceil(totalTime)}s (estimado)`,
-          avgKicks: 'N/A'
-        });
+        // Para playlists oficiais, carregar estatísticas do Firebase
+        const { getTopScores } = await import('../firebase.js');
+        const scores = await getTopScores(playlistName, 100);
+        
+        if (scores.length > 0) {
+          const avgTime = scores.reduce((sum, s) => sum + s.time, 0) / scores.length;
+          
+          setStats({
+            scenariosCount: playlistData.scenarios.length,
+            avgTime: `${avgTime.toFixed(1)}s`
+          });
+        } else {
+          const totalTime = playlistData.scenarios.reduce((sum, s) => sum + (s.timeLimit || 0), 0);
+          setStats({
+            scenariosCount: playlistData.scenarios.length,
+            avgTime: `~${Math.ceil(totalTime)}s (estimado)`
+          });
+        }
       }
     } catch (error) {
       console.error('Error loading playlist stats:', error);
       const totalTime = playlistData.scenarios.reduce((sum, s) => sum + (s.timeLimit || 0), 0);
       setStats({
         scenariosCount: playlistData.scenarios.length,
-        avgTime: `~${Math.ceil(totalTime)}s (estimado)`,
-        avgKicks: 'N/A'
+        avgTime: `~${Math.ceil(totalTime)}s (estimado)`
       });
     }
   };
 
   const loadPlayerHighscore = async () => {
-    if (!playlist) return;
+    if (!playlist && !communityPlaylist) return;
 
     try {
       const { getNickname } = await import('../player.js');
-      const { getPlayerHighscore, getTopScores } = await import('../firebase.js');
-      
       const nickname = getNickname();
-      const highscore = await getPlayerHighscore(nickname, playlist.name);
       
-      if (highscore) {
-        const allScores = await getTopScores(playlist.name, 1000);
-        const playerRank = allScores.findIndex(s => s.nickname === nickname) + 1;
+      if (communityPlaylist) {
+        // Para playlists da comunidade
+        const { getPlayerCommunityPlaylistHighscore, getCommunityPlaylistRanking } = await import('../firebase.js');
+        const highscore = await getPlayerCommunityPlaylistHighscore(nickname, communityPlaylist.id);
         
-        setPlayerHighscore({
-          score: highscore.score,
-          rank: playerRank > 0 ? `#${playerRank}` : 'N/A',
-          kicks: highscore.kicks,
-          time: highscore.time
-        });
-      } else {
-        setPlayerHighscore(null);
+        if (highscore) {
+          const allScores = await getCommunityPlaylistRanking(communityPlaylist.id, 1000);
+          const playerRank = allScores.findIndex(s => s.nickname === nickname) + 1;
+          
+          setPlayerHighscore({
+            score: highscore.score,
+            rank: playerRank > 0 ? `#${playerRank}` : 'N/A',
+            time: highscore.time
+          });
+        } else {
+          setPlayerHighscore(null);
+        }
+      } else if (playlist) {
+        // Para playlists oficiais
+        const { getPlayerHighscore, getTopScores } = await import('../firebase.js');
+        const highscore = await getPlayerHighscore(nickname, playlist.name);
+        
+        if (highscore) {
+          const allScores = await getTopScores(playlist.name, 1000);
+          const playerRank = allScores.findIndex(s => s.nickname === nickname) + 1;
+          
+          setPlayerHighscore({
+            score: highscore.score,
+            rank: playerRank > 0 ? `#${playerRank}` : 'N/A',
+            time: highscore.time
+          });
+        } else {
+          setPlayerHighscore(null);
+        }
       }
     } catch (error) {
       console.error('Error loading player highscore:', error);
@@ -96,14 +152,20 @@ function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDe
   };
 
   const loadRankings = async () => {
-    if (!playlist || isLoadingRanking) return;
+    if ((!playlist && !communityPlaylist) || isLoadingRanking) return;
 
     setIsLoadingRanking(true);
     
     try {
-      const { getTopScores } = await import('../firebase.js');
-      const scores = await getTopScores(playlist.name, 20);
-      setRankings(scores);
+      if (communityPlaylist) {
+        const { getCommunityPlaylistRanking } = await import('../firebase.js');
+        const scores = await getCommunityPlaylistRanking(communityPlaylist.id, 20);
+        setRankings(scores);
+      } else if (playlist) {
+        const { getTopScores } = await import('../firebase.js');
+        const scores = await getTopScores(playlist.name, 20);
+        setRankings(scores);
+      }
     } catch (error) {
       console.error('Error loading rankings:', error);
       setRankings([]);
@@ -119,7 +181,7 @@ function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDe
     return `${minutes}:${seconds.toString().padStart(2, '0')}.${cs.toString().padStart(2, '0')}`;
   };
 
-  if (!playlist || !playlistData) {
+  if ((!playlist && !communityPlaylist) || !playlistData) {
     return (
       <div className="playlist-details">
         <div className="playlist-empty">
@@ -132,16 +194,50 @@ function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDe
     );
   }
 
+  const displayName = playlist?.name || communityPlaylist?.name || '';
+  const displayIcon = playlist?.icon || 'fa-list-ul';
+  const displayDescription = playlistData.description || t('playlists.noDescription');
+
   return (
     <div className="playlist-details">
       {/* Header */}
       <div className="playlist-header">
-        <h3>
-          <i className={`fas ${playlist.icon}`}></i> {playlist.name}
-        </h3>
-        <button className="btn-primary" onClick={onStartPlaylist}>
-          <i className="fas fa-play"></i> {t('playlists.startPlaylist')}
-        </button>
+        <div>
+          <h3>
+            <i className={`fas ${displayIcon}`}></i> {displayName}
+          </h3>
+          {communityPlaylist && (
+            <div className="playlist-author">
+              <i className="fas fa-user"></i> {t('playlists.author')} {communityPlaylist.authorNickname}
+            </div>
+          )}
+        </div>
+        <div className="header-actions">
+          {communityPlaylist && onLike && onDislike && (
+            <div className="playlist-actions">
+              <button 
+                className={`btn-like ${userLike === 'like' ? 'active' : ''}`}
+                onClick={onLike}
+              >
+                <i className="fas fa-heart"></i> {communityPlaylist.likes}
+              </button>
+              <button 
+                className={`btn-dislike ${userLike === 'dislike' ? 'active' : ''}`}
+                onClick={onDislike}
+              >
+                <i className="fas fa-heart-broken"></i> {communityPlaylist.dislikes}
+              </button>
+            </div>
+          )}
+          {communityPlaylist && onDelete && userProfile && communityPlaylist.authorId === userProfile.uid && (
+            <button className="btn-delete" onClick={onDelete} title={t('playlists.deletePlaylist')}>
+              <i className="fas fa-trash"></i>
+            </button>
+          )}
+          <button className="btn-primary" onClick={onStartPlaylist}>
+            <i className="fas fa-play"></i> {t('playlists.startPlaylist')}
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -168,7 +264,7 @@ function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDe
               <span className="info-label">
                 <i className="fas fa-align-left"></i> {t('playlists.description')}
               </span>
-              <p>{playlistData.description || t('playlists.noDescription')}</p>
+              <p>{displayDescription}</p>
             </div>
             {stats && (
               <div className="info-grid">
@@ -183,12 +279,6 @@ function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDe
                     <i className="fas fa-stopwatch"></i> {t('playlists.avgTime')}
                   </span>
                   <span className="info-value">{stats.avgTime}</span>
-                </div>
-                <div className="info-item">
-                  <span className="info-label">
-                    <i className="fas fa-shoe-prints"></i> {t('playlists.avgKicks')}
-                  </span>
-                  <span className="info-value">{stats.avgKicks}</span>
                 </div>
               </div>
             )}
@@ -212,10 +302,6 @@ function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDe
                 <div className="highscore-item">
                   <span>{t('playlists.position')}</span>
                   <span className="highscore-value">{playerHighscore.rank}</span>
-                </div>
-                <div className="highscore-item">
-                  <span>{t('playlists.kicks')}</span>
-                  <span className="highscore-value">{playerHighscore.kicks}</span>
                 </div>
                 <div className="highscore-item">
                   <span>{t('playlists.time')}</span>
@@ -251,7 +337,6 @@ function PlaylistDetails({ playlist, playlistData, onStartPlaylist }: PlaylistDe
                   <div className="ranking-stat">
                     <strong>{entry.score.toLocaleString()}</strong> {t('playlists.pts')}
                   </div>
-                  <div className="ranking-stat">{entry.kicks} {t('playlists.kicksUnit')}</div>
                   <div className="ranking-stat">{formatTime(entry.time)}</div>
                 </div>
               );

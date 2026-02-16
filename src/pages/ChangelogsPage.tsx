@@ -22,6 +22,36 @@ interface ChangelogEntry {
 
 const changelogs: ChangelogEntry[] = [
   {
+    version: '0.1.0-alpha',
+    date: '2026-02-16',
+    changes: [
+      {
+        type: 'feature',
+        text: {
+          en: 'Community training playlists with publishing from editor',
+          pt: 'Playlists de treino da comunidade com publicação pelo editor',
+          es: 'Listas de entrenamiento de la comunidad con publicación desde el editor'
+        }
+      },
+      {
+        type: 'feature',
+        text: {
+          en: 'Extrapolation simulation system',
+          pt: 'Sistema de simulação de extrapolation',
+          es: 'Sistema de simulación de extrapolación'
+        }
+      },
+      {
+        type: 'bugfix',
+        text: {
+          en: 'Fixed bot kick force calculation with kickOnContact',
+          pt: 'Corrigido cálculo de força do chute dos bots com kickOnContact',
+          es: 'Corregido cálculo de fuerza del pateo de los bots con kickOnContact'
+        }
+      }
+    ]
+  },
+  {
     version: '0.0.1-alpha',
     date: '2026-02-15',
     changes: [

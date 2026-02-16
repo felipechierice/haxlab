@@ -53,22 +53,20 @@ export function isOfficialPlaylist(playlistName: string): boolean {
 export interface RankingEntry {
   nickname: string;
   playlistName: string;
-  kicks: number;
   time: number; // tempo em segundos
   score: number; // pontuação calculada
   timestamp: number;
 }
 
 /**
- * Calcula pontuação baseado em chutes e tempo
- * Quanto menos chutes e menos tempo, maior a pontuação
+ * Calcula pontuação baseado apenas no tempo
+ * Quanto menos tempo, maior a pontuação
  */
-export function calculateScore(kicks: number, timeInSeconds: number): number {
-  // Fórmula: 1000000 / (kicks * tempo_em_segundos)
-  // Isso garante que menos chutes e menos tempo = maior pontuação
-  const safeKicks = Math.max(kicks, 1);
+export function calculateScore(timeInSeconds: number): number {
+  // Fórmula: 100000 / tempo_em_segundos
+  // Isso garante que menos tempo = maior pontuação
   const safeTime = Math.max(timeInSeconds, 0.1);
-  const baseScore = 1000000 / (safeKicks * safeTime);
+  const baseScore = 100000 / safeTime;
   return Math.round(baseScore);
 }
 
@@ -80,32 +78,42 @@ export function calculateScore(kicks: number, timeInSeconds: number): number {
 export async function submitScore(
   nickname: string,
   playlistName: string,
-  kicks: number,
-  timeInSeconds: number
+  timeInSeconds: number,
+  playlistId?: string
 ): Promise<void> {
-  // Verificar se é uma playlist oficial
-  if (!isOfficialPlaylist(playlistName)) {
+  // Verificar se é uma playlist oficial ou da comunidade
+  const collectionName = playlistId ? 'community_rankings' : 'rankings';
+  
+  if (!playlistId && !isOfficialPlaylist(playlistName)) {
     console.log('Playlist não oficial, ranking não será salvo:', playlistName);
     return;
   }
   
-  const score = calculateScore(kicks, timeInSeconds);
+  const score = calculateScore(timeInSeconds);
   
-  const entry: RankingEntry = {
+  const entry: RankingEntry & { playlistId?: string } = {
     nickname,
     playlistName,
-    kicks,
     time: timeInSeconds,
     score,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    ...(playlistId && { playlistId })
   };
 
   try {
     // Verificar se já existe um registro para esse nickname + playlist
-    const q = query(
-      collection(db, 'rankings'),
+    const queryConstraints = [
       where('nickname', '==', nickname),
       where('playlistName', '==', playlistName)
+    ];
+    
+    if (playlistId) {
+      queryConstraints.push(where('playlistId', '==', playlistId));
+    }
+    
+    const q = query(
+      collection(db, collectionName),
+      ...queryConstraints
     );
     
     const querySnapshot = await getDocs(q);
@@ -117,8 +125,7 @@ export async function submitScore(
       
       if (score > existingEntry.score) {
         // Novo score é melhor - atualizar o primeiro e deletar os outros
-        await updateDoc(doc(db, 'rankings', existingDocs[0].id), {
-          kicks: entry.kicks,
+        await updateDoc(doc(db, collectionName, existingDocs[0].id), {
           time: entry.time,
           score: entry.score,
           timestamp: entry.timestamp
@@ -126,21 +133,21 @@ export async function submitScore(
         
         // Deletar registros duplicados se existirem
         for (let i = 1; i < existingDocs.length; i++) {
-          await deleteDoc(doc(db, 'rankings', existingDocs[i].id));
+          await deleteDoc(doc(db, collectionName, existingDocs[i].id));
         }
         
         console.log('Score updated successfully:', entry);
       } else {
         // Score existente é melhor - apenas deletar duplicatas se existirem
         for (let i = 1; i < existingDocs.length; i++) {
-          await deleteDoc(doc(db, 'rankings', existingDocs[i].id));
+          await deleteDoc(doc(db, collectionName, existingDocs[i].id));
         }
         
         console.log('Existing score is better, no update needed');
       }
     } else {
       // Não existe registro - criar novo
-      await addDoc(collection(db, 'rankings'), entry);
+      await addDoc(collection(db, collectionName), entry);
       console.log('Score submitted successfully:', entry);
     }
   } catch (error) {
@@ -272,5 +279,81 @@ export async function getPlayerHighscore(nickname: string, playlistName: string)
   } catch (error) {
     console.error('Error getting player highscore:', error);
     return null;
+  }
+}
+
+/**
+ * Obtém top scores de uma playlist da comunidade
+ */
+export async function getCommunityPlaylistRanking(playlistId: string, limitCount: number = 10): Promise<RankingEntry[]> {
+  try {
+    const q = query(
+      collection(db, 'community_rankings'),
+      where('playlistId', '==', playlistId),
+      orderBy('score', 'desc'),
+      limit(limitCount)
+    );
+
+    const querySnapshot = await getDocs(q);
+    const scores: RankingEntry[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      scores.push(doc.data() as RankingEntry);
+    });
+
+    return scores;
+  } catch (error) {
+    console.error('Error getting community playlist ranking:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtém highscore de um jogador para uma playlist da comunidade específica
+ */
+export async function getPlayerCommunityPlaylistHighscore(
+  nickname: string, 
+  playlistId: string
+): Promise<RankingEntry | null> {
+  try {
+    const q = query(
+      collection(db, 'community_rankings'),
+      where('nickname', '==', nickname),
+      where('playlistId', '==', playlistId),
+      limit(1)
+    );
+
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+      return null;
+    }
+    
+    return querySnapshot.docs[0].data() as RankingEntry;
+  } catch (error) {
+    console.error('Error getting player community playlist highscore:', error);
+    return null;
+  }
+}
+
+/**
+ * Obtém lista de playlists únicas que existem no ranking
+ */
+export async function getAvailablePlaylists(): Promise<string[]> {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'rankings'));
+    const playlistsSet = new Set<string>();
+    
+    querySnapshot.forEach((doc) => {
+      const data = doc.data() as RankingEntry;
+      if (data.playlistName) {
+        playlistsSet.add(data.playlistName);
+      }
+    });
+
+    return Array.from(playlistsSet).sort();
+  } catch (error) {
+    console.error('Error getting available playlists:', error);
+    return [];
   }
 }

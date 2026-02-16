@@ -174,6 +174,7 @@ export interface GameConfig {
   kickSpeedMultiplier?: number; // Multiplicador de velocidade ao segurar chute (padrão 1.0)
   disableGameOver?: boolean; // Se true, não mostra tela de game over
   extrapolation?: number; // Tempo de extrapolation em ms (0-200, padrão 0 = desligado)
+  interpolation?: boolean; // Se true, suaviza movimento entre frames (padrão true)
 }
 
 // Playlist System Types
@@ -250,6 +251,7 @@ export interface Playlist {
   description: string;
   scenarios: Scenario[];
   gameConfig?: Partial<GameConfig>; // Configurações de física opcionais (para garantir determinismo)
+  randomizeOrder?: boolean; // Se true, os cenários são embaralhados antes de começar
 }
 
 export interface PlaylistProgress {

@@ -33,6 +33,7 @@ interface EditorScenario {
 interface PlaylistSettings {
   name: string;
   description: string;
+  randomizeOrder: boolean;
 }
 
 interface EditorBot extends BotDefinition {
@@ -81,7 +82,8 @@ export class PlaylistEditor {
   private currentScenarioIndex: number = 0;
   private playlistSettings: PlaylistSettings = {
     name: 'Minha Playlist',
-    description: 'Playlist personalizada'
+    description: 'Playlist personalizada',
+    randomizeOrder: false
   };
   
   // Arrasto de pontos de path
@@ -365,6 +367,10 @@ export class PlaylistEditor {
         <span class="tool-icon"><i class="fas fa-cog"></i></span>
         <span class="tool-name">Cenário</span>
       </button>
+      <button class="editor-action-btn" id="editor-publish">
+        <span class="tool-icon"><i class="fas fa-cloud-upload-alt"></i></span>
+        <span class="tool-name">Publicar</span>
+      </button>
       <button class="editor-action-btn" id="editor-exit">
         <span class="tool-icon"><i class="fas fa-times"></i></span>
         <span class="tool-name">Sair</span>
@@ -397,6 +403,7 @@ export class PlaylistEditor {
     document.getElementById('editor-next-scenario')?.addEventListener('click', () => this.nextScenario());
     document.getElementById('editor-add-scenario')?.addEventListener('click', () => this.addScenario());
     document.getElementById('editor-remove-scenario')?.addEventListener('click', () => this.removeScenario());
+    document.getElementById('editor-publish')?.addEventListener('click', () => this.publishPlaylist());
     document.getElementById('editor-exit')?.addEventListener('click', () => this.exit());
   }
 
@@ -1980,6 +1987,12 @@ export class PlaylistEditor {
         <textarea id="prop-playlist-description" rows="3">${this.playlistSettings.description}</textarea>
       </div>
       <div class="property">
+        <label>
+          <input type="checkbox" id="prop-randomize-order" ${this.playlistSettings.randomizeOrder ? 'checked' : ''} />
+          Ordem aleatória dos cenários
+        </label>
+      </div>
+      <div class="property">
         <label>Cenários: ${this.scenarios.length}</label>
       </div>
       <div class="property">
@@ -1995,6 +2008,7 @@ export class PlaylistEditor {
   private applyPlaylistSettings(): void {
     this.playlistSettings.name = (document.getElementById('prop-playlist-name') as HTMLInputElement).value;
     this.playlistSettings.description = (document.getElementById('prop-playlist-description') as HTMLTextAreaElement).value;
+    this.playlistSettings.randomizeOrder = (document.getElementById('prop-randomize-order') as HTMLInputElement).checked;
     
     this.propertiesPanel?.classList.add('hidden');
     this.triggerAutoSave();
@@ -2677,6 +2691,7 @@ export class PlaylistEditor {
           // Substituir tudo
           this.playlistSettings.name = data.name || 'Playlist Importada';
           this.playlistSettings.description = data.description || '';
+          this.playlistSettings.randomizeOrder = data.randomizeOrder || false;
           this.scenarios = [];
           
           // Importar configurações de física se existirem
@@ -2841,7 +2856,8 @@ export class PlaylistEditor {
       name: this.playlistSettings.name,
       description: this.playlistSettings.description,
       scenarios,
-      gameConfig
+      gameConfig,
+      randomizeOrder: this.playlistSettings.randomizeOrder
     };
   }
 
@@ -3073,6 +3089,85 @@ export class PlaylistEditor {
       this.cleanup();
       // Voltar ao menu principal - disparar evento customizado
       window.dispatchEvent(new CustomEvent('editor-exit'));
+    }
+  }
+
+  private async publishPlaylist(): Promise<void> {
+    // Salvar o cenário atual antes de publicar
+    this.saveCurrentScenario();
+
+    // Validar playlist
+    if (!this.playlistSettings.name.trim()) {
+      alert('Por favor, defina um nome para a playlist antes de publicar.\n\nVá em "Playlist" > Nome da Playlist');
+      return;
+    }
+
+    if (this.scenarios.length === 0) {
+      alert('A playlist deve ter pelo menos um cenário para ser publicada.');
+      return;
+    }
+
+    try {
+      // Importar módulos dinamicamente para evitar problemas de carregamento
+      const { publishCommunityPlaylist } = await import('./community-playlists.js');
+      const { auth } = await import('./auth.js');
+      const { getUserProfile } = await import('./auth.js');
+      
+      // Verificar se o usuário está autenticado (prioridade sobre sessão guest)
+      const currentUser = auth.currentUser;
+      
+      if (!currentUser) {
+        // Não está autenticado - pedir para fazer login
+        const shouldLogin = confirm(
+          'Você precisa fazer login ou criar uma conta para publicar playlists na comunidade.\n\n' +
+          'Usuários convidados não podem publicar playlists.\n\n' +
+          'Deseja voltar ao menu principal para fazer login?'
+        );
+        
+        if (shouldLogin) {
+          this.cleanup();
+          window.dispatchEvent(new CustomEvent('editor-exit'));
+        }
+        return;
+      }
+
+      // Buscar perfil do usuário
+      const userProfile = await getUserProfile(currentUser.uid);
+      
+      if (!userProfile) {
+        alert('Erro ao carregar perfil do usuário.');
+        return;
+      }
+
+      // Confirmar publicação
+      const confirmPublish = confirm(
+        `Publicar playlist "${this.playlistSettings.name}" na comunidade?\n\n` +
+        `A playlist será visível para todos os jogadores e poderá receber likes e ser jogada por outros usuários.`
+      );
+
+      if (!confirmPublish) {
+        return;
+      }
+
+      // Exportar playlist
+      const playlist = this.exportPlaylist();
+
+      // Publicar na comunidade
+      const playlistId = await publishCommunityPlaylist(
+        playlist,
+        currentUser.uid,
+        userProfile.nickname
+      );
+
+      alert(
+        `✅ Playlist "${this.playlistSettings.name}" publicada com sucesso!\n\n` +
+        `Ela agora está disponível na aba "Comunidade" da tela de playlists.`
+      );
+
+      console.log('Playlist publicada com ID:', playlistId);
+    } catch (error) {
+      console.error('Erro ao publicar playlist:', error);
+      alert('❌ Erro ao publicar playlist. Tente novamente mais tarde.');
     }
   }
 

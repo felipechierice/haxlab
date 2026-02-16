@@ -102,6 +102,10 @@ function SettingsPage() {
   };
 
   const handleApply = () => {
+    // Ler configuração de interpolação do localStorage
+    const interpolationSaved = localStorage.getItem('interpolation');
+    const interpolationEnabled = interpolationSaved ? interpolationSaved === 'true' : true;
+    
     // Salvar configurações no localStorage
     const config: GameConfig = {
       timeLimit: settings.timeLimit * 60,
@@ -113,6 +117,7 @@ function SettingsPage() {
       playerSpeed: settings.playerSpeed,
       playerAcceleration: settings.playerAcceleration,
       kickSpeedMultiplier: settings.kickSpeedMultiplier,
+      interpolation: interpolationEnabled,
       ballConfig: {
         radius: settings.ballRadius,
         mass: settings.ballMass,

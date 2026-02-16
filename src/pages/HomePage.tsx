@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../hooks/useI18n';
 import { useKeyboardNav } from '../hooks/useKeyboardNav';
-import { getNickname, saveNickname, generateRandomNickname, isValidNickname } from '../player.js';
+import { useAuth } from '../contexts/AuthContext';
 import { audioManager } from '../audio';
+import { signOut } from '../auth';
 import RankingModal from '../components/RankingModal';
+import AuthModal from '../components/AuthModal';
 import { trackPageView } from '../analytics';
 import { GAME_VERSION } from '../version';
 
@@ -13,29 +15,23 @@ function HomePage() {
   useEffect(() => { trackPageView('HomePage'); }, []);
   const navigate = useNavigate();
   const { t } = useI18n();
-  const [nickname, setNickname] = useState(getNickname());
+  const { userProfile, isAuthenticated, setUserProfile } = useAuth();
   const [showRankingModal, setShowRankingModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   
   const { containerRef } = useKeyboardNav({
     autoFocus: true,
     initialFocusSelector: '.btn-play'
   });
 
-  const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setNickname(value);
-    if (isValidNickname(value)) {
-      saveNickname(value);
-    }
-  };
-
-  const handleRandomNickname = () => {
-    const newNickname = generateRandomNickname();
-    setNickname(newNickname);
-    saveNickname(newNickname);
-  };
-
   const handlePlay = () => {
+    // Validar se o jogador tem nickname
+    if (!userProfile || !userProfile.nickname || userProfile.nickname.trim().length === 0) {
+      audioManager.play('menuBack');
+      setShowAuthModal(true);
+      return;
+    }
+    
     audioManager.play('menuSelect');
     navigate('/modes');
   };
@@ -60,36 +56,49 @@ function HomePage() {
     navigate('/changelogs');
   };
 
+  const handleAuth = () => {
+    audioManager.play('menuSelect');
+    setShowAuthModal(true);
+  };
+
+  const handleLogout = async () => {
+    audioManager.play('menuSelect');
+    try {
+      await signOut();
+      // Setar perfil como null para mostrar botão de login
+      setUserProfile(null);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return (
     <div className="home-page">
       <div className="menu-container" ref={containerRef}>
         <img src="/images/haxlab-logo.webp" alt="HaxLab" className="logo" />
         
-        {/* Nickname */}
-        <div className="nickname-section">
-          <label className="form-label">
-            <i className="fas fa-user"></i> {t('menu.nickname')}
-          </label>
-          <div className="nickname-input-group">
-            <input
-              type="text"
-              className="nickname-input"
-              placeholder={t('menu.nickname.placeholder')}
-              value={nickname}
-              onChange={handleNicknameChange}
-              maxLength={16}
-              pattern="[a-zA-Z0-9]{3,16}"
-            />
-            <button 
-              className="btn-random"
-              onClick={handleRandomNickname}
-              title={t('menu.nickname.random')}
-            >
-              <i className="fas fa-dice"></i>
+        {/* User Info or Auth Button */}
+        {userProfile ? (
+          <div className="user-profile-section">
+            <div className="user-profile-info" onClick={handleAuth} style={{ cursor: 'pointer' }} title={t('auth.clickToManage')}>
+              <i className={`fas ${userProfile.isGuest ? 'fa-user' : 'fa-user-circle'}`}></i>
+              <div>
+                <div className="user-nickname">{userProfile.nickname}</div>
+                {userProfile.isGuest && (
+                  <div className="user-status">{t('auth.guest')}</div>
+                )}
+              </div>
+            </div>
+            <button className="btn-logout" onClick={handleLogout} title={t('auth.logout')}>
+              <i className="fas fa-sign-out-alt"></i>
             </button>
           </div>
-        </div>
-
+        ) : (
+          <button className="btn-auth" onClick={handleAuth}>
+            <i className="fas fa-sign-in-alt"></i> {t('auth.login')} / {t('auth.register')}
+          </button>
+        )}
+        
         {/* Action Buttons */}
         <div className="button-group">
           <button className="btn-play" onClick={handlePlay}>
@@ -120,7 +129,8 @@ function HomePage() {
         </div>
       </div>
 
-      <RankingModal isOpen={showRankingModal} onClose={() => setShowRankingModal(false)} />
+      {showRankingModal && <RankingModal isOpen={showRankingModal} onClose={() => setShowRankingModal(false)} />}
+      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} allowGuest={true} />}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { getTopScores, getAllRankings, RankingEntry } from '../firebase';
+import { getTopScores, getAllRankings, RankingEntry, getAvailablePlaylists } from '../firebase';
 import { useI18n } from '../hooks/useI18n';
 import { useKeyboardNav } from '../hooks/useKeyboardNav';
 
@@ -11,7 +11,6 @@ interface RankingModalProps {
 interface AggregatedPlayer {
   nickname: string;
   totalScore: number;
-  totalKicks: number;
   totalTime: number;
   entries: number;
 }
@@ -46,6 +45,7 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [availablePlaylists, setAvailablePlaylists] = useState<string[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const { containerRef } = useKeyboardNav({
@@ -53,14 +53,6 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
     autoFocus: isOpen,
     enabled: isOpen
   });
-
-  const playlists = [
-    { name: 'TORNEIO A.D. BRK - Edição 1', value: 'TORNEIO A.D. BRK - Edição 1' },
-    { name: 'Cruzamento - Fácil', value: 'Cruzamento - Fácil' },
-    { name: 'Drible e Gol', value: 'Drible e Gol' },
-    { name: 'Condução - Fácil', value: 'Condução - Fácil' },
-    { name: 'Finalizações - Fácil', value: 'Finalizações - Fácil' },
-  ];
 
   // Whether we show aggregated (summed by player) or individual entries
   const isAggregatedView = !selectedPlaylist;
@@ -72,14 +64,12 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
       const existing = playerMap.get(entry.nickname);
       if (existing) {
         existing.totalScore += entry.score;
-        existing.totalKicks += entry.kicks;
         existing.totalTime += entry.time;
         existing.entries += 1;
       } else {
         playerMap.set(entry.nickname, {
           nickname: entry.nickname,
           totalScore: entry.score,
-          totalKicks: entry.kicks,
           totalTime: entry.time,
           entries: 1,
         });
@@ -122,6 +112,7 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
       setSearchQuery('');
       setDisplayCount(PAGE_SIZE);
       loadRankings();
+      loadAvailablePlaylists();
     }
   }, [isOpen, selectedPlaylist]);
 
@@ -129,6 +120,16 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
   useEffect(() => {
     setDisplayCount(PAGE_SIZE);
   }, [searchQuery]);
+
+  const loadAvailablePlaylists = async () => {
+    try {
+      const playlists = await getAvailablePlaylists();
+      setAvailablePlaylists(playlists);
+    } catch (error) {
+      console.error('Error loading playlists:', error);
+      setAvailablePlaylists([]);
+    }
+  };
 
   const loadRankings = async () => {
     setLoading(true);
@@ -231,9 +232,9 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
               onChange={(e) => setSelectedPlaylist(e.target.value)}
             >
               <option value="">{t('ranking.global')}</option>
-              {playlists.map((playlist) => (
-                <option key={playlist.value} value={playlist.value}>
-                  {playlist.name}
+              {availablePlaylists.map((playlist) => (
+                <option key={playlist} value={playlist}>
+                  {playlist}
                 </option>
               ))}
             </select>
@@ -291,7 +292,6 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
                     <th>{t('result.rank')}</th>
                     <th>{t('ranking.nickname')}</th>
                     <th>{t('ranking.playlists')}</th>
-                    <th>{t('result.kicks')}</th>
                     <th>{t('result.time')}</th>
                     <th>{t('result.score')}</th>
                   </tr>
@@ -321,7 +321,6 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
                         <td className="playlists-count-cell">
                           <span className="playlists-badge">{player.entries}</span>
                         </td>
-                        <td className="kicks-cell">{player.totalKicks}</td>
                         <td className="time-cell">{formatTime(player.totalTime)}</td>
                         <td className="score-cell">{player.totalScore.toLocaleString()}</td>
                       </tr>
@@ -352,7 +351,6 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
                     <th>{t('result.rank')}</th>
                     <th>{t('ranking.nickname')}</th>
                     <th>{t('ranking.playlistName')}</th>
-                    <th>{t('result.kicks')}</th>
                     <th>{t('result.time')}</th>
                     <th>{t('result.score')}</th>
                   </tr>
@@ -380,7 +378,6 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
                           <span className="nickname-text">{entry.nickname}</span>
                         </td>
                         <td className="playlist-cell">{entry.playlistName}</td>
-                        <td className="kicks-cell">{entry.kicks}</td>
                         <td className="time-cell">{formatTime(entry.time)}</td>
                         <td className="score-cell">{entry.score.toLocaleString()}</td>
                       </tr>

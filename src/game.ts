@@ -1,4 +1,4 @@
-import { GameState, Player, GameMap, Goal, Vector2D, GameConfig, BotBehavior } from './types.js';
+import { GameState, Player, GameMap, Goal, Vector2D, GameConfig, BotBehavior, NoneBehaviorConfig } from './types.js';
 import { Physics } from './physics.js';
 import { Renderer } from './renderer.js';
 import { GameConsole } from './console.js';
@@ -792,6 +792,17 @@ export class Game {
           }
         }
         
+        // Para bots com kickOnContact: chuta imediatamente na colisão
+        if (player.isBot && player.botBehavior && !player.hasKickedThisPress) {
+          if (player.botBehavior.preset === 'none') {
+            const config = player.botBehavior.config as NoneBehaviorConfig;
+            if (config.kickOnContact) {
+              this.tryKick(player, 1);
+              player.input.kick = false;
+            }
+          }
+        }
+        
         // Rastreia quem tocou na bola por último  
         if (player.team !== 'spectator') {
           this.lastBallToucher = { 
@@ -1060,6 +1071,9 @@ export class Game {
         right: binds.right.some(key => this.keyState[key])
       };
       
+      // Verifica se interpolação está habilitada
+      const interpolationEnabled = this.config.interpolation !== false;
+      
       extrapolatedPositions = extrapolation.extrapolate(
         this.state,
         this.map.segments,
@@ -1068,13 +1082,16 @@ export class Game {
         this.config,
         this.inputControllers, // Passa InputControllers para extrapolação de bots
         undefined, // Não usa interpolação tradicional como base
-        interpolationData.alpha // Passa alpha para interpolar entre frames extrapolados
+        interpolationEnabled ? interpolationData.alpha : 1 // Passa alpha se interpolação habilitada, senão 1 (sem interpolação)
       );
     }
 
     // Renderizar
     // Quando extrapolação está ativa: usa interpolação ENTRE frames extrapolados (feita internamente)
     // Quando extrapolação está desligada: usar interpolação tradicional para suavidade
+    // Respeita a configuração de interpolation (padrão: true)
+    const interpolationEnabled = this.config.interpolation !== false;
+    
     this.renderer.drawState(
       this.state, 
       this.map, 
@@ -1082,8 +1099,8 @@ export class Game {
       this.state.time, 
       this.config.ballConfig,
       extrapolatedPositions,
-      // Não usar interpolação quando extrapolação está ativa (já está sendo feita internamente)
-      extrapolatedPositions ? undefined : interpolationData
+      // Só usa interpolação se estiver habilitada E se não estiver usando extrapolação
+      (interpolationEnabled && !extrapolatedPositions) ? interpolationData : undefined
     );
     
     // FPS tracking e display

@@ -28,6 +28,7 @@ let currentEditor: PlaylistEditor | null = null;
 let currentConfig: GameConfig = loadConfigFromStorage();
 let currentMapType: string = localStorage.getItem('mapType') || 'default';
 let isPlaylistMode: boolean = false;
+let communityPlaylistId: string | undefined = undefined; // ID da playlist da comunidade (se aplicável)
 let isEditorMode: boolean = false;
 
 function getDefaultConfig(): GameConfig {
@@ -54,14 +55,21 @@ function getDefaultConfig(): GameConfig {
 
 function loadConfigFromStorage(): GameConfig {
   const savedConfig = localStorage.getItem('gameConfig');
+  const interpolationSaved = localStorage.getItem('interpolation');
+  const interpolationEnabled = interpolationSaved ? interpolationSaved === 'true' : true; // Padrão: ativado
+  
   if (savedConfig) {
     try {
-      return JSON.parse(savedConfig) as GameConfig;
+      const config = JSON.parse(savedConfig) as GameConfig;
+      config.interpolation = interpolationEnabled; // Adiciona configuração de interpolação
+      return config;
     } catch (e) {
       console.error('Error loading config from storage:', e);
     }
   }
-  return getDefaultConfig();
+  const defaultConfig = getDefaultConfig();
+  defaultConfig.interpolation = interpolationEnabled; // Adiciona configuração de interpolação
+  return defaultConfig;
 }
 
 // ── Playlist HUD ──
@@ -232,12 +240,15 @@ window.addEventListener('game-play-again', handlePlayAgain);
   document.body.classList.add('game-active');
 };
 
-(window as any).initPlaylistCanvas = (playlist: Playlist) => {
+(window as any).initPlaylistCanvas = (playlist: Playlist, playlistId?: string) => {
   const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
   if (!canvas) {
     console.error('Canvas not found');
     return;
   }
+  
+  // Salvar ID da playlist da comunidade (se fornecido)
+  communityPlaylistId = playlistId;
   
   if (currentGame) {
     currentGame.stop();
@@ -255,6 +266,17 @@ window.addEventListener('game-play-again', handlePlayAgain);
   document.getElementById('playlist-hud')?.classList.remove('hidden');
   document.getElementById('playlist-hud-bottom')?.classList.remove('hidden');
   document.getElementById('game-info')?.classList.add('hidden');
+  
+  // Se randomizeOrder estiver ativado, embaralhar os cenários
+  if (playlist.randomizeOrder) {
+    // Fisher-Yates shuffle
+    const scenarios = [...playlist.scenarios];
+    for (let i = scenarios.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [scenarios[i], scenarios[j]] = [scenarios[j], scenarios[i]];
+    }
+    playlist = { ...playlist, scenarios };
+  }
   
   // Playlists sempre usam configurações padrão (exceto keybinds)
   // IMPORTANTE: Usar config padrão fixo para garantir determinismo entre editor e modo de jogo
@@ -285,22 +307,29 @@ window.addEventListener('game-play-again', handlePlayAgain);
       showFeedback('<i class="fas fa-trophy"></i> Playlist Completa!', '#ffff00', true);
       
       const nickname = getNickname();
-      const kicks = currentPlaylist!.getTotalKicks();
       const time = currentPlaylist!.getPlaylistTime();
-      const score = calculateScore(kicks, time);
+      const score = calculateScore(time);
       
       let previousHighscore: RankingEntry | null = null;
       try {
-        previousHighscore = await getPlayerHighscore(nickname, playlist.name);
+        // Se for playlist da comunidade, buscar do ranking da comunidade
+        if (communityPlaylistId) {
+          const { getPlayerCommunityPlaylistHighscore } = await import('./firebase.js');
+          previousHighscore = await getPlayerCommunityPlaylistHighscore(nickname, communityPlaylistId);
+        } else {
+          previousHighscore = await getPlayerHighscore(nickname, playlist.name);
+        }
       } catch (error) {
         console.error('Failed to get previous highscore:', error);
       }
       
-      const isOfficial = isOfficialPlaylist(playlist.name);
-      trackPlaylistComplete(playlist.name, kicks, time, score, isOfficial);
+      // Playlists oficiais e playlists da comunidade salvam scores
+      const isOfficial = isOfficialPlaylist(playlist.name) || !!communityPlaylistId;
+      trackPlaylistComplete(playlist.name, time, score, isOfficial);
       
       try {
-        await submitScore(nickname, playlist.name, kicks, time);
+        // Se for playlist da comunidade, passar o ID
+        await submitScore(nickname, playlist.name, time, communityPlaylistId);
         console.log('Score submitted!');
         const isNewHighscore = !previousHighscore || score > previousHighscore.score;
         trackScoreSubmit(playlist.name, score, isNewHighscore);
@@ -314,12 +343,12 @@ window.addEventListener('game-play-again', handlePlayAgain);
         window.dispatchEvent(new CustomEvent('playlist-complete', {
           detail: {
             playlistName: playlist.name,
-            kicks,
             time,
             score,
             previousHighscore,
             isOfficial,
             playlistData: playlist,
+            communityPlaylistId,
           }
         }));
       }, 2000);

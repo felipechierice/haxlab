@@ -87,6 +87,26 @@ export const translations: Translations = {
     pt: 'Prevê posições futuras para reduzir input lag percebido. 0 = desligado, 20-60ms = recomendado.',
     es: 'Predice posiciones futuras para reducir el lag de entrada percibido. 0 = apagado, 20-60ms = recomendado.'
   },
+  'appSettings.interpolation': {
+    en: 'Interpolation',
+    pt: 'Interpolação',
+    es: 'Interpolación'
+  },
+  'appSettings.interpolationHint': {
+    en: 'Smooths movement between frames. Enabled by default.',
+    pt: 'Suaviza movimento entre frames. Ativado por padrão.',
+    es: 'Suaviza el movimiento entre fotogramas. Activado por defecto.'
+  },
+  'appSettings.enabled': {
+    en: 'Enabled',
+    pt: 'Ativado',
+    es: 'Activado'
+  },
+  'appSettings.disabled': {
+    en: 'Disabled',
+    pt: 'Desativado',
+    es: 'Desactivado'
+  },
   'appSettings.back': {
     en: 'Back',
     pt: 'Voltar',
@@ -250,6 +270,148 @@ export const translations: Translations = {
     en: 'kicks',
     pt: 'chutes',
     es: 'patadas'
+  },
+  
+  // Auth & Community Playlists
+  'auth.guest': {
+    en: 'Guest',
+    pt: 'Convidado',
+    es: 'Invitado'
+  },
+  'auth.clickToManage': {
+    en: 'Click to manage account',
+    pt: 'Clique para gerenciar conta',
+    es: 'Clic para gestionar cuenta'
+  },
+  'auth.login': {
+    en: 'Login',
+    pt: 'Login',
+    es: 'Iniciar Sesión'
+  },
+  'auth.logout': {
+    en: 'Logout',
+    pt: 'Sair',
+    es: 'Cerrar Sesión'
+  },
+  'auth.register': {
+    en: 'Register',
+    pt: 'Cadastrar',
+    es: 'Registrarse'
+  },
+  'auth.profile': {
+    en: 'Profile',
+    pt: 'Perfil',
+    es: 'Perfil'
+  },
+  'playlists.official': {
+    en: 'Official',
+    pt: 'Oficiais',
+    es: 'Oficiales'
+  },
+  'playlists.community': {
+    en: 'Community',
+    pt: 'Comunidade',
+    es: 'Comunidad'
+  },
+  'playlists.publish': {
+    en: 'Publish',
+    pt: 'Publicar',
+    es: 'Publicar'
+  },
+  'playlists.published': {
+    en: 'Published',
+    pt: 'Publicado',
+    es: 'Publicado'
+  },
+  'playlists.publishSuccess': {
+    en: 'Playlist published successfully!',
+    pt: 'Playlist publicada com sucesso!',
+    es: '¡Lista publicada exitosamente!'
+  },
+  'playlists.publishError': {
+    en: 'Error publishing playlist',
+    pt: 'Erro ao publicar playlist',
+    es: 'Error al publicar la lista'
+  },
+  'playlists.loginRequired': {
+    en: 'You need to login to publish playlists',
+    pt: 'Você precisa fazer login para publicar playlists',
+    es: 'Necesitas iniciar sesión para publicar listas'
+  },
+  'playlists.sortBy': {
+    en: 'Sort by:',
+    pt: 'Ordenar por:',
+    es: 'Ordenar por:'
+  },
+  'playlists.sortLikes': {
+    en: 'Likes',
+    pt: 'Likes',
+    es: 'Me gusta'
+  },
+  'playlists.sortRecent': {
+    en: 'Recent',
+    pt: 'Recentes',
+    es: 'Recientes'
+  },
+  'playlists.sortPlays': {
+    en: 'Most Played',
+    pt: 'Mais Jogadas',
+    es: 'Más Jugadas'
+  },
+  'playlists.sortName': {
+    en: 'Name',
+    pt: 'Nome',
+    es: 'Nombre'
+  },
+  'playlists.author': {
+    en: 'By',
+    pt: 'Por',
+    es: 'Por'
+  },
+  'playlists.likes': {
+    en: 'likes',
+    pt: 'likes',
+    es: 'me gusta'
+  },
+  'playlists.plays': {
+    en: 'plays',
+    pt: 'jogadas',
+    es: 'jugadas'
+  },
+  'playlists.noCommunityPlaylists': {
+    en: 'No community playlists yet',
+    pt: 'Ainda não há playlists da comunidade',
+    es: 'Aún no hay listas de la comunidad'
+  },
+  'playlists.deletePlaylist': {
+    en: 'Delete playlist',
+    pt: 'Excluir playlist',
+    es: 'Eliminar lista'
+  },
+  'playlists.confirmDelete': {
+    en: 'Are you sure you want to delete this playlist? This action cannot be undone.',
+    pt: 'Tem certeza que deseja excluir esta playlist? Esta ação não pode ser desfeita.',
+    es: '¿Estás seguro de que quieres eliminar esta lista? Esta acción no se puede deshacer.'
+  },
+  'playlists.deleteError': {
+    en: 'Error deleting playlist',
+    pt: 'Erro ao excluir playlist',
+    es: 'Error al eliminar la lista'
+  },
+  'playlists.guestCantLike': {
+    en: 'You need to create an account to like playlists. Click on your profile to sign up.',
+    pt: 'Você precisa criar uma conta para curtir playlists. Clique no seu perfil para se cadastrar.',
+    es: 'Necesitas crear una cuenta para dar me gusta a las listas. Haz clic en tu perfil para registrarte.'
+  },
+  'playlists.likeError': {
+    en: 'Error liking playlist',
+    pt: 'Erro ao curtir playlist',
+    es: 'Error al dar me gusta a la lista'
+  },
+  'playlists.randomizeOrder': {
+    en: 'Random scenario order',
+    pt: 'Ordem aleatória dos cenários',
+    es: 'Orden aleatorio de escenarios'
   },
 
   // Playlist Result Modal

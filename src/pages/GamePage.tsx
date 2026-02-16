@@ -11,7 +11,7 @@ import { trackPageView, trackFreePlayEnd } from '../analytics';
 declare global {
   interface Window {
     initGameCanvas: () => void;
-    initPlaylistCanvas: (playlist: Playlist) => void;
+    initPlaylistCanvas: (playlist: Playlist, communityPlaylistId?: string) => void;
     initEditorCanvas: () => void;
     cleanupGame: () => void;
     playlistResetScenario: () => void;
@@ -29,16 +29,17 @@ declare global {
 interface LocationState {
   playlist?: Playlist;
   mode?: 'free' | 'playlist' | 'editor';
+  communityPlaylistId?: string;
 }
 
 interface PlaylistResult {
   playlistName: string;
-  kicks: number;
   time: number;
   score: number;
   previousHighscore: RankingEntry | null;
   isOfficial: boolean;
   playlistData: Playlist | null;
+  communityPlaylistId?: string;
 }
 
 interface GameOverInfo {
@@ -122,7 +123,7 @@ function GamePage() {
     if (state?.mode === 'playlist' && state.playlist) {
       // Modo playlist
       if (window.initPlaylistCanvas) {
-        window.initPlaylistCanvas(state.playlist);
+        window.initPlaylistCanvas(state.playlist, state.communityPlaylistId);
       }
     } else if (state?.mode === 'editor') {
       // Modo editor
@@ -185,7 +186,7 @@ function GamePage() {
     setPlaylistResult(null);
     // Re-inicializar a playlist
     if (state?.playlist && window.initPlaylistCanvas) {
-      window.initPlaylistCanvas(state.playlist);
+      window.initPlaylistCanvas(state.playlist, state.communityPlaylistId);
     }
   };
 
@@ -317,12 +318,12 @@ function GamePage() {
         <PlaylistResultModal
           isOpen={showResultModal}
           playlistName={playlistResult.playlistName}
-          kicks={playlistResult.kicks}
           time={playlistResult.time}
           score={playlistResult.score}
           previousHighscore={playlistResult.previousHighscore}
           isOfficial={playlistResult.isOfficial}
           playlistData={playlistResult.playlistData}
+          communityPlaylistId={playlistResult.communityPlaylistId}
           onRetry={handleRetryPlaylist}
           onClose={handleCloseResult}
         />

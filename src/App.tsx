@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useEffect } from 'react';
+import { AuthProvider } from './contexts/AuthContext';
 import HomePage from './pages/HomePage';
 import GameModesPage from './pages/GameModesPage';
 import PlaylistsPage from './pages/PlaylistsPage';
@@ -25,18 +26,20 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/modes" element={<GameModesPage />} />
-        <Route path="/playlists" element={<PlaylistsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/app-settings" element={<AppSettingsPage />} />
-        <Route path="/game" element={<GamePage />} />
-        <Route path="/credits" element={<CreditsPage />} />
-        <Route path="/changelogs" element={<ChangelogsPage />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/modes" element={<GameModesPage />} />
+          <Route path="/playlists" element={<PlaylistsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/app-settings" element={<AppSettingsPage />} />
+          <Route path="/game" element={<GamePage />} />
+          <Route path="/credits" element={<CreditsPage />} />
+          <Route path="/changelogs" element={<ChangelogsPage />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

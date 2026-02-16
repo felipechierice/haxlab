@@ -2,27 +2,108 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Perfis de usuário
+    match /users/{userId} {
+      // Permitir leitura do próprio perfil ou de qualquer perfil (para mostrar autores)
+      allow read: if true;
+      
+      // Permitir criar perfil apenas para o próprio usuário
+      allow create: if request.auth != null 
+                    && request.auth.uid == userId
+                    && request.resource.data.keys().hasAll(['uid', 'nickname', 'isGuest', 'createdAt'])
+                    && request.resource.data.uid == userId
+                    && request.resource.data.nickname is string
+                    && request.resource.data.nickname.size() >= 1
+                    && request.resource.data.nickname.size() <= 16;
+      
+      // Permitir atualizar apenas o próprio perfil
+      allow update: if request.auth != null 
+                    && request.auth.uid == userId;
+    }
+    
+    // Playlists da comunidade
+    match /community_playlists/{playlistId} {
+      // Permitir leitura para todos
+      allow read: if true;
+      
+      // Permitir criar playlist apenas para usuários autenticados
+      allow create: if request.auth != null
+                    && request.resource.data.authorId == request.auth.uid
+                    && request.resource.data.keys().hasAll(['name', 'description', 'authorId', 'authorNickname', 'scenarios', 'likes', 'dislikes', 'createdAt'])
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() >= 3
+                    && request.resource.data.scenarios is list
+                    && request.resource.data.scenarios.size() > 0;
+      
+      // Permitir atualizar apenas o próprio playlist OU atualizar contadores de likes/dislikes
+      allow update: if request.auth != null && (
+                      // Autor pode atualizar tudo
+                      request.auth.uid == resource.data.authorId ||
+                      // Qualquer um autenticado pode atualizar apenas likes/dislikes
+                      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'dislikes', 'updatedAt']))
+                    );
+      
+      // Permitir deletar apenas o próprio playlist
+      allow delete: if request.auth != null
+                    && request.auth.uid == resource.data.authorId;
+    }
+    
+    // Likes/dislikes de playlists
+    match /playlist_likes/{likeId} {
+      // Permitir leitura para todos
+      allow read: if true;
+      
+      // Permitir criar/atualizar apenas o próprio like
+      allow create, update: if request.auth != null
+                            && request.resource.data.userId == request.auth.uid;
+      
+      // Permitir deletar apenas o próprio like
+      allow delete: if request.auth != null
+                    && request.auth.uid == resource.data.userId;
+    }
+    
     // Permitir leitura do ranking para todos
     // Permitir escrita apenas com dados válidos
     match /rankings/{rankingId} {
       allow read: if true;
       
       // Criar novo registro
-      allow create: if request.resource.data.keys().hasAll(['nickname', 'playlistName', 'kicks', 'time', 'score', 'timestamp'])
+      allow create: if request.resource.data.keys().hasAll(['nickname', 'playlistName', 'time', 'score', 'timestamp'])
                     && request.resource.data.nickname is string
                     && request.resource.data.nickname.size() >= 3
                     && request.resource.data.nickname.size() <= 16
-                    && request.resource.data.kicks is number
-                    && request.resource.data.kicks >= 0
                     && request.resource.data.time is number
                     && request.resource.data.time >= 0
                     && request.resource.data.score is number
                     && request.resource.data.timestamp is number;
       
       // Atualizar registro existente (para atualizar highscore)
-      allow update: if request.resource.data.kicks is number
-                    && request.resource.data.kicks >= 0
+      allow update: if request.resource.data.time is number
+                    && request.resource.data.time >= 0
+                    && request.resource.data.score is number
+                    && request.resource.data.timestamp is number;
+      
+      // Deletar registros duplicados
+      allow delete: if true;
+    }
+    
+    // Rankings de playlists da comunidade
+    match /community_rankings/{rankingId} {
+      allow read: if true;
+      
+      // Criar novo registro
+      allow create: if request.resource.data.keys().hasAll(['nickname', 'playlistName', 'playlistId', 'time', 'score', 'timestamp'])
+                    && request.resource.data.nickname is string
+                    && request.resource.data.nickname.size() >= 3
+                    && request.resource.data.nickname.size() <= 16
+                    && request.resource.data.playlistId is string
                     && request.resource.data.time is number
+                    && request.resource.data.time >= 0
+                    && request.resource.data.score is number
+                    && request.resource.data.timestamp is number;
+      
+      // Atualizar registro existente (para atualizar highscore)
+      allow update: if request.resource.data.time is number
                     && request.resource.data.time >= 0
                     && request.resource.data.score is number
                     && request.resource.data.timestamp is number;

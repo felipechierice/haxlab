@@ -82,6 +82,27 @@
   gap: 16px;
 }
 
+.checkbox-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.checkbox-control input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #6366f1;
+}
+
+.checkbox-control .checkbox-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f1f5f9;
+  cursor: pointer;
+  user-select: none;
+}
+
 .volume-slider {
   flex: 1;
   height: 8px;

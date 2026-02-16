@@ -6,7 +6,7 @@
  * 
  * Formato recomendado: "MAJOR.MINOR.PATCH" ou "YYYY.MM.DD"
  */
-export const GAME_VERSION = '0.0.1-alpha';
+export const GAME_VERSION = '0.1.0-alpha';
 
 /**
  * Chaves do localStorage que devem ser resetadas quando a versão mudar

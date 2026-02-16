@@ -89,14 +89,12 @@ export function trackPlaylistStart(playlistName: string, scenarioCount: number):
 /** Jogador completou uma playlist inteira */
 export function trackPlaylistComplete(
   playlistName: string,
-  kicks: number,
   timeSeconds: number,
   score: number,
   isOfficial: boolean
 ): void {
   safeLogEvent('playlist_complete', {
     playlist_name: playlistName,
-    kicks,
     time_seconds: Math.round(timeSeconds),
     score,
     is_official: isOfficial,

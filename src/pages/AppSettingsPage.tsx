@@ -21,6 +21,11 @@ function AppSettingsPage() {
     const saved = localStorage.getItem('extrapolation');
     return saved ? parseInt(saved) : 0;
   });
+  
+  const [interpolationEnabled, setInterpolationEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('interpolation');
+    return saved ? saved === 'true' : true; // Padrão: ativado
+  });
 
   const [keybinds, setKeybinds] = useState<KeyBindings>(keyBindings.getBindings());
   const [configuringKey, setConfiguringKey] = useState<keyof KeyBindings | null>(null);
@@ -91,6 +96,12 @@ function AppSettingsPage() {
     extrapolation.setExtrapolation(ms);
     localStorage.setItem('extrapolation', ms.toString());
   };
+  
+  const handleInterpolationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const enabled = e.target.checked;
+    setInterpolationEnabled(enabled);
+    localStorage.setItem('interpolation', enabled.toString());
+  };
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     changeLanguage(e.target.value as 'en' | 'pt' | 'es');
@@ -157,6 +168,25 @@ function AppSettingsPage() {
               <span className="volume-value">{extrapolationMs}ms</span>
             </div>
             <p className="setting-hint">{t('appSettings.extrapolationHint')}</p>
+          </div>
+          
+          {/* Interpolation */}
+          <div className="setting-section">
+            <label className="setting-label">
+              <i className="fas fa-stream"></i> {t('appSettings.interpolation')}
+            </label>
+            <div className="checkbox-control">
+              <input
+                type="checkbox"
+                id="interpolation-checkbox"
+                checked={interpolationEnabled}
+                onChange={handleInterpolationChange}
+              />
+              <label htmlFor="interpolation-checkbox" className="checkbox-label">
+                {interpolationEnabled ? t('appSettings.enabled') : t('appSettings.disabled')}
+              </label>
+            </div>
+            <p className="setting-hint">{t('appSettings.interpolationHint')}</p>
           </div>
 
           {/* Controls / Keybindings */}

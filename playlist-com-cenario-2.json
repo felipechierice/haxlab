@@ -1,0 +1,210 @@
+{
+  "name": "Minha Playlist",
+  "description": "Playlist personalizada",
+  "scenarios": [
+    {
+      "name": "Cenário Customizado",
+      "map": "default",
+      "timeLimit": 3,
+      "objectives": [
+        {
+          "type": "goal",
+          "team": "red",
+          "scoredBy": "bot",
+          "scoredByBotId": "bot-1771277106917"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "kick_count",
+          "exact": 1
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771277106917",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 700,
+            "y": 300
+          },
+          "behavior": {
+            "preset": "none",
+            "config": {
+              "kickOnContact": true
+            }
+          },
+          "radius": 29
+        }
+      ],
+      "ballSpawn": {
+        "x": 883,
+        "y": 485
+      },
+      "playerSpawn": {
+        "x": 909,
+        "y": 507
+      }
+    },
+    {
+      "name": "Cenário Customizado 2 (Espelhado)",
+      "map": "default",
+      "timeLimit": 3,
+      "objectives": [
+        {
+          "type": "goal",
+          "team": "blue",
+          "scoredBy": "bot",
+          "scoredByBotId": "bot-1771277106917-mirror"
+        },
+        {
+          "type": "no_goal",
+          "team": "blue"
+        },
+        {
+          "type": "kick_count",
+          "exact": 1
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771277106917-mirror",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 700,
+            "y": 300
+          },
+          "behavior": {
+            "preset": "none",
+            "config": {
+              "kickOnContact": true
+            }
+          },
+          "radius": 29
+        }
+      ],
+      "ballSpawn": {
+        "x": 883,
+        "y": 115
+      },
+      "playerSpawn": {
+        "x": 909,
+        "y": 93
+      }
+    },
+    {
+      "name": "Cenário 3 - Lateral Esquerda Inferior",
+      "map": "default",
+      "timeLimit": 3,
+      "objectives": [
+        {
+          "type": "goal",
+          "team": "red",
+          "scoredBy": "bot",
+          "scoredByBotId": "bot-cenario3"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "kick_count",
+          "exact": 1
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-cenario3",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 300,
+            "y": 300
+          },
+          "behavior": {
+            "preset": "none",
+            "config": {
+              "kickOnContact": true
+            }
+          },
+          "radius": 29
+        }
+      ],
+      "ballSpawn": {
+        "x": 117,
+        "y": 485
+      },
+      "playerSpawn": {
+        "x": 91,
+        "y": 507
+      }
+    },
+    {
+      "name": "Cenário 4 - Lateral Esquerda Superior (Espelhado)",
+      "map": "default",
+      "timeLimit": 3,
+      "objectives": [
+        {
+          "type": "goal",
+          "team": "red",
+          "scoredBy": "bot",
+          "scoredByBotId": "bot-cenario4"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "kick_count",
+          "exact": 1
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-cenario4",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 300,
+            "y": 300
+          },
+          "behavior": {
+            "preset": "none",
+            "config": {
+              "kickOnContact": true
+            }
+          },
+          "radius": 29
+        }
+      ],
+      "ballSpawn": {
+        "x": 117,
+        "y": 115
+      },
+      "playerSpawn": {
+        "x": 91,
+        "y": 93
+      }
+    }
+  ],
+  "gameConfig": {
+    "kickStrength": 500,
+    "kickMode": "classic",
+    "playerRadius": 15,
+    "playerSpeed": 150,
+    "playerAcceleration": 7.5,
+    "kickSpeedMultiplier": 1,
+    "ballConfig": {
+      "radius": 8,
+      "mass": 5,
+      "damping": 0.99,
+      "color": "#ffff00",
+      "borderColor": "#000000",
+      "borderWidth": 2
+    }
+  }
+}

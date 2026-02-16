@@ -12,20 +12,17 @@ export interface PlaylistInfo {
 export interface PlaylistStats {
   scenariosCount: number;
   avgTime: string;
-  avgKicks: string;
 }
 
 export interface PlayerHighscore {
   score: number;
   rank: string;
-  kicks: number;
   time: number;
 }
 
 export interface RankingEntry {
   nickname: string;
   score: number;
-  kicks: number;
   time: number;
   playlistName: string;
 }
