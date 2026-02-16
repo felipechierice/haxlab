@@ -1,6 +1,14 @@
 import { GameState, GameMap, Circle, Segment, Goal, Vector2D, BallConfig, Player } from './types.js';
 import { ExtrapolatedPositions } from './extrapolation.js';
 
+/** Dados de interpolação para renderização suave entre frames de física */
+export interface InterpolationData {
+  alpha: number; // 0 = posição anterior, 1 = posição atual
+  prevBallPos: Vector2D;
+  prevPlayerPos: Map<string, Vector2D>;
+  ballCollided?: boolean; // Flag para indicar que a bola colidiu com parede ou player
+}
+
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
   private width: number;
@@ -277,16 +285,32 @@ export class Renderer {
     controlledPlayerId?: string, 
     time: number = 0, 
     ballConfig?: BallConfig,
-    extrapolatedPositions?: ExtrapolatedPositions
+    extrapolatedPositions?: ExtrapolatedPositions,
+    interpolation?: InterpolationData
   ): void {
     this.clear();
     this.drawMap(map);
 
     const ball = state.ball.circle;
     
-    // Usa posição extrapolada se disponível, senão usa posição real
-    const ballX = extrapolatedPositions?.ball.x ?? ball.pos.x;
-    const ballY = extrapolatedPositions?.ball.y ?? ball.pos.y;
+    // Prioridade: extrapolação > interpolação > posição atual
+    // Quando extrapolação está ativa, NÃO usar interpolação (causa conflito/tremor)
+    let ballX: number, ballY: number;
+    
+    if (extrapolatedPositions) {
+      // Usa extrapolação (predição de input)
+      ballX = extrapolatedPositions.ball.x;
+      ballY = extrapolatedPositions.ball.y;
+    } else if (interpolation) {
+      // Usa interpolação entre frame anterior e atual (suavização visual)
+      const a = interpolation.alpha;
+      ballX = interpolation.prevBallPos.x + (ball.pos.x - interpolation.prevBallPos.x) * a;
+      ballY = interpolation.prevBallPos.y + (ball.pos.y - interpolation.prevBallPos.y) * a;
+    } else {
+      // Posição atual
+      ballX = ball.pos.x;
+      ballY = ball.pos.y;
+    }
 
     // Desenha a bola
     if (ballConfig) {
@@ -302,10 +326,26 @@ export class Renderer {
       const color = player.team === 'red' ? this.colors.red : this.colors.blue;
       const circle = player.circle;
       
-      // Usa posição extrapolada se disponível, senão usa posição real
-      const playerPos = extrapolatedPositions?.players.get(player.id);
-      const drawX = playerPos?.x ?? circle.pos.x;
-      const drawY = playerPos?.y ?? circle.pos.y;
+      // Prioridade: extrapolação > interpolação > posição atual
+      let drawX: number, drawY: number;
+      if (extrapolatedPositions) {
+        const playerPos = extrapolatedPositions.players.get(player.id);
+        drawX = playerPos?.x ?? circle.pos.x;
+        drawY = playerPos?.y ?? circle.pos.y;
+      } else if (interpolation) {
+        const prevPos = interpolation.prevPlayerPos.get(player.id);
+        if (prevPos) {
+          const a = interpolation.alpha;
+          drawX = prevPos.x + (circle.pos.x - prevPos.x) * a;
+          drawY = prevPos.y + (circle.pos.y - prevPos.y) * a;
+        } else {
+          drawX = circle.pos.x;
+          drawY = circle.pos.y;
+        }
+      } else {
+        drawX = circle.pos.x;
+        drawY = circle.pos.y;
+      }
       
       this.drawCircle(drawX, drawY, circle.radius, color, true);
       

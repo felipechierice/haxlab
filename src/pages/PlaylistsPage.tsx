@@ -12,6 +12,12 @@ import { trackPageView } from '../analytics';
 
 const AVAILABLE_PLAYLISTS: PlaylistInfo[] = [
   // Playlists serão adicionadas aqui
+  {
+    file: 'mix-1.json',
+    name: 'Desafio 1',
+    description: '6 cenários combinando habilidades de passe, drible, finalizações e mais.',
+    icon: 'fa-trophy'
+  }
 ];
 
 function PlaylistsPage() {

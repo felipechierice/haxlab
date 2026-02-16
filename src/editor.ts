@@ -124,6 +124,10 @@ export class PlaylistEditor {
     
     this.setupEventListeners();
     this.createUI();
+    
+    // Atualizar contador de cenários após criar UI (importante se carregou do localStorage)
+    this.updateScenarioCounter();
+    
     this.startRenderLoop();
     
     // Debug: confirmar estado após inicialização
@@ -135,6 +139,11 @@ export class PlaylistEditor {
   }
   
   // ==================== AUTO-SAVE ====================
+  
+  // Helper para deep clone de objetos (evita problemas de referências compartilhadas)
+  private deepClone<T>(obj: T): T {
+    return JSON.parse(JSON.stringify(obj));
+  }
   
   private saveToLocalStorage(): void {
     try {
@@ -191,20 +200,20 @@ export class PlaylistEditor {
       // Restaurar dados (seja porque acabou de dizer sim, ou porque já tinha dito sim antes)
       console.log('[AutoSave] Carregando dados salvos...');
       
-      this.playlistSettings = data.playlistSettings;
-      this.scenarios = data.scenarios;
+      this.playlistSettings = this.deepClone(data.playlistSettings);
+      this.scenarios = this.deepClone(data.scenarios);
       this.currentScenarioIndex = data.currentScenarioIndex || 0;
       this.nextEntityId = data.nextEntityId || 0;
       
       // Restaurar configurações de física
       if (data.config) {
-        Object.assign(this.config, data.config);
+        Object.assign(this.config, this.deepClone(data.config));
       }
       
       // Carregar cenário atual
       const scenario = this.scenarios[this.currentScenarioIndex];
-      this.scenarioSettings = { ...scenario.settings };
-      this.entities = [...scenario.entities];
+      this.scenarioSettings = this.deepClone(scenario.settings);
+      this.entities = this.deepClone(scenario.entities);
       
       console.log('[AutoSave] Playlist restaurada:', {
         scenarios: this.scenarios.length,
@@ -1875,8 +1884,8 @@ export class PlaylistEditor {
 
   private saveCurrentScenario(): void {
     this.scenarios[this.currentScenarioIndex] = {
-      settings: { ...this.scenarioSettings },
-      entities: [...this.entities]
+      settings: this.deepClone(this.scenarioSettings),
+      entities: this.deepClone(this.entities)
     };
     // Auto-save no localStorage
     this.saveToLocalStorage();
@@ -1889,8 +1898,8 @@ export class PlaylistEditor {
     this.currentScenarioIndex = index;
     
     const scenario = this.scenarios[index];
-    this.scenarioSettings = { ...scenario.settings };
-    this.entities = [...scenario.entities];
+    this.scenarioSettings = this.deepClone(scenario.settings);
+    this.entities = this.deepClone(scenario.entities);
     this.selectedEntity = null;
     
     this.updateScenarioCounter();
@@ -1947,8 +1956,8 @@ export class PlaylistEditor {
       // Carrega o cenário diretamente sem salvar o cenário removido
       // (não chama loadScenario porque ele faz saveCurrentScenario antes)
       const scenario = this.scenarios[this.currentScenarioIndex];
-      this.scenarioSettings = { ...scenario.settings };
-      this.entities = [...scenario.entities];
+      this.scenarioSettings = this.deepClone(scenario.settings);
+      this.entities = this.deepClone(scenario.entities);
       this.selectedEntity = null;
       
       this.updateScenarioCounter();

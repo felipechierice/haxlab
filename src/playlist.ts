@@ -312,6 +312,9 @@ export class PlaylistMode {
       ball.circle.vel.y = scenario.initialBallVelocity.y;
     }
     
+    // Sincronizar interpolação após setar posições customizadas
+    this.game.syncInterpolation();
+    
     // Preparar objetivos
     this.prepareObjectives(scenario);
     
@@ -411,7 +414,19 @@ export class PlaylistMode {
     
     // Validar path sempre que existe (independente de checkpoints)
     if (this.activePath) {
-      if (!this.validateBallOnPath(ball.circle, this.activePath)) {
+      const validationResult = this.validateBallOnPathDebug(ball.circle, this.activePath);
+      if (!validationResult.isOnPath) {
+        console.log('[PATH FAIL DEBUG]', {
+          ballPosition: { x: ball.circle.pos.x.toFixed(2), y: ball.circle.pos.y.toFixed(2) },
+          ballRadius: ball.circle.radius,
+          pathWidth: this.activePath.width,
+          halfPathWidth: this.activePath.width / 2,
+          allowedDistance: (this.activePath.width / 2 + ball.circle.radius / 2).toFixed(2),
+          minDistanceToPath: validationResult.minDist.toFixed(2),
+          pathPoints: this.activePath.points,
+          pointDistances: validationResult.pointDistances.map(d => d.toFixed(2)),
+          segmentDistances: validationResult.segmentDistances.map(d => d.toFixed(2))
+        });
         this.failScenario('Bola saiu do caminho!');
         return;
       }
@@ -462,9 +477,16 @@ export class PlaylistMode {
   }
   
   private validateBallOnPath(ball: Circle, path: PathObjective): boolean {
-    // Encontrar o segmento mais próximo do caminho
+    // Encontrar a menor distância até o caminho (segmentos + pontos para lineCap round)
     let minDist = Infinity;
     
+    // Verificar distância até cada ponto (para lineCap: 'round' nas extremidades e cantos)
+    for (const point of path.points) {
+      const dist = Physics.vectorLength(Physics.vectorSub(ball.pos, point));
+      minDist = Math.min(minDist, dist);
+    }
+    
+    // Verificar distância até cada segmento
     for (let i = 0; i < path.points.length - 1; i++) {
       const p1 = path.points[i];
       const p2 = path.points[i + 1];
@@ -474,8 +496,38 @@ export class PlaylistMode {
       minDist = Math.min(minDist, dist);
     }
     
-    // Se a distância mínima for maior que a largura do caminho, saiu do caminho
-    return minDist <= path.width / 2;
+    // A bola falha quando pelo menos metade dela sair do caminho
+    // Tolerância = metade do raio da bola (permite que até 50% saia)
+    return minDist <= path.width / 2 + ball.radius / 2;
+  }
+  
+  private validateBallOnPathDebug(ball: Circle, path: PathObjective): { isOnPath: boolean; minDist: number; segmentDistances: number[]; pointDistances: number[] } {
+    // Encontrar a menor distância até o caminho (segmentos + pontos para lineCap round)
+    let minDist = Infinity;
+    const segmentDistances: number[] = [];
+    const pointDistances: number[] = [];
+    
+    // Verificar distância até cada ponto (para lineCap: 'round' nas extremidades e cantos)
+    for (const point of path.points) {
+      const dist = Physics.vectorLength(Physics.vectorSub(ball.pos, point));
+      pointDistances.push(dist);
+      minDist = Math.min(minDist, dist);
+    }
+    
+    // Verificar distância até cada segmento
+    for (let i = 0; i < path.points.length - 1; i++) {
+      const p1 = path.points[i];
+      const p2 = path.points[i + 1];
+      
+      // Calcular distância da bola até o segmento
+      const dist = this.distanceToSegment(ball.pos, p1, p2);
+      segmentDistances.push(dist);
+      minDist = Math.min(minDist, dist);
+    }
+    
+    // A bola falha quando pelo menos metade dela sair do caminho
+    // Tolerância = metade do raio da bola (permite que até 50% saia)
+    return { isOnPath: minDist <= path.width / 2 + ball.radius / 2, minDist, segmentDistances, pointDistances };
   }
   
   private distanceToSegment(point: Vector2D, p1: Vector2D, p2: Vector2D): number {

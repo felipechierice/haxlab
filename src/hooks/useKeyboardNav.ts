@@ -138,6 +138,31 @@ export function useKeyboardNav(options: KeyboardNavOptions = {}) {
         }
       }
 
+      // Se está em um slider (input range), permitir setas horizontais e A/D para controlar o valor
+      const isRangeInput = target instanceof HTMLInputElement && target.type === 'range';
+      if (isRangeInput && ['ArrowLeft', 'ArrowRight', 'a', 'd', 'A', 'D'].includes(e.key)) {
+        // Não interceptar - deixar o comportamento padrão do slider
+        // Para A/D, simular comportamento das setas
+        if (e.key.toLowerCase() === 'a' || e.key.toLowerCase() === 'd') {
+          e.preventDefault();
+          const step = parseFloat(target.step) || 1;
+          const min = parseFloat(target.min) || 0;
+          const max = parseFloat(target.max) || 100;
+          let value = parseFloat(target.value) || 0;
+          
+          if (e.key.toLowerCase() === 'a') {
+            value = Math.max(min, value - step);
+          } else {
+            value = Math.min(max, value + step);
+          }
+          
+          target.value = String(value);
+          target.dispatchEvent(new Event('input', { bubbles: true }));
+          target.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        return;
+      }
+
       // Navegação com setas verticais e WASD
       if (e.key === 'ArrowDown' || (e.key.toLowerCase() === 's' && !isInput)) {
         e.preventDefault();

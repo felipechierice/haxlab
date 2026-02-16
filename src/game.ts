@@ -54,6 +54,16 @@ export class Game {
   
   // Tempo acumulado da simulação em segundos (usado pelos InputControllers para timing)
   private simulationTime: number = 0;
+  
+  // Fixed timestep para física determinística
+  // Usando 144Hz para melhor suavidade em monitores não-60Hz sem precisar de interpolação
+  private readonly FIXED_DT: number = 1 / 60; // 144 updates por segundo
+  private timeAccumulator: number = 0;
+  
+  // Interpolação visual - posições anteriores para renderização suave
+  private prevBallPos: Vector2D = { x: 0, y: 0 };
+  private prevPlayerPos: Map<string, Vector2D> = new Map();
+  private ballCollided: boolean = false; // Flag para indicar colisão da bola (parede ou player)
 
   constructor(canvas: HTMLCanvasElement, map: GameMap, config: GameConfig) {
     this.renderer = new Renderer(canvas);
@@ -661,6 +671,27 @@ export class Game {
       player.circle.vel.x = 0;
       player.circle.vel.y = 0;
     }
+    
+    // Sincroniza posições anteriores para evitar "salto" na interpolação
+    this.syncPrevPositions();
+    
+    // Invalida posições extrapoladas anteriores (evita saltos na extrapolação)
+    extrapolation.invalidatePrevPositions();
+  }
+  
+  /** Sincroniza posições anteriores com as atuais (evita saltos na interpolação) */
+  private syncPrevPositions(): void {
+    this.prevBallPos.x = this.state.ball.circle.pos.x;
+    this.prevBallPos.y = this.state.ball.circle.pos.y;
+    for (const player of this.state.players) {
+      let prevPos = this.prevPlayerPos.get(player.id);
+      if (!prevPos) {
+        prevPos = { x: 0, y: 0 };
+        this.prevPlayerPos.set(player.id, prevPos);
+      }
+      prevPos.x = player.circle.pos.x;
+      prevPos.y = player.circle.pos.y;
+    }
   }
 
   private update(dt: number): void {
@@ -693,6 +724,11 @@ export class Game {
     // Atualiza bola com sub-stepping para evitar tunneling através das paredes
     const hitSpeed = Physics.updateCircleWithSubsteps(this.state.ball.circle, dt, this.map.segments);
     
+    // Detecta colisão com parede para interpolação
+    if (hitSpeed > 0) {
+      this.ballCollided = true;
+    }
+    
     // Som de quique na parede (intensidade varia com a velocidade do impacto)
     if (hitSpeed > 30) {
       const now = this.simulationTime;
@@ -714,6 +750,9 @@ export class Game {
 
     for (const player of this.state.players) {
       if (Physics.checkCircleCollision(player.circle, this.state.ball.circle)) {
+        // Marca que houve colisão da bola com player (para interpolação)
+        this.ballCollided = true;
+        
         // Calcular velocidade relativa do impacto ANTES de resolver a colisão
         const ball = this.state.ball.circle;
         const dx = ball.pos.x - player.circle.pos.x;
@@ -910,6 +949,7 @@ export class Game {
     this.isPaused = false;
     this.lastTime = 0;
     this.simulationTime = 0;
+    this.timeAccumulator = 0;
     
     // Pré-inicializa AudioContext para evitar stutter no primeiro som
     audioManager.warmUp();
@@ -937,6 +977,7 @@ export class Game {
     this.isPaused = false;
     this.state.running = true;
     this.lastTime = 0;
+    this.timeAccumulator = 0;
     
     this.animationId = requestAnimationFrame(this.gameLoop);
   }
@@ -955,19 +996,57 @@ export class Game {
   private fpsDisplay: number = 0;
   private fpsLastUpdate: number = 0;
   private frameTimeDisplay: number = 0;
+  private cpuUsageDisplay: number = 0;
+  private frameProcessingTimes: number[] = [];
 
   private gameLoop = (timestamp: number): void => {
-    // Calcular dt diretamente do frame — sem acumulador, sem interpolação
-    let dt = this.lastTime ? (timestamp - this.lastTime) / 1000 : 1 / 60;
+    const frameStartTime = performance.now();
+    
+    // Calcular tempo real desde último frame
+    let frameTime = this.lastTime ? (timestamp - this.lastTime) / 1000 : this.FIXED_DT;
     this.lastTime = timestamp;
 
-    // Clamp dt para evitar saltos (tab inativa, lag spike)
-    if (dt > 0.05) dt = 0.05;
-    if (dt <= 0) dt = 1 / 60;
+    // Clamp frameTime para evitar saltos extremos (tab inativa, lag spike)
+    if (frameTime > 0.1) frameTime = 0.1;
+    if (frameTime <= 0) frameTime = this.FIXED_DT;
 
-    // Atualizar física e lógica com o dt real do frame
-    this.update(dt);
-    this.simulationTime += dt;
+    // Acumular tempo para fixed timestep
+    this.timeAccumulator += frameTime;
+
+    // Resetar flag de colisão antes dos steps de física
+    // (será setada como true se QUALQUER step tiver colisão)
+    this.ballCollided = false;
+
+    // Executar física em passos fixos para garantir determinismo
+    while (this.timeAccumulator >= this.FIXED_DT) {
+      // Salvar posições anteriores antes do step de física (para interpolação)
+      this.prevBallPos.x = this.state.ball.circle.pos.x;
+      this.prevBallPos.y = this.state.ball.circle.pos.y;
+      for (const player of this.state.players) {
+        let prevPos = this.prevPlayerPos.get(player.id);
+        if (!prevPos) {
+          prevPos = { x: 0, y: 0 };
+          this.prevPlayerPos.set(player.id, prevPos);
+        }
+        prevPos.x = player.circle.pos.x;
+        prevPos.y = player.circle.pos.y;
+      }
+      
+      this.update(this.FIXED_DT);
+      this.simulationTime += this.FIXED_DT;
+      this.timeAccumulator -= this.FIXED_DT;
+    }
+    
+    // Calcular alpha para interpolação (0 = posição anterior, 1 = posição atual)
+    const interpolationAlpha = this.timeAccumulator / this.FIXED_DT;
+    
+    // Dados de interpolação para suavizar renderização
+    const interpolationData = {
+      alpha: interpolationAlpha,
+      prevBallPos: this.prevBallPos,
+      prevPlayerPos: this.prevPlayerPos,
+      ballCollided: this.ballCollided // Passa flag de colisão para evitar interpolação em bounces
+    };
 
     // Calcular posições extrapoladas se habilitado
     let extrapolatedPositions = undefined;
@@ -987,18 +1066,24 @@ export class Game {
         this.controlledPlayerId,
         currentInput,
         this.config,
-        this.inputControllers // Passa InputControllers para extrapolação de bots
+        this.inputControllers, // Passa InputControllers para extrapolação de bots
+        undefined, // Não usa interpolação tradicional como base
+        interpolationData.alpha // Passa alpha para interpolar entre frames extrapolados
       );
     }
 
-    // Renderizar (com posições extrapoladas se habilitadas)
+    // Renderizar
+    // Quando extrapolação está ativa: usa interpolação ENTRE frames extrapolados (feita internamente)
+    // Quando extrapolação está desligada: usar interpolação tradicional para suavidade
     this.renderer.drawState(
       this.state, 
       this.map, 
       this.controlledPlayerId, 
       this.state.time, 
       this.config.ballConfig,
-      extrapolatedPositions
+      extrapolatedPositions,
+      // Não usar interpolação quando extrapolação está ativa (já está sendo feita internamente)
+      extrapolatedPositions ? undefined : interpolationData
     );
     
     // FPS tracking e display
@@ -1013,6 +1098,14 @@ export class Game {
     }
     
     this.updateUI();
+
+    // Calcular tempo de processamento do frame para estimativa de CPU
+    const frameProcessingTime = performance.now() - frameStartTime;
+    this.frameProcessingTimes.push(frameProcessingTime);
+    // Manter apenas últimas 60 amostras
+    if (this.frameProcessingTimes.length > 60) {
+      this.frameProcessingTimes.shift();
+    }
 
     if (this.state.running) {
       this.animationId = requestAnimationFrame(this.gameLoop);
@@ -1037,11 +1130,21 @@ export class Game {
         const elapsed = this.fpsFrameTimes[this.fpsFrameTimes.length - 1] - this.fpsFrameTimes[0];
         this.fpsDisplay = Math.round((this.fpsFrameTimes.length - 1) / (elapsed / 1000));
         this.frameTimeDisplay = Math.round(elapsed / (this.fpsFrameTimes.length - 1) * 10) / 10;
+        
+        // Calcular estimativa de uso de CPU
+        // CPU% = (tempo médio de processamento / tempo entre frames) * 100
+        if (this.frameProcessingTimes.length > 0) {
+          const avgProcessingTime = this.frameProcessingTimes.reduce((a, b) => a + b, 0) / this.frameProcessingTimes.length;
+          const avgFrameTime = elapsed / (this.fpsFrameTimes.length - 1);
+          this.cpuUsageDisplay = Math.round((avgProcessingTime / avgFrameTime) * 100);
+          // Clamp para 0-100%
+          this.cpuUsageDisplay = Math.min(100, Math.max(0, this.cpuUsageDisplay));
+        }
       }
       this.fpsLastUpdate = timestamp;
     }
     
-    // Desenha FPS + frametime no canto superior esquerdo
+    // Desenha FPS + frametime + CPU% no canto superior esquerdo
     const ctx = this.renderer.getContext();
     if (ctx && this.fpsDisplay > 0) {
       ctx.save();
@@ -1050,7 +1153,7 @@ export class Game {
       ctx.font = '11px monospace';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      ctx.fillText(`${this.fpsDisplay} FPS  ${this.frameTimeDisplay}ms`, 8, 8);
+      ctx.fillText(`${this.fpsDisplay} FPS  ${this.frameTimeDisplay}ms  CPU: ${this.cpuUsageDisplay}%`, 8, 8);
       ctx.restore();
     }
   }
@@ -1066,6 +1169,14 @@ export class Game {
   
   getState(): GameState {
     return this.state;
+  }
+  
+  /** 
+   * Sincroniza posições anteriores com as atuais (para interpolação)
+   * Chamar após modificar posições diretamente (ex: spawn de cenário)
+   */
+  syncInterpolation(): void {
+    this.syncPrevPositions();
   }
   
   setCustomRenderCallback(callback: ((ctx: CanvasRenderingContext2D) => void) | null): void {

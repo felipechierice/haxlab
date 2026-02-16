@@ -46,7 +46,7 @@ export class Extrapolation {
   /** Tempo de extrapolation em milissegundos */
   private extrapolationMs: number = 0;
   
-  /** Timestep fixo para simulação (60fps = ~16.67ms) */
+  /** Timestep fixo para simulação (144fps = ~6.94ms) - deve coincidir com game.ts */
   private readonly SIMULATION_TIMESTEP = 1 / 60;
   
   /** Estado reutilizável para simulação */
@@ -62,6 +62,11 @@ export class Extrapolation {
     ball: { x: 0, y: 0 },
     players: new Map()
   };
+  
+  /** Posições extrapoladas do frame anterior (para interpolação) */
+  private prevExtrapolatedBall: Vector2D = { x: 0, y: 0 };
+  private prevExtrapolatedPlayers: Map<string, Vector2D> = new Map();
+  private hasValidPrevPositions: boolean = false;
   
   /** Círculo temporário para simulação de colisões */
   private tempBallCircle: Circle = {
@@ -88,6 +93,8 @@ export class Extrapolation {
    */
   setExtrapolation(ms: number): void {
     this.extrapolationMs = Math.max(0, Math.min(200, ms)); // Limita entre 0 e 200ms
+    // Invalida posições anteriores ao mudar configuração
+    this.hasValidPrevPositions = false;
   }
 
   /**
@@ -95,6 +102,13 @@ export class Extrapolation {
    */
   getExtrapolation(): number {
     return this.extrapolationMs;
+  }
+  
+  /**
+   * Invalida posições anteriores (chamar ao resetar jogo/cenário)
+   */
+  invalidatePrevPositions(): void {
+    this.hasValidPrevPositions = false;
   }
 
   /**
@@ -105,6 +119,16 @@ export class Extrapolation {
   }
 
   /**
+   * Dados de interpolação para suavizar a base da extrapolação
+   */
+  private interpolationData?: {
+    alpha: number;
+    prevBallPos: Vector2D;
+    prevPlayerPos: Map<string, Vector2D>;
+    ballCollided?: boolean;
+  };
+
+  /**
    * Calcula posições extrapoladas baseado no estado atual e inputs
    * 
    * @param state Estado atual do jogo
@@ -113,6 +137,8 @@ export class Extrapolation {
    * @param playerInput Input atual do jogador controlado (legacy)
    * @param config Configurações do jogo
    * @param inputControllers Map de InputControllers por ID do jogador (opcional)
+   * @param interpolation Dados de interpolação para suavizar posição base (opcional)
+   * @param renderAlpha Alpha para interpolar entre frames extrapolados (0-1)
    * @returns Posições extrapoladas para renderização
    */
   extrapolate(
@@ -121,8 +147,18 @@ export class Extrapolation {
     controlledPlayerId: string,
     playerInput: { up: boolean; down: boolean; left: boolean; right: boolean },
     config: GameConfig,
-    inputControllers?: Map<string, InputController>
+    inputControllers?: Map<string, InputController>,
+    interpolation?: {
+      alpha: number;
+      prevBallPos: Vector2D;
+      prevPlayerPos: Map<string, Vector2D>;
+      ballCollided?: boolean; // Flag para indicar colisão da bola
+    },
+    renderAlpha: number = 1
   ): ExtrapolatedPositions {
+    // Salva dados de interpolação para uso em copyStateForSimulation
+    this.interpolationData = interpolation;
+    
     // Se extrapolation está desligado, retorna posições atuais
     if (this.extrapolationMs <= 0) {
       this.cachedResult.ball.x = state.ball.circle.pos.x;
@@ -135,6 +171,9 @@ export class Extrapolation {
           y: player.circle.pos.y
         });
       }
+      
+      // Invalida posições anteriores quando extrapolação está desligada
+      this.hasValidPrevPositions = false;
       
       return this.cachedResult;
     }
@@ -160,29 +199,65 @@ export class Extrapolation {
       );
     }
 
-    // Copia resultados para o cache
-    this.cachedResult.ball.x = this.simState.ballPos.x;
-    this.cachedResult.ball.y = this.simState.ballPos.y;
+    // Posições extrapoladas "raw" (antes da interpolação entre frames)
+    const rawBallX = this.simState.ballPos.x;
+    const rawBallY = this.simState.ballPos.y;
     
-    this.cachedResult.players.clear();
-    for (const [playerId, pos] of this.simState.playerPos) {
-      this.cachedResult.players.set(playerId, { x: pos.x, y: pos.y });
+    // Se temos posições anteriores válidas, interpola entre prev e current
+    if (this.hasValidPrevPositions && renderAlpha < 1) {
+      // Interpola bola
+      this.cachedResult.ball.x = this.prevExtrapolatedBall.x + (rawBallX - this.prevExtrapolatedBall.x) * renderAlpha;
+      this.cachedResult.ball.y = this.prevExtrapolatedBall.y + (rawBallY - this.prevExtrapolatedBall.y) * renderAlpha;
+      
+      // Interpola jogadores
+      this.cachedResult.players.clear();
+      for (const [playerId, pos] of this.simState.playerPos) {
+        const prevPos = this.prevExtrapolatedPlayers.get(playerId);
+        if (prevPos) {
+          this.cachedResult.players.set(playerId, {
+            x: prevPos.x + (pos.x - prevPos.x) * renderAlpha,
+            y: prevPos.y + (pos.y - prevPos.y) * renderAlpha
+          });
+        } else {
+          this.cachedResult.players.set(playerId, { x: pos.x, y: pos.y });
+        }
+      }
+    } else {
+      // Sem posições anteriores, usa valores raw
+      this.cachedResult.ball.x = rawBallX;
+      this.cachedResult.ball.y = rawBallY;
+      
+      this.cachedResult.players.clear();
+      for (const [playerId, pos] of this.simState.playerPos) {
+        this.cachedResult.players.set(playerId, { x: pos.x, y: pos.y });
+      }
     }
+    
+    // Atualiza posições anteriores para o próximo frame
+    this.prevExtrapolatedBall.x = rawBallX;
+    this.prevExtrapolatedBall.y = rawBallY;
+    
+    this.prevExtrapolatedPlayers.clear();
+    for (const [playerId, pos] of this.simState.playerPos) {
+      this.prevExtrapolatedPlayers.set(playerId, { x: pos.x, y: pos.y });
+    }
+    this.hasValidPrevPositions = true;
 
     return this.cachedResult;
   }
 
   /**
    * Copia o estado atual para as variáveis de simulação
+   * Usa posição atual como base (sem interpolação para evitar conflitos)
    */
   private copyStateForSimulation(state: GameState): void {
-    // Bola
+    // Bola - sempre usa posição atual (sem interpolação)
     this.simState.ballPos.x = state.ball.circle.pos.x;
     this.simState.ballPos.y = state.ball.circle.pos.y;
     this.simState.ballVel.x = state.ball.circle.vel.x;
     this.simState.ballVel.y = state.ball.circle.vel.y;
 
-    // Jogadores
+    // Jogadores - sempre usa posição atual (sem interpolação)
     this.simState.playerPos.clear();
     this.simState.playerVel.clear();
     
