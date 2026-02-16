@@ -672,26 +672,15 @@ export class PlaylistEditor {
   }
   
   private findPathAtPosition(pos: Vector2D): EditorPath | null {
-    // Procurar paths
+    // Procurar paths - só seleciona se clicar em algum ponto de curva
     for (let i = this.entities.length - 1; i >= 0; i--) {
       const entity = this.entities[i];
       if ('points' in entity && 'width' in entity) {
         const path = entity as EditorPath;
         
-        // Verificar se clicou em algum ponto
+        // Verificar se clicou em algum ponto (única forma de selecionar)
         if (this.findPathPointAtPosition(path, pos) !== null) {
           return path;
-        }
-        
-        // Verificar se clicou no caminho
-        for (let j = 0; j < path.points.length - 1; j++) {
-          const p1 = path.points[j];
-          const p2 = path.points[j + 1];
-          const dist = this.distanceToSegment(pos, p1, p2);
-          
-          if (dist <= path.width / 2) {
-            return path;
-          }
         }
       }
     }
@@ -788,6 +777,25 @@ export class PlaylistEditor {
     // Procurar de trás para frente para pegar entidade mais no topo
     for (let i = this.entities.length - 1; i >= 0; i--) {
       const entity = this.entities[i];
+      
+      // Para paths, verificar se clicou em algum dos pontos de curva
+      if ('points' in entity) {
+        const path = entity as EditorPath;
+        const pointRadius = 12; // Raio de clique nos pontos do path
+        
+        for (const point of path.points) {
+          const dx = pos.x - point.x;
+          const dy = pos.y - point.y;
+          const distSq = dx * dx + dy * dy;
+          
+          if (distSq < pointRadius * pointRadius) {
+            return entity;
+          }
+        }
+        continue; // Path não foi clicado em nenhum ponto, continuar procurando
+      }
+      
+      // Para outras entidades, usar o método normal
       const entityPos = this.getEntityPosition(entity);
       const radius = this.getEntityRadius(entity);
       
@@ -1460,6 +1468,18 @@ export class PlaylistEditor {
   private showPathProperties(path: EditorPath): void {
     if (!this.propertiesPanel) return;
     
+    const pointsHtml = path.points.map((point, index) => `
+      <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px; padding: 6px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+        <span style="color: #a5b4fc; font-size: 11px; font-weight: 600; min-width: 20px;">${index + 1}</span>
+        <div style="flex: 1;">
+          <input type="number" class="path-point-x" data-index="${index}" value="${Math.round(point.x)}" style="width: 100%; padding: 4px 6px; font-size: 11px; background: rgba(51, 65, 85, 0.5); border: 1px solid rgba(99, 102, 241, 0.3); color: #f1f5f9; border-radius: 4px;" />
+        </div>
+        <div style="flex: 1;">
+          <input type="number" class="path-point-y" data-index="${index}" value="${Math.round(point.y)}" style="width: 100%; padding: 4px 6px; font-size: 11px; background: rgba(51, 65, 85, 0.5); border: 1px solid rgba(99, 102, 241, 0.3); color: #f1f5f9; border-radius: 4px;" />
+        </div>
+      </div>
+    `).join('');
+    
     this.propertiesPanel.innerHTML = `
       <h3>Propriedades do Caminho</h3>
       <div class="property">
@@ -1471,8 +1491,11 @@ export class PlaylistEditor {
         <input type="number" id="prop-path-order" value="${path.order}" min="1" />
       </div>
       <div class="property">
-        <label>Pontos:</label>
-        <div>${path.points.length} pontos</div>
+        <label>Pontos (${path.points.length}):</label>
+        <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px;">X &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Y</div>
+        <div id="path-points-list" style="max-height: 200px; overflow-y: auto;">
+          ${pointsHtml}
+        </div>
       </div>
       <div class="property">
         <button id="prop-delete" class="delete-btn">Deletar Caminho</button>
@@ -1485,6 +1508,27 @@ export class PlaylistEditor {
     
     document.getElementById('prop-path-order')?.addEventListener('input', (e) => {
       path.order = parseInt((e.target as HTMLInputElement).value);
+    });
+    
+    // Event listeners para editar coordenadas dos pontos
+    document.querySelectorAll('.path-point-x').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const index = parseInt((e.target as HTMLInputElement).dataset.index || '0');
+        const value = parseFloat((e.target as HTMLInputElement).value);
+        if (!isNaN(value) && path.points[index]) {
+          path.points[index].x = value;
+        }
+      });
+    });
+    
+    document.querySelectorAll('.path-point-y').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const index = parseInt((e.target as HTMLInputElement).dataset.index || '0');
+        const value = parseFloat((e.target as HTMLInputElement).value);
+        if (!isNaN(value) && path.points[index]) {
+          path.points[index].y = value;
+        }
+      });
     });
     
     document.getElementById('prop-delete')?.addEventListener('click', () => {
@@ -1900,7 +1944,14 @@ export class PlaylistEditor {
         this.currentScenarioIndex = this.scenarios.length - 1;
       }
       
-      this.loadScenario(this.currentScenarioIndex);
+      // Carrega o cenário diretamente sem salvar o cenário removido
+      // (não chama loadScenario porque ele faz saveCurrentScenario antes)
+      const scenario = this.scenarios[this.currentScenarioIndex];
+      this.scenarioSettings = { ...scenario.settings };
+      this.entities = [...scenario.entities];
+      this.selectedEntity = null;
+      
+      this.updateScenarioCounter();
       this.triggerAutoSave();
     }
   }
@@ -2929,33 +2980,40 @@ export class PlaylistEditor {
       disableGoalReset: scenario.objectives.some(obj => obj.type === 'goal' || obj.type === 'no_goal')
     };
     
+    // Helper para mostrar feedback visual
+    const showFeedback = (text: string, color: string) => {
+      const feedback = document.getElementById('playlist-feedback');
+      const feedbackText = document.getElementById('feedback-text');
+      if (!feedback || !feedbackText) return;
+      feedbackText.innerHTML = text;
+      feedbackText.style.color = color;
+      feedback.classList.remove('hidden');
+      // No modo teste, feedback fica visível até próxima ação
+    };
+    
     // Criar e iniciar PlaylistMode
     this.testPlaylistMode = new PlaylistMode(this.canvas, playlist, testConfig, {
       onScenarioComplete: () => {
-        // Resetar cenário ao invés de sair
-        setTimeout(() => {
-          if (this.testPlaylistMode) {
-            this.testPlaylistMode.resetScenario();
-          }
-        }, 1500);
+        // Mostra feedback igual ao modo normal
+        showFeedback('<i class="fas fa-check"></i> Cenário Completo!', '#00ff00');
+        // Não avança automaticamente - usuário pode pressionar R para resetar ou ESC para sair
       },
       onPlaylistComplete: () => {
-        // Resetar cenário ao invés de sair
-        setTimeout(() => {
-          if (this.testPlaylistMode) {
-            this.testPlaylistMode.resetScenario();
-          }
-        }, 1500);
+        // Mostra feedback igual ao modo normal
+        showFeedback('<i class="fas fa-trophy"></i> Playlist Completa!', '#ffff00');
+        // Não faz nada automaticamente - usuário pode pressionar R para resetar ou ESC para sair
       },
       onScenarioFail: (reason) => {
-        // Resetar cenário ao invés de sair
-        setTimeout(() => {
-          if (this.testPlaylistMode) {
-            this.testPlaylistMode.resetScenario();
-          }
-        }, 2000);
+        // Mostra feedback igual ao modo normal
+        showFeedback(`<i class="fas fa-times"></i> ${reason}`, '#ff0000');
+        // Não reseta automaticamente - usuário pode pressionar R para resetar ou ESC para sair
       },
-      onScenarioStart: () => {}
+      onScenarioStart: () => {
+        // Esconde feedback anterior quando cenário começa/reseta
+        const feedback = document.getElementById('playlist-feedback');
+        feedback?.classList.add('hidden');
+      },
+      disableAutoProgress: true
     });
     
     this.testPlaylistMode.startScenario(0);

@@ -1,0 +1,514 @@
+{
+  "name": "Desafio 1",
+  "description": "5 cenários combinando habilidades de passe, drible, finalizações e mais, para testar suas habilidades.",
+  "scenarios": [
+    {
+      "name": "Cenário Customizado",
+      "map": "default",
+      "timeLimit": 60,
+      "objectives": [
+        {
+          "type": "path",
+          "points": [
+            {
+              "x": 300,
+              "y": 525
+            },
+            {
+              "x": 618,
+              "y": 525
+            },
+            {
+              "x": 948,
+              "y": 299
+            }
+          ],
+          "width": 100
+        },
+        {
+          "type": "goal",
+          "team": "red",
+          "scoredBy": "player"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "kick_count",
+          "exact": 1
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771258730061",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 262,
+            "y": 525
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 700
+                },
+                {
+                  "action": "kick",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771259341267",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 455,
+            "y": 376
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "DOWN_LEFT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "UP_RIGHT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771259386164",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 850,
+            "y": 454
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "DOWN_LEFT",
+                  "durationMs": 900
+                },
+                {
+                  "action": "move",
+                  "direction": "LEFT",
+                  "durationMs": 200
+                },
+                {
+                  "action": "move",
+                  "direction": "UP_RIGHT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 300,
+        "y": 525
+      },
+      "playerSpawn": {
+        "x": 499,
+        "y": 550
+      },
+      "initialPlayerVelocity": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "name": "Cenário 2",
+      "map": "default",
+      "timeLimit": 60,
+      "objectives": [
+        {
+          "type": "path",
+          "points": [
+            {
+              "x": 300,
+              "y": 75
+            },
+            {
+              "x": 618,
+              "y": 75
+            },
+            {
+              "x": 948,
+              "y": 301
+            }
+          ],
+          "width": 100
+        },
+        {
+          "type": "goal",
+          "team": "red",
+          "scoredBy": "player"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "kick_count",
+          "exact": 1
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771258730062",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 262,
+            "y": 75
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 700
+                },
+                {
+                  "action": "kick",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771259341268",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 455,
+            "y": 224
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "UP_LEFT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN_RIGHT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771259386165",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 850,
+            "y": 146
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "UP_LEFT",
+                  "durationMs": 900
+                },
+                {
+                  "action": "move",
+                  "direction": "LEFT",
+                  "durationMs": 200
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN_RIGHT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 300,
+        "y": 75
+      },
+      "playerSpawn": {
+        "x": 499,
+        "y": 50
+      },
+      "initialPlayerVelocity": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "name": "Cenário 3",
+      "map": "default",
+      "timeLimit": 60,
+      "objectives": [
+        {
+          "type": "path",
+          "points": [
+            {
+              "x": 340,
+              "y": 449
+            },
+            {
+              "x": 437,
+              "y": 451
+            },
+            {
+              "x": 500,
+              "y": 526
+            },
+            {
+              "x": 586,
+              "y": 401
+            },
+            {
+              "x": 949,
+              "y": 299
+            }
+          ],
+          "width": 100
+        },
+        {
+          "type": "goal",
+          "team": "red"
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771260959866",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 682,
+            "y": 448
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "LEFT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 200
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN_LEFT",
+                  "durationMs": 200
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 100
+                },
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 1500
+                },
+                {
+                  "action": "move",
+                  "direction": "UP_RIGHT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 340,
+        "y": 450
+      },
+      "playerSpawn": {
+        "x": 300,
+        "y": 450
+      }
+    },
+    {
+      "name": "Cenário 4",
+      "map": "default",
+      "timeLimit": 60,
+      "objectives": [
+        {
+          "type": "path",
+          "points": [
+            {
+              "x": 340,
+              "y": 151
+            },
+            {
+              "x": 437,
+              "y": 149
+            },
+            {
+              "x": 500,
+              "y": 74
+            },
+            {
+              "x": 586,
+              "y": 199
+            },
+            {
+              "x": 949,
+              "y": 301
+            }
+          ],
+          "width": 100
+        },
+        {
+          "type": "goal",
+          "team": "red"
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771260959867",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 682,
+            "y": 152
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "LEFT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 200
+                },
+                {
+                  "action": "move",
+                  "direction": "UP_LEFT",
+                  "durationMs": 200
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 100
+                },
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 1500
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN_RIGHT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 340,
+        "y": 150
+      },
+      "playerSpawn": {
+        "x": 300,
+        "y": 150
+      }
+    }
+  ],
+  "gameConfig": {
+    "kickStrength": 500,
+    "kickMode": "classic",
+    "playerRadius": 15,
+    "playerSpeed": 150,
+    "playerAcceleration": 7.5,
+    "kickSpeedMultiplier": 1,
+    "ballConfig": {
+      "radius": 8,
+      "mass": 5,
+      "damping": 0.99,
+      "color": "#ffff00",
+      "borderColor": "#000000",
+      "borderWidth": 2
+    }
+  }
+}

@@ -205,6 +205,7 @@ export class PlaylistMode {
   private resetTimeoutId: number | null = null; // ID do timeout de reset automático
   private nextScenarioTimeoutId: number | null = null; // ID do timeout para próximo cenário
   private goalScored: boolean = false; // Rastreia se o gol foi marcado
+  private disableAutoProgress: boolean = false; // Desabilita auto-reset/next após complete/fail
   
   // Tracking para ranking
   private playlistStartTime: number = 0;
@@ -219,6 +220,7 @@ export class PlaylistMode {
       onPlaylistComplete: () => void;
       onScenarioFail: (reason: string) => void;
       onScenarioStart: (index: number) => void;
+      disableAutoProgress?: boolean;
     }
   ) {
     this.canvas = canvas;
@@ -228,6 +230,7 @@ export class PlaylistMode {
     this.onPlaylistComplete = callbacks.onPlaylistComplete;
     this.onScenarioFail = callbacks.onScenarioFail;
     this.onScenarioStart = callbacks.onScenarioStart;
+    this.disableAutoProgress = callbacks.disableAutoProgress ?? false;
     
     this.progress = {
       currentScenarioIndex: 0,
@@ -698,6 +701,9 @@ export class PlaylistMode {
     
     this.onScenarioComplete(this.progress.currentScenarioIndex);
     
+    // Se auto progress está desabilitado, não faz nada automaticamente
+    if (this.disableAutoProgress) return;
+    
     // Verificar se completou toda a playlist
     if (this.progress.completedScenarios.every(completed => completed)) {
       this.onPlaylistComplete();
@@ -718,6 +724,10 @@ export class PlaylistMode {
     audioManager.play('fail');
     
     this.onScenarioFail(reason);
+    
+    // Se auto progress está desabilitado, não faz reset automático
+    if (this.disableAutoProgress) return;
+    
     this.resetTimeoutId = window.setTimeout(() => {
       this.resetTimeoutId = null;
       this.resetScenario();
