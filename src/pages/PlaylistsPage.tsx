@@ -15,7 +15,7 @@ const AVAILABLE_PLAYLISTS: PlaylistInfo[] = [
   {
     file: 'mix-1.json',
     name: 'Desafio 1',
-    description: '6 cenários combinando habilidades de passe, drible, finalizações e mais.',
+    description: '9 cenários combinando habilidades de passe, drible, finalizações e mais.',
     icon: 'fa-trophy'
   }
 ];
