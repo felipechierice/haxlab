@@ -13,12 +13,170 @@ import {
   PreventTouchObjective,
   ScenarioObjective,
   Vector2D,
-  Circle
+  Circle,
+  BotBehavior,
+  BotDefinition
 } from './types.js';
 import { Game } from './game.js';
 import { Physics } from './physics.js';
 import { DEFAULT_MAP, CLASSIC_MAP } from './maps.js';
 import { audioManager } from './audio.js';
+
+/**
+ * Converte comportamento de bot do formato antigo para o novo formato
+ * Permite backward compatibility com playlists existentes
+ */
+function migrateBotBehavior(oldBehavior: any): BotBehavior {
+  // Se já está no novo formato, retorna como está
+  if (oldBehavior.preset && typeof oldBehavior.config === 'object' && !oldBehavior.config.type) {
+    return oldBehavior as BotBehavior;
+  }
+  
+  // Formato antigo: { type: 'ai_preset', config: { type: 'ai_preset', preset: 'idle', params: {...} } }
+  if (oldBehavior.type === 'ai_preset' && oldBehavior.config?.type === 'ai_preset') {
+    const oldPreset = oldBehavior.config.preset;
+    const oldParams = oldBehavior.config.params || {};
+    
+    switch (oldPreset) {
+      case 'idle':
+        return {
+          preset: 'none',
+          config: {
+            kickOnContact: oldParams.kickOnContact || false
+          }
+        };
+      
+      case 'chase_ball':
+        return {
+          preset: 'autonomous',
+          config: {
+            strategy: 'chase_ball',
+            kickDistance: 35,
+            reactionDelayMs: (oldParams.reactionTime || 0) * 1000
+          }
+        };
+      
+      case 'mark_player':
+        return {
+          preset: 'autonomous',
+          config: {
+            strategy: 'mark_player',
+            targetPlayerId: 'local-0',
+            keepDistance: oldParams.distance || 100,
+            kickDistance: oldParams.kickOnContact ? 35 : 9999,
+            reactionDelayMs: (oldParams.reactionTime || 0) * 1000
+          }
+        };
+      
+      case 'intercept':
+        return {
+          preset: 'autonomous',
+          config: {
+            strategy: 'intercept_ball',
+            kickDistance: 35,
+            reactionDelayMs: (oldParams.reactionTime || 0) * 1000
+          }
+        };
+      
+      case 'stay_near':
+        return {
+          preset: 'autonomous',
+          config: {
+            strategy: 'stay_at_position',
+            targetPosition: oldParams.position || { x: 500, y: 300 },
+            keepDistance: oldParams.radius || 50,
+            reactionDelayMs: (oldParams.reactionTime || 0) * 1000
+          }
+        };
+      
+      case 'patrol':
+        // Converter pontos de patrulha para comandos
+        // Formato antigo: points: [{x, y, delay?}], speed, loop
+        const oldPoints = oldParams.points || [];
+        const commands: any[] = [];
+        
+        for (let i = 0; i < oldPoints.length; i++) {
+          // Calcular direção para o próximo ponto
+          const currentPoint = oldPoints[i];
+          const nextPoint = oldPoints[(i + 1) % oldPoints.length];
+          
+          // Simplificação: usar direção predominante
+          const dx = nextPoint.x - currentPoint.x;
+          const dy = nextPoint.y - currentPoint.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          // Estimar duração baseado na velocidade antiga
+          const speed = oldParams.speed || 0.6;
+          const durationMs = distance / (speed * 300) * 1000; // Aproximação
+          
+          // Determinar direção
+          let direction = 'RIGHT';
+          const absX = Math.abs(dx);
+          const absY = Math.abs(dy);
+          if (absX > absY) {
+            direction = dx > 0 ? 'RIGHT' : 'LEFT';
+          } else if (absY > absX) {
+            direction = dy > 0 ? 'DOWN' : 'UP';
+          } else if (absX > 10 && absY > 10) {
+            // Diagonal
+            if (dx > 0 && dy > 0) direction = 'DOWN_RIGHT';
+            else if (dx > 0 && dy < 0) direction = 'UP_RIGHT';
+            else if (dx < 0 && dy > 0) direction = 'DOWN_LEFT';
+            else direction = 'UP_LEFT';
+          }
+          
+          commands.push({
+            action: 'move',
+            direction,
+            durationMs: Math.max(500, durationMs)
+          });
+          
+          // Adicionar espera se houver delay
+          if (currentPoint.delay && currentPoint.delay > 0) {
+            commands.push({
+              action: 'wait',
+              durationMs: currentPoint.delay * 1000
+            });
+          }
+        }
+        
+        return {
+          preset: 'patrol',
+          config: {
+            commands: commands.length > 0 ? commands : [
+              { action: 'move', direction: 'RIGHT', durationMs: 1000 },
+              { action: 'move', direction: 'LEFT', durationMs: 1000 }
+            ],
+            loop: oldParams.loop !== false
+          }
+        };
+      
+      default:
+        // Fallback para none
+        return {
+          preset: 'none',
+          config: {
+            kickOnContact: false
+          }
+        };
+    }
+  }
+  
+  // Formato programmed antigo
+  if (oldBehavior.type === 'programmed') {
+    // Converter para patrol se tinha pontos
+    return {
+      preset: 'none',
+      config: { kickOnContact: false }
+    };
+  }
+  
+  // Fallback para none
+  return {
+    preset: 'none',
+    config: { kickOnContact: false }
+  };
+}
 
 export class PlaylistMode {
   private playlist: Playlist;
@@ -106,12 +264,15 @@ export class PlaylistMode {
     // Criar bots se existirem
     if (scenario.bots) {
       for (const botDef of scenario.bots) {
+        // Migrar comportamento do formato antigo se necessário
+        const migratedBehavior = migrateBotBehavior(botDef.behavior);
+        
         this.game.addBot(
           botDef.id,
           botDef.name,
           botDef.team,
           botDef.spawn,
-          botDef.behavior,
+          migratedBehavior,
           botDef.initialVelocity,
           botDef.radius
         );

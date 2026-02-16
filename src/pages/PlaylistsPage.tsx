@@ -41,12 +41,12 @@ const AVAILABLE_PLAYLISTS: PlaylistInfo[] = [
     description: 'Seu time penetrou pela defesa adversária. Finalize com sucesso marcando gol.', 
     icon: 'fa-crosshairs' 
   },
-  { 
-    file: 'goleiro-treino.json', 
-    name: 'Treino de Goleiro', 
-    description: 'Defenda seu gol contra ataques cada vez mais difíceis. Dos chutes simples até blitz com múltiplos atacantes.', 
-    icon: 'fa-hand' 
-  }
+//   { 
+//     file: 'goleiro-treino.json', 
+//     name: 'Treino de Goleiro', 
+//     description: 'Defenda seu gol contra ataques cada vez mais difíceis. Dos chutes simples até blitz com múltiplos atacantes.', 
+//     icon: 'fa-hand' 
+//   }
 ];
 
 function PlaylistsPage() {

@@ -2,10 +2,15 @@ import { GameState, Player, GameMap, Goal, Vector2D, GameConfig, BotBehavior } f
 import { Physics } from './physics.js';
 import { Renderer } from './renderer.js';
 import { GameConsole } from './console.js';
-import { BotAI } from './botAI.js';
 import { audioManager } from './audio.js';
 import { keyBindings } from './keybindings.js';
 import { extrapolation, ExtrapolatedPositions } from './extrapolation.js';
+import type { InputController, Direction } from './input/index.js';
+import { 
+  directionToInputFlags,
+  directionToVector,
+  BotVirtualInputController
+} from './input/index.js';
 
 export class Game {
   private state: GameState;
@@ -23,7 +28,7 @@ export class Game {
   private customRenderCallback: ((ctx: CanvasRenderingContext2D) => void) | null = null;
   private customUpdateCallback: (() => void) | null = null;
   private customKickCallback: (() => void) | null = null;
-  private bots: Map<string, BotAI> = new Map();
+  private inputControllers: Map<string, InputController> = new Map(); // Controladores de input por jogador/bot
   private ballTouches: Map<string, number> = new Map(); // Rastreia toques na bola por bot/jogador
   private customBallTouchCallback: ((playerId: string) => void) | null = null;
   private customGoalCallback: ((team: 'red' | 'blue', scoredBy?: { id: string, name: string, team: 'red' | 'blue', isBot: boolean }) => void) | null = null;
@@ -47,7 +52,7 @@ export class Game {
   // Cache de estado anterior para evitar atualizações DOM desnecessárias
   private lastUIState = { redScore: -1, blueScore: -1, time: -1 };
   
-  // Tempo acumulado da simulação em segundos (usado pela BotAI para timing)
+  // Tempo acumulado da simulação em segundos (usado pelos InputControllers para timing)
   private simulationTime: number = 0;
 
   constructor(canvas: HTMLCanvasElement, map: GameMap, config: GameConfig) {
@@ -128,15 +133,43 @@ export class Game {
     this.state.players.push(bot);
     this.ballTouches.set(id, 0);
     
-    // Criar IA para o bot
-    const botAI = new BotAI(bot, behavior);
-    this.bots.set(id, botAI);
+    // Criar BotVirtualInputController para o bot
+    const inputController = new BotVirtualInputController(bot, behavior);
+    inputController.setGameState(this.state);
+    this.inputControllers.set(id, inputController);
   }
 
   removeAllBots(): void {
     // Remove todos os bots do jogo
     this.state.players = this.state.players.filter(p => !p.isBot);
-    this.bots.clear();
+    // Remove input controllers dos bots
+    for (const [id] of this.inputControllers) {
+      const playerObj = this.state.players.find(p => p.id === id);
+      if (!playerObj) {
+        this.inputControllers.delete(id);
+      }
+    }
+  }
+  
+  /**
+   * Registra um InputController para um jogador/bot
+   */
+  setInputController(playerId: string, controller: InputController): void {
+    this.inputControllers.set(playerId, controller);
+  }
+  
+  /**
+   * Remove um InputController
+   */
+  removeInputController(playerId: string): void {
+    this.inputControllers.delete(playerId);
+  }
+  
+  /**
+   * Obtém o InputController de um jogador/bot
+   */
+  getInputController(playerId: string): InputController | undefined {
+    return this.inputControllers.get(playerId);
   }
   
   setControlledPlayer(playerId: string): void {
@@ -277,6 +310,28 @@ export class Game {
   }
 
   private updatePlayerInput(player: Player): void {
+    // Verifica se há um InputController registrado para este jogador
+    const controller = this.inputControllers.get(player.id);
+    
+    if (controller) {
+      // Usa o InputController para obter direção e kick
+      const direction = controller.getMovementDirection();
+      const inputFlags = directionToInputFlags(direction);
+      
+      player.input.up = inputFlags.up;
+      player.input.down = inputFlags.down;
+      player.input.left = inputFlags.left;
+      player.input.right = inputFlags.right;
+      
+      // Kick vem do controller (para bots)
+      if (controller.isKickPressed() && !player.hasKickedThisPress) {
+        player.input.kick = true;
+      }
+      
+      return;
+    }
+    
+    // Fallback: input direto do teclado para o jogador controlado
     if (player.id === this.controlledPlayerId) {
       // Reutiliza objeto cacheado para evitar alocações
       const input = this.cachedInput;
@@ -619,9 +674,16 @@ export class Game {
       return;
     }
 
-    // Atualizar IAs dos bots (passa tempo de simulação para determinismo)
-    for (const [botId, botAI] of this.bots.entries()) {
-      botAI.update(this.state, dt, this.simulationTime);
+    // Atualiza game state reference nos InputControllers que suportam
+    for (const [playerId, controller] of this.inputControllers) {
+      if (controller.setGameState) {
+        controller.setGameState(this.state);
+      }
+    }
+
+    // Atualizar todos os InputControllers registrados (inclui bots via BotVirtualInputController)
+    for (const [playerId, controller] of this.inputControllers) {
+      controller.update(dt, this.simulationTime);
     }
 
     for (const player of this.state.players) {
@@ -924,7 +986,8 @@ export class Game {
         this.map.segments,
         this.controlledPlayerId,
         currentInput,
-        this.config
+        this.config,
+        this.inputControllers // Passa InputControllers para extrapolação de bots
       );
     }
 

@@ -59,93 +59,82 @@ export interface Player {
   maxSpeedMultiplier?: number; // Multiplicador de velocidade máxima (0 a 1, padrão 1)
 }
 
-// Bot AI Behaviors
+// ==================== NEW BOT INPUT SYSTEM ====================
+
+/**
+ * Direções possíveis de movimento (8 direções + parado)
+ */
+export type Direction = 
+  | 'UP' 
+  | 'DOWN' 
+  | 'LEFT' 
+  | 'RIGHT' 
+  | 'UP_LEFT' 
+  | 'UP_RIGHT' 
+  | 'DOWN_LEFT' 
+  | 'DOWN_RIGHT' 
+  | null;
+
+/**
+ * Tipo de preset do bot
+ */
+export type BotPresetType = 'none' | 'patrol' | 'autonomous';
+
+/**
+ * Comportamento do bot (novo sistema unificado)
+ */
 export interface BotBehavior {
-  type: 'programmed' | 'ai_preset';
-  config: ProgrammedBehavior | AIPresetBehavior;
+  preset: BotPresetType;
+  config: NoneBehaviorConfig | PatrolBehaviorConfig | AutonomousBehaviorConfig;
 }
 
-// Movimento totalmente programado pelo JSON
-export interface ProgrammedBehavior {
-  type: 'programmed';
-  movements: ProgrammedMovement[];
-  loop?: boolean; // Se deve repetir os movimentos
+/**
+ * Preset None - Bot fica parado
+ */
+export interface NoneBehaviorConfig {
+  kickOnContact?: boolean; // Chuta quando a bola encosta
 }
 
-export interface ProgrammedMovement {
-  duration: number; // Duração em segundos
-  direction?: Vector2D; // Direção normalizada (-1 a 1 para cada eixo)
-  speed?: number; // Velocidade (0 a 1, onde 1 = velocidade máxima)
-  kick?: boolean; // Se deve chutar durante este movimento
+/**
+ * Comando de patrulha
+ */
+export interface PatrolCommand {
+  action: 'move' | 'kick' | 'wait';
+  direction?: Direction;
+  durationMs: number;
 }
 
-// Comportamentos de IA predefinidos
-export interface AIPresetBehavior {
-  type: 'ai_preset';
-  preset: 'idle' | 'chase_ball' | 'mark_player' | 'intercept' | 'stay_near' | 'patrol';
-  params: IdleParams | ChaseBallParams | MarkPlayerParams | InterceptParams | StayNearParams | PatrolParams;
+/**
+ * Preset Patrol - Sequência de comandos cronometrados
+ */
+export interface PatrolBehaviorConfig {
+  commands: PatrolCommand[];
+  loop?: boolean; // Repetir comandos (padrão: true)
 }
 
-export interface IdleParams {
-  type: 'idle';
-  kickOnContact?: boolean; // Se deve chutar quando a bola encostar
-}
+/**
+ * Estratégias de targeting para preset Autonomous
+ */
+export type AutonomousStrategy = 
+  | 'chase_ball'       // Perseguir a bola
+  | 'aim_at_goal'      // Posicionar para chutar no gol
+  | 'mark_player'      // Marcar um jogador
+  | 'intercept_ball'   // Interceptar trajetória da bola
+  | 'stay_at_position'; // Manter posição fixa
 
-export interface ChaseBallParams {
-  type: 'chase_ball';
-  speed: number; // 0 a 1
-  keepDistance?: number; // Distância mínima da bola
-  kickWhenClose?: boolean; // Se deve chutar quando próximo
-  kickDistance?: number; // Distância para chutar
-  reactionTime?: number; // Tempo de reação em segundos (delay para mudar direção)
-  aimAtGoal?: boolean; // Se deve se posicionar para chutar em direção ao gol
-}
-
-export interface MarkPlayerParams {
-  type: 'mark_player';
-  targetPlayerId?: string; // ID do jogador a marcar (se não especificado, marca o jogador controlado)
-  distance: number; // Distância ideal para marcar
-  speed: number; // 0 a 1
-  reactionTime?: number; // Tempo de reação em segundos (delay para mudar direção)
-  interceptLine?: {
-    target: 'goal' | 'position' | 'bot';
-    targetId?: string; // Se target for 'bot', ID do bot alvo
-    targetPosition?: Vector2D; // Se target for 'position'
-  };
-}
-
-export interface InterceptParams {
-  type: 'intercept';
-  speed: number; // 0 a 1
-  predictBallPath: boolean; // Se deve prever o caminho da bola
-  stealBall: boolean; // Se deve tentar roubar a bola quando próximo
-  reactionTime?: number; // Tempo de reação em segundos (delay para mudar direção)
-}
-
-export interface StayNearParams {
-  type: 'stay_near';
-  position: Vector2D;
-  radius: number; // Raio de movimento ao redor da posição
-  speed: number; // 0 a 1
-  reactionTime?: number; // Tempo de reação em segundos (delay para mudar direção)
-  kickWhenBallNear?: boolean; // Se deve chutar quando a bola está próxima
-  kickDistance?: number; // Distância para chutar a bola
-}
-
-export interface PatrolPoint {
-  x: number;
-  y: number;
-  delay?: number; // Tempo de espera ANTES de começar a ir para este ponto (segundos)
-}
-
-export interface PatrolParams {
-  type: 'patrol';
-  points: PatrolPoint[]; // Pontos de patrulha
-  speed: number; // 0 a 1
-  loop?: boolean; // Se deve voltar ao primeiro ponto após o último (padrão: true)
-  waitTime?: number; // Tempo de espera em cada ponto (segundos) - DEPRECATED, use delay em cada ponto
-  reactionTime?: number; // Tempo de reação em segundos (delay para mudar direção)
-  kickOnContact?: boolean; // Se deve chutar quando a bola encostar
+/**
+ * Preset Autonomous - IA dinâmica que calcula direções
+ */
+export interface AutonomousBehaviorConfig {
+  strategy: AutonomousStrategy;
+  
+  // Parâmetros por estratégia
+  targetPlayerId?: string;      // Para 'mark_player'
+  targetPosition?: Vector2D;    // Para 'stay_at_position'
+  keepDistance?: number;        // Distância mínima do alvo
+  kickWhenAligned?: boolean;    // Chuta quando alinhado com o gol
+  kickDistance?: number;        // Distância para ativar chute (padrão: 35)
+  reactionDelayMs?: number;     // Delay de reação em ms (para simular humanidade)
 }
 
 export interface Ball {

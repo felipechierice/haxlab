@@ -1,8 +1,13 @@
 import { Game } from './game.js';
 import { DEFAULT_MAP, CLASSIC_MAP } from './maps.js';
-import { GameConfig, Vector2D, BotDefinition, BotBehavior, CheckpointObjective, PathObjective, Scenario, Playlist, GameMap, PatrolParams } from './types.js';
+import { GameConfig, Vector2D, BotDefinition, BotBehavior, CheckpointObjective, PathObjective, Scenario, Playlist, GameMap, BotPresetType, PatrolBehaviorConfig, AutonomousBehaviorConfig, NoneBehaviorConfig, PatrolCommand, Direction } from './types.js';
 import { Renderer } from './renderer.js';
 import { PlaylistMode } from './playlist.js';
+
+// Chave para auto-save no localStorage
+const EDITOR_AUTOSAVE_KEY = 'haxlab_editor_autosave';
+// Flag para controlar restauração: null = não perguntou, true = restaurar, false = não restaurar
+let restoreDecision: boolean | null = null;
 
 type EditorTool = 'select' | 'bot' | 'checkpoint' | 'path';
 type EditorSpecialEntity = 'player' | 'ball';
@@ -79,12 +84,6 @@ export class PlaylistEditor {
     description: 'Playlist personalizada'
   };
   
-  // Captura de coordenadas para patrol
-  private capturingPatrolPoint: { bot: EditorBot; pointIndex: number } | null = null;
-  
-  // Arrasto de pontos de patrulha
-  private draggingPatrolPoint: { bot: EditorBot; pointIndex: number } | null = null;
-  
   // Arrasto de pontos de path
   private draggingPathPoint: { path: EditorPath; pointIndex: number } | null = null;
   
@@ -95,6 +94,12 @@ export class PlaylistEditor {
   // Controle de clique rápido
   private mouseDownTime: number = 0;
   private mouseDownPos: Vector2D = { x: 0, y: 0 };
+  
+  // Auto-save debounce
+  private autoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
+  
+  // Referência para remover event listener
+  private boundBeforeUnload: (() => void) | null = null;
 
   constructor(canvas: HTMLCanvasElement, mapType: string = 'default') {
     this.canvas = canvas;
@@ -106,15 +111,164 @@ export class PlaylistEditor {
     this.game = new Game(canvas, map, this.config);
     this.renderer = new Renderer(canvas);
     
-    // Inicializar com um cenário vazio
-    this.scenarios.push({
-      settings: { ...this.scenarioSettings },
-      entities: []
-    });
+    // Tentar carregar do localStorage primeiro
+    const loaded = this.loadFromLocalStorage();
+    
+    if (!loaded) {
+      // Inicializar com um cenário vazio se não houver dados salvos
+      this.scenarios.push({
+        settings: { ...this.scenarioSettings },
+        entities: []
+      });
+    }
     
     this.setupEventListeners();
     this.createUI();
     this.startRenderLoop();
+    
+    // Debug: confirmar estado após inicialização
+    console.log('[Editor] Inicialização completa:', {
+      scenarios: this.scenarios.length,
+      currentIndex: this.currentScenarioIndex,
+      entities: this.entities.length
+    });
+  }
+  
+  // ==================== AUTO-SAVE ====================
+  
+  private saveToLocalStorage(): void {
+    try {
+      const data = {
+        playlistSettings: this.playlistSettings,
+        scenarios: this.scenarios,
+        currentScenarioIndex: this.currentScenarioIndex,
+        config: this.config,
+        mapType: this.mapType,
+        nextEntityId: this.nextEntityId,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(EDITOR_AUTOSAVE_KEY, JSON.stringify(data));
+    } catch (error) {
+      console.warn('Erro ao salvar no localStorage:', error);
+    }
+  }
+  
+  private loadFromLocalStorage(): boolean {
+    try {
+      const saved = localStorage.getItem(EDITOR_AUTOSAVE_KEY);
+      if (!saved) {
+        console.log('[AutoSave] Nenhum dado salvo encontrado');
+        return false;
+      }
+      
+      const data = JSON.parse(saved);
+      
+      // Verificar se os dados são válidos
+      if (!data.scenarios || !Array.isArray(data.scenarios) || data.scenarios.length === 0) {
+        console.log('[AutoSave] Dados inválidos no localStorage');
+        return false;
+      }
+      
+      // Se já decidiu não restaurar nesta sessão, não carregar
+      if (restoreDecision === false) {
+        console.log('[AutoSave] Usuário já optou por não restaurar nesta sessão');
+        return false;
+      }
+      
+      // Se ainda não perguntou, perguntar
+      if (restoreDecision === null) {
+        const timeAgo = this.formatTimeAgo(data.timestamp);
+        const restore = confirm(`Foi encontrada uma playlist em edição (salva ${timeAgo}).\n\nDeseja restaurar?\n\nOK = Restaurar\nCancelar = Começar do zero`);
+        restoreDecision = restore;
+        
+        if (!restore) {
+          console.log('[AutoSave] Usuário optou por não restaurar');
+          this.clearLocalStorage();
+          return false;
+        }
+      }
+      
+      // Restaurar dados (seja porque acabou de dizer sim, ou porque já tinha dito sim antes)
+      console.log('[AutoSave] Carregando dados salvos...');
+      
+      this.playlistSettings = data.playlistSettings;
+      this.scenarios = data.scenarios;
+      this.currentScenarioIndex = data.currentScenarioIndex || 0;
+      this.nextEntityId = data.nextEntityId || 0;
+      
+      // Restaurar configurações de física
+      if (data.config) {
+        Object.assign(this.config, data.config);
+      }
+      
+      // Carregar cenário atual
+      const scenario = this.scenarios[this.currentScenarioIndex];
+      this.scenarioSettings = { ...scenario.settings };
+      this.entities = [...scenario.entities];
+      
+      console.log('[AutoSave] Playlist restaurada:', {
+        scenarios: this.scenarios.length,
+        currentIndex: this.currentScenarioIndex,
+        entities: this.entities.length,
+        entitiesData: this.entities
+      });
+      return true;
+      
+    } catch (error) {
+      console.warn('[AutoSave] Erro ao carregar do localStorage:', error);
+      this.clearLocalStorage();
+      return false;
+    }
+  }
+  
+  private clearLocalStorage(): void {
+    try {
+      localStorage.removeItem(EDITOR_AUTOSAVE_KEY);
+    } catch (error) {
+      console.warn('Erro ao limpar localStorage:', error);
+    }
+  }
+  
+  private formatTimeAgo(timestamp: number): string {
+    const now = Date.now();
+    const diff = now - timestamp;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return 'agora mesmo';
+    if (minutes < 60) return `há ${minutes} minuto${minutes > 1 ? 's' : ''}`;
+    if (hours < 24) return `há ${hours} hora${hours > 1 ? 's' : ''}`;
+    return `há ${days} dia${days > 1 ? 's' : ''}`;
+  }
+  
+  // Método para disparar auto-save com debounce (evita salvar muitas vezes durante digitação)
+  private triggerAutoSave(): void {
+    // Cancelar timeout anterior se existir
+    if (this.autoSaveTimeout) {
+      clearTimeout(this.autoSaveTimeout);
+    }
+    
+    // Agendar save após 500ms de inatividade
+    this.autoSaveTimeout = setTimeout(() => {
+      this.saveImmediately();
+    }, 500);
+  }
+  
+  // Salva imediatamente sem debounce (usado no beforeunload)
+  private saveImmediately(): void {
+    // Cancelar timeout pendente
+    if (this.autoSaveTimeout) {
+      clearTimeout(this.autoSaveTimeout);
+      this.autoSaveTimeout = null;
+    }
+    
+    // Atualizar scenarios com entidades atuais
+    this.scenarios[this.currentScenarioIndex] = {
+      settings: { ...this.scenarioSettings },
+      entities: [...this.entities]
+    };
+    this.saveToLocalStorage();
   }
 
   private getDefaultConfig(): GameConfig {
@@ -260,6 +414,10 @@ export class PlaylistEditor {
     this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
     this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
     
+    // Salvar imediatamente antes de sair da página (F5, fechar aba, etc)
+    this.boundBeforeUnload = () => this.saveImmediately();
+    window.addEventListener('beforeunload', this.boundBeforeUnload);
+    
     // Teclas de atalho
     document.addEventListener('keydown', (e) => {
       // Ignora atalhos quando o foco está em um campo de texto
@@ -270,15 +428,6 @@ export class PlaylistEditor {
       }
       
       if (e.key === 'Escape') {
-        // Cancelar captura de coordenada
-        if (this.capturingPatrolPoint) {
-          this.capturingPatrolPoint = null;
-          this.canvas.style.cursor = 'default';
-          document.getElementById('capture-overlay')?.remove();
-          e.stopImmediatePropagation();
-          return;
-        }
-        
         // Sair do modo de teste se estiver ativo
         if (this.isTestMode) {
           e.stopImmediatePropagation();
@@ -332,20 +481,6 @@ export class PlaylistEditor {
     this.mouseDownTime = Date.now();
     this.mouseDownPos = { x: pos.x, y: pos.y };
     
-    // Verificar se está capturando coordenada para patrol
-    if (this.capturingPatrolPoint) {
-      if (this.capturingPatrolPoint.bot.behavior.config.type === 'ai_preset') {
-        const params = (this.capturingPatrolPoint.bot.behavior.config as any).params;
-        params.points[this.capturingPatrolPoint.pointIndex] = { x: Math.round(pos.x), y: Math.round(pos.y) };
-        this.updatePatrolPointsList(this.capturingPatrolPoint.bot);
-        this.capturingPatrolPoint = null;
-        // Restaurar cursor e remover overlay
-        this.canvas.style.cursor = 'default';
-        document.getElementById('capture-overlay')?.remove();
-      }
-      return;
-    }
-    
     // Verificar se clicou no handle de velocidade
     const velocityHandle = this.findVelocityHandleAtPosition(pos);
     if (velocityHandle) {
@@ -355,19 +490,6 @@ export class PlaylistEditor {
     }
     
     if (this.currentTool === 'select') {
-      // Verificar se clicou em um ponto de patrulha (se um bot de patrulha estiver selecionado)
-      if (this.selectedEntity && typeof this.selectedEntity === 'object' && 'spawn' in this.selectedEntity) {
-        const bot = this.selectedEntity as EditorBot;
-        if (bot.behavior.type === 'ai_preset' && bot.behavior.config.type === 'ai_preset' && bot.behavior.config.preset === 'patrol') {
-          const patrolPoint = this.findPatrolPointAtPosition(bot, pos);
-          if (patrolPoint !== null) {
-            this.draggingPatrolPoint = { bot, pointIndex: patrolPoint };
-            this.isDragging = true;
-            return;
-          }
-        }
-      }
-      
       // Verificar se clicou em um ponto de path
       const pathAtPos = this.findPathAtPosition(pos);
       if (pathAtPos) {
@@ -435,13 +557,6 @@ export class PlaylistEditor {
       if (this.draggingVelocityHandle) {
         // Arrastar handle de velocidade
         this.updateVelocityFromHandle(this.draggingVelocityHandle, pos);
-      } else if (this.draggingPatrolPoint) {
-        // Arrastar ponto de patrulha
-        const bot = this.draggingPatrolPoint.bot;
-        if (bot.behavior.config.type === 'ai_preset') {
-          const params = (bot.behavior.config as any).params;
-          params.points[this.draggingPatrolPoint.pointIndex] = { x: Math.round(pos.x), y: Math.round(pos.y) };
-        }
       } else if (this.draggingPathPoint) {
         // Arrastar ponto de path
         this.draggingPathPoint.path.points[this.draggingPathPoint.pointIndex] = {
@@ -473,7 +588,7 @@ export class PlaylistEditor {
     // Detectar clique rápido (não arrasto) em path
     const isQuickClick = clickDuration < 200 && moveDistance < 5;
     
-    if (isQuickClick && this.currentTool === 'select' && !this.draggingVelocityHandle && !this.draggingPatrolPoint) {
+    if (isQuickClick && this.currentTool === 'select' && !this.draggingVelocityHandle) {
       const pathAtPos = this.findPathAtPosition(pos);
       if (pathAtPos && !this.draggingPathPoint) {
         // Clique rápido em path - abrir propriedades
@@ -485,21 +600,17 @@ export class PlaylistEditor {
     // Finalizar arrasto de velocity handle
     if (this.draggingVelocityHandle) {
       this.draggingVelocityHandle = null;
+      this.triggerAutoSave();
       // Atualizar inputs do painel
       if (this.selectedEntity) {
         this.showSpecialEntityProperties(this.selectedEntity as EditorSpecialEntity);
       }
     }
     
-    // Atualizar lista de patrulha se estava arrastando ponto
-    if (this.draggingPatrolPoint) {
-      this.updatePatrolPointsList(this.draggingPatrolPoint.bot);
-      this.draggingPatrolPoint = null;
-    }
-    
     // Finalizar arrasto de ponto de path
     if (this.draggingPathPoint) {
       this.draggingPathPoint = null;
+      this.triggerAutoSave();
       // Atualizar painel de propriedades se necessário
       if (this.selectedEntity && typeof this.selectedEntity === 'object' && 'points' in this.selectedEntity) {
         this.showPropertiesPanel(this.selectedEntity);
@@ -512,6 +623,11 @@ export class PlaylistEditor {
       if (e.shiftKey) {
         this.finalizePath();
       }
+    }
+    
+    // Se estava arrastando, disparar auto-save
+    if (this.isDragging && this.draggingEntity) {
+      this.triggerAutoSave();
     }
     
     this.isDragging = false;
@@ -535,26 +651,6 @@ export class PlaylistEditor {
     dy = pos.y - ballPos.y;
     if (dx * dx + dy * dy < ballRadius * ballRadius) {
       return 'ball';
-    }
-    
-    return null;
-  }
-
-  private findPatrolPointAtPosition(bot: EditorBot, pos: Vector2D): number | null {
-    if (bot.behavior.config.type !== 'ai_preset') return null;
-    
-    const params = (bot.behavior.config as any).params;
-    if (!params.points || params.points.length === 0) return null;
-    
-    const clickRadius = 12; // Mesmo raio usado para renderizar
-    
-    for (let i = 0; i < params.points.length; i++) {
-      const point = params.points[i];
-      const dx = pos.x - point.x;
-      const dy = pos.y - point.y;
-      if (dx * dx + dy * dy < clickRadius * clickRadius) {
-        return i;
-      }
     }
     
     return null;
@@ -761,15 +857,10 @@ export class PlaylistEditor {
       spawn: pos,
       radius: 15, // Raio padrão
       behavior: {
-        type: 'ai_preset',
+        preset: 'none',
         config: {
-          type: 'ai_preset',
-          preset: 'idle',
-          params: {
-            type: 'idle',
-            kickOnContact: false
-          }
-        }
+          kickOnContact: false
+        } as NoneBehaviorConfig
       }
     };
     
@@ -777,6 +868,7 @@ export class PlaylistEditor {
     this.selectedEntity = bot;
     this.selectTool('select', true);
     this.showPropertiesPanel(bot);
+    this.triggerAutoSave();
   }
 
   private createCheckpoint(pos: Vector2D): void {
@@ -794,6 +886,7 @@ export class PlaylistEditor {
     this.selectedEntity = checkpoint;
     this.selectTool('select', true);
     this.showPropertiesPanel(checkpoint);
+    this.triggerAutoSave();
   }
 
   private getNextCheckpointOrder(): number {
@@ -822,6 +915,7 @@ export class PlaylistEditor {
       this.pathBeingDrawn = null;
       this.selectTool('select', true);
       this.showPropertiesPanel(path);
+      this.triggerAutoSave();
     } else {
       this.pathBeingDrawn = null;
       this.selectTool('select');
@@ -840,27 +934,45 @@ export class PlaylistEditor {
     } else if ('points' in entity) {
       this.showPathProperties(entity);
     }
+    
+    // Adicionar listener global para auto-save em qualquer mudança no painel
+    this.setupPropertiesPanelAutoSave();
+  }
+  
+  private setupPropertiesPanelAutoSave(): void {
+    if (!this.propertiesPanel) return;
+    
+    // Listener para inputs e selects - dispara auto-save
+    const autoSaveHandler = () => this.triggerAutoSave();
+    
+    // Remover listeners anteriores e adicionar novos
+    this.propertiesPanel.querySelectorAll('input, select, textarea').forEach(el => {
+      el.removeEventListener('input', autoSaveHandler);
+      el.removeEventListener('change', autoSaveHandler);
+      el.addEventListener('input', autoSaveHandler);
+      el.addEventListener('change', autoSaveHandler);
+    });
   }
 
   private showBotProperties(bot: EditorBot): void {
     if (!this.propertiesPanel) return;
     
-    const behaviorType = bot.behavior.type;
-    const aiPreset = behaviorType === 'ai_preset' && bot.behavior.config.type === 'ai_preset' 
-      ? bot.behavior.config.preset 
-      : 'chase_ball';
+    const preset = bot.behavior.preset;
+    const config = bot.behavior.config;
     
-    // Obter params atuais se existirem
-    const currentParams = behaviorType === 'ai_preset' && bot.behavior.config.type === 'ai_preset' 
-      ? (bot.behavior.config as any).params 
-      : {};
+    // Get current config values based on preset type
+    const noneConfig = preset === 'none' ? config as NoneBehaviorConfig : { kickOnContact: false };
+    const patrolConfig = preset === 'patrol' ? config as PatrolBehaviorConfig : { commands: [], loop: true };
+    const autoConfig: AutonomousBehaviorConfig = preset === 'autonomous' 
+      ? config as AutonomousBehaviorConfig 
+      : { strategy: 'chase_ball', kickDistance: 35, reactionDelayMs: 0, keepDistance: 30 };
     
     this.propertiesPanel.innerHTML = `
       <h3>Propriedades do Bot</h3>
       <div class="property">
         <label>ID do Bot:</label>
-        <input type="text" id="prop-bot-id" value="${bot.id}" readonly style="background: #f0f0f0; cursor: pointer;" title="Clique para copiar" />
-        <small style="color: #666; font-size: 11px;">Clique para copiar o ID</small>
+        <input type="text" id="prop-bot-id" value="${bot.id}" readonly style="background: rgba(51, 65, 85, 0.8); cursor: pointer; opacity: 0.8;" title="Clique para copiar" />
+        <small style="color: #94a3b8; font-size: 11px;">Clique para copiar o ID</small>
       </div>
       <div class="property">
         <label>Nome:</label>
@@ -890,92 +1002,79 @@ export class PlaylistEditor {
         <span id="prop-bot-radius-value">${bot.radius ?? 15}</span>
       </div>
       <div class="property">
-        <label>Preset de IA:</label>
-        <select id="prop-bot-ai-preset">
-          <option value="idle" ${aiPreset === 'idle' ? 'selected' : ''}>Nada (Parado)</option>
-          <option value="mark_player" ${aiPreset === 'mark_player' ? 'selected' : ''}>Marcar Jogador</option>
-          <option value="chase_ball" ${aiPreset === 'chase_ball' ? 'selected' : ''}>Perseguir Bola</option>
-          <option value="patrol" ${aiPreset === 'patrol' ? 'selected' : ''}>Patrulhar</option>
+        <label>Comportamento:</label>
+        <select id="prop-bot-preset">
+          <option value="none" ${preset === 'none' ? 'selected' : ''}>Parado</option>
+          <option value="patrol" ${preset === 'patrol' ? 'selected' : ''}>Patrulhar (Comandos)</option>
+          <option value="autonomous" ${preset === 'autonomous' ? 'selected' : ''}>Autônomo (Dinâmico)</option>
         </select>
       </div>
       
-      <!-- Configurações para Nada (Parado) -->
-      <div id="idle-config" style="display: ${aiPreset === 'idle' ? 'block' : 'none'};">
+      <!-- Configurações para Parado (none) -->
+      <div id="none-config" style="display: ${preset === 'none' ? 'block' : 'none'};">
         <h4>Config. Bot Parado</h4>
         <div class="property">
           <label>
-            <input type="checkbox" id="prop-idle-kick" ${currentParams.kickOnContact ? 'checked' : ''} />
+            <input type="checkbox" id="prop-none-kick" ${noneConfig.kickOnContact ? 'checked' : ''} />
             Chutar ao encostar na bola
           </label>
         </div>
       </div>
       
-      <!-- Configurações para Marcar Jogador -->
-      <div id="mark-player-config" style="display: ${aiPreset === 'mark_player' ? 'block' : 'none'};">
-        <h4>Config. Marcar Jogador</h4>
+      <!-- Configurações para Patrol (comandos) -->
+      <div id="patrol-config" style="display: ${preset === 'patrol' ? 'block' : 'none'};">
+        <h4>Comandos de Patrulha</h4>
+        <div id="patrol-commands-list"></div>
         <div class="property">
-          <label>Velocidade:</label>
-          <input type="range" id="prop-mark-speed" min="0.1" max="1.5" value="${currentParams.speed || 0.8}" step="0.1" />
-          <span id="prop-mark-speed-value">${currentParams.speed || 0.8}</span>
+          <button id="prop-add-patrol-command" class="editor-action-btn" style="width: 100%; margin-top: 10px; padding: 10px; justify-content: center; flex-direction: row; gap: 8px;"><i class="fas fa-plus"></i> Adicionar Comando</button>
+        </div>
+        <div class="property">
+          <label>
+            <input type="checkbox" id="prop-patrol-loop" ${patrolConfig.loop !== false ? 'checked' : ''} />
+            Loop (repetir comandos)
+          </label>
+        </div>
+      </div>
+      
+      <!-- Configurações para Autônomo -->
+      <div id="autonomous-config" style="display: ${preset === 'autonomous' ? 'block' : 'none'};">
+        <h4>Config. Autônomo</h4>
+        <div class="property">
+          <label>Estratégia:</label>
+          <select id="prop-auto-strategy">
+            <option value="chase_ball" ${autoConfig.strategy === 'chase_ball' ? 'selected' : ''}>Perseguir Bola</option>
+            <option value="aim_at_goal" ${autoConfig.strategy === 'aim_at_goal' ? 'selected' : ''}>Mirar no Gol</option>
+            <option value="mark_player" ${autoConfig.strategy === 'mark_player' ? 'selected' : ''}>Marcar Jogador</option>
+            <option value="intercept_ball" ${autoConfig.strategy === 'intercept_ball' ? 'selected' : ''}>Interceptar Bola</option>
+            <option value="stay_at_position" ${autoConfig.strategy === 'stay_at_position' ? 'selected' : ''}>Ficar em Posição</option>
+          </select>
+        </div>
+        <div class="property" id="auto-target-player-wrapper" style="display: ${autoConfig.strategy === 'mark_player' ? 'block' : 'none'};">
+          <label>ID do Jogador Alvo:</label>
+          <input type="text" id="prop-auto-target-player" value="${autoConfig.targetPlayerId ?? 'local-0'}" />
+        </div>
+        <div class="property" id="auto-target-position-wrapper" style="display: ${autoConfig.strategy === 'stay_at_position' ? 'block' : 'none'};">
+          <label>Posição X:</label>
+          <input type="number" id="prop-auto-target-x" value="${autoConfig.targetPosition?.x ?? bot.spawn.x}" />
+          <label>Posição Y:</label>
+          <input type="number" id="prop-auto-target-y" value="${autoConfig.targetPosition?.y ?? bot.spawn.y}" />
         </div>
         <div class="property">
           <label>Distância Mínima:</label>
-          <input type="number" id="prop-mark-distance" value="${currentParams.distance || 100}" min="10" max="300" step="10" />
+          <input type="number" id="prop-auto-keep-distance" value="${autoConfig.keepDistance ?? 30}" min="0" max="200" step="5" />
         </div>
         <div class="property">
-          <label>Tempo de Reação (s):</label>
-          <input type="number" id="prop-mark-reaction" value="${currentParams.reactionTime || 0}" min="0" max="2" step="0.1" />
+          <label>Tempo de Reação (ms):</label>
+          <input type="number" id="prop-auto-reaction" value="${autoConfig.reactionDelayMs ?? 0}" min="0" max="2000" step="50" />
         </div>
         <div class="property">
-          <label>
-            <input type="checkbox" id="prop-mark-kick" ${currentParams.kickOnContact ? 'checked' : ''} />
-            Chutar ao encostar na bola
-          </label>
-        </div>
-      </div>
-      
-      <!-- Configurações para Perseguir Bola -->
-      <div id="chase-ball-config" style="display: ${aiPreset === 'chase_ball' ? 'block' : 'none'};">
-        <h4>Config. Perseguir Bola</h4>
-        <div class="property">
-          <label>Velocidade:</label>
-          <input type="range" id="prop-chase-speed" min="0.1" max="1.5" value="${currentParams.speed || 0.8}" step="0.1" />
-          <span id="prop-chase-speed-value">${currentParams.speed || 0.8}</span>
+          <label>Distância de Chute:</label>
+          <input type="number" id="prop-auto-kick-distance" value="${autoConfig.kickDistance ?? 35}" min="10" max="100" step="5" />
         </div>
         <div class="property">
           <label>
-            <input type="checkbox" id="prop-chase-kick" ${currentParams.kickWhenClose !== false ? 'checked' : ''} />
-            Chutar ao encostar na bola
-          </label>
-        </div>
-      </div>
-      
-      <!-- Configurações do patrol -->
-      <div id="patrol-config" style="display: ${aiPreset === 'patrol' ? 'block' : 'none'};">
-        <h4>Pontos de Patrulha</h4>
-        <div id="patrol-points-list"></div>
-        <div class="property">
-          <button id="prop-add-patrol-point" class="apply-btn" style="width: 100%; margin-top: 10px;"><i class="fas fa-plus"></i> Adicionar Ponto</button>
-        </div>
-        <div class="property">
-          <label>
-            <input type="checkbox" id="prop-patrol-loop" ${currentParams.loop !== false ? 'checked' : ''} />
-            Loop (voltar ao ponto 1)
-          </label>
-        </div>
-        <div class="property">
-          <label>Velocidade:</label>
-          <input type="range" id="prop-patrol-speed" min="0.1" max="1" value="0.6" step="0.1" />
-          <span id="prop-patrol-speed-value">0.6</span>
-        </div>
-        <div class="property">
-          <label>Tempo de Espera (s):</label>
-          <input type="number" id="prop-patrol-wait" value="0" min="0" max="10" step="0.5" />
-        </div>
-        <div class="property">
-          <label>
-            <input type="checkbox" id="prop-patrol-kick" ${currentParams.kickOnContact ? 'checked' : ''} />
-            Chutar ao encostar na bola
+            <input type="checkbox" id="prop-auto-kick-aligned" ${autoConfig.kickWhenAligned ? 'checked' : ''} />
+            Chutar apenas alinhado com gol
           </label>
         </div>
       </div>
@@ -1032,69 +1131,55 @@ export class PlaylistEditor {
       if (radiusValue) radiusValue.textContent = value.toString();
     });
     
-    document.getElementById('prop-bot-ai-preset')?.addEventListener('change', (e) => {
-      const preset = (e.target as HTMLSelectElement).value as any;
+    // Event listener para mudança de preset
+    document.getElementById('prop-bot-preset')?.addEventListener('change', (e) => {
+      const newPreset = (e.target as HTMLSelectElement).value as BotPresetType;
       
       // Criar config apropriado para cada preset
-      let params: any;
-      switch (preset) {
-        case 'idle':
-          params = { 
-            type: 'idle', 
-            kickOnContact: false 
-          };
-          break;
-        case 'mark_player':
-          params = { 
-            type: 'mark_player', 
-            speed: 0.8, 
-            distance: 100, 
-            reactionTime: 0, 
-            kickOnContact: false 
-          };
-          break;
-        case 'chase_ball':
-          params = { 
-            type: 'chase_ball', 
-            speed: 0.8, 
-            kickWhenClose: true 
+      switch (newPreset) {
+        case 'none':
+          bot.behavior = {
+            preset: 'none',
+            config: { kickOnContact: false } as NoneBehaviorConfig
           };
           break;
         case 'patrol':
-          params = { 
-            type: 'patrol', 
-            points: [{ x: 400, y: 300 }, { x: 600, y: 300 }], 
-            speed: 0.6,
-            loop: true,
-            waitTime: 0,
-            reactionTime: 0,
-            kickOnContact: false
+          bot.behavior = {
+            preset: 'patrol',
+            config: {
+              commands: [
+                { action: 'move', direction: 'RIGHT', durationMs: 1000 },
+                { action: 'wait', durationMs: 500 },
+                { action: 'move', direction: 'LEFT', durationMs: 1000 },
+                { action: 'wait', durationMs: 500 }
+              ],
+              loop: true
+            } as PatrolBehaviorConfig
+          };
+          break;
+        case 'autonomous':
+          bot.behavior = {
+            preset: 'autonomous',
+            config: {
+              strategy: 'chase_ball',
+              kickDistance: 35,
+              reactionDelayMs: 0
+            } as AutonomousBehaviorConfig
           };
           break;
       }
-      
-      bot.behavior = {
-        type: 'ai_preset',
-        config: {
-          type: 'ai_preset',
-          preset: preset,
-          params: params
-        }
-      };
       
       // Recarregar propriedades para mostrar configurações corretas
       this.showBotProperties(bot);
     });
     
     // Configurar controles específicos de cada preset
-    if (aiPreset === 'idle') {
-      this.setupIdleControls(bot);
-    } else if (aiPreset === 'mark_player') {
-      this.setupMarkPlayerControls(bot);
-    } else if (aiPreset === 'chase_ball') {
-      this.setupChaseBallControls(bot);
-    } else if (aiPreset === 'patrol') {
+    if (preset === 'none') {
+      this.setupNoneControls(bot);
+    } else if (preset === 'patrol') {
       this.setupPatrolControls(bot);
+    } else if (preset === 'autonomous') {
+      this.setupAutonomousControls(bot);
     }
     
     document.getElementById('prop-delete')?.addEventListener('click', () => {
@@ -1102,269 +1187,233 @@ export class PlaylistEditor {
     });
   }
 
-  private setupIdleControls(bot: EditorBot): void {
-    if (bot.behavior.config.type !== 'ai_preset') return;
+  private setupNoneControls(bot: EditorBot): void {
+    if (bot.behavior.preset !== 'none') return;
     
-    const idleParams = (bot.behavior.config as any).params;
+    const config = bot.behavior.config as NoneBehaviorConfig;
     
-    // Kick on contact checkbox
-    const kickCheckbox = document.getElementById('prop-idle-kick') as HTMLInputElement;
+    const kickCheckbox = document.getElementById('prop-none-kick') as HTMLInputElement;
     kickCheckbox?.addEventListener('change', () => {
-      if (bot.behavior.config.type === 'ai_preset') {
-        ((bot.behavior.config as any).params).kickOnContact = kickCheckbox.checked;
-      }
+      (bot.behavior.config as NoneBehaviorConfig).kickOnContact = kickCheckbox.checked;
     });
   }
 
-  private setupMarkPlayerControls(bot: EditorBot): void {
-    if (bot.behavior.config.type !== 'ai_preset') return;
+  private setupAutonomousControls(bot: EditorBot): void {
+    if (bot.behavior.preset !== 'autonomous') return;
     
-    const markParams = (bot.behavior.config as any).params;
+    const config = bot.behavior.config as AutonomousBehaviorConfig;
     
-    // Speed slider
-    const speedInput = document.getElementById('prop-mark-speed') as HTMLInputElement;
-    const speedValue = document.getElementById('prop-mark-speed-value');
-    if (speedInput && markParams.speed !== undefined) {
-      speedInput.value = markParams.speed.toString();
-      if (speedValue) speedValue.textContent = markParams.speed.toFixed(1);
-    }
-    speedInput?.addEventListener('input', () => {
-      const value = parseFloat(speedInput.value);
-      if (bot.behavior.config.type === 'ai_preset') {
-        ((bot.behavior.config as any).params).speed = value;
-        if (speedValue) speedValue.textContent = value.toFixed(1);
+    // Strategy select
+    const strategySelect = document.getElementById('prop-auto-strategy') as HTMLSelectElement;
+    strategySelect?.addEventListener('change', () => {
+      const newStrategy = strategySelect.value as AutonomousBehaviorConfig['strategy'];
+      (bot.behavior.config as AutonomousBehaviorConfig).strategy = newStrategy;
+      
+      // Show/hide relevant fields
+      const targetPlayerWrapper = document.getElementById('auto-target-player-wrapper');
+      const targetPositionWrapper = document.getElementById('auto-target-position-wrapper');
+      if (targetPlayerWrapper) {
+        targetPlayerWrapper.style.display = newStrategy === 'mark_player' ? 'block' : 'none';
+      }
+      if (targetPositionWrapper) {
+        targetPositionWrapper.style.display = newStrategy === 'stay_at_position' ? 'block' : 'none';
       }
     });
     
-    // Distance input
-    const distanceInput = document.getElementById('prop-mark-distance') as HTMLInputElement;
-    if (distanceInput && markParams.distance !== undefined) {
-      distanceInput.value = markParams.distance.toString();
-    }
-    distanceInput?.addEventListener('input', () => {
-      const value = parseFloat(distanceInput.value);
-      if (bot.behavior.config.type === 'ai_preset') {
-        ((bot.behavior.config as any).params).distance = value;
-      }
+    // Target player ID
+    const targetPlayerInput = document.getElementById('prop-auto-target-player') as HTMLInputElement;
+    targetPlayerInput?.addEventListener('input', () => {
+      (bot.behavior.config as AutonomousBehaviorConfig).targetPlayerId = targetPlayerInput.value;
     });
     
-    // Reaction time input
-    const reactionInput = document.getElementById('prop-mark-reaction') as HTMLInputElement;
-    if (reactionInput && markParams.reactionTime !== undefined) {
-      reactionInput.value = markParams.reactionTime.toString();
-    }
+    // Target position
+    const targetXInput = document.getElementById('prop-auto-target-x') as HTMLInputElement;
+    const targetYInput = document.getElementById('prop-auto-target-y') as HTMLInputElement;
+    targetXInput?.addEventListener('input', () => {
+      const cfg = bot.behavior.config as AutonomousBehaviorConfig;
+      if (!cfg.targetPosition) cfg.targetPosition = { x: 0, y: 0 };
+      cfg.targetPosition.x = parseFloat(targetXInput.value) || 0;
+    });
+    targetYInput?.addEventListener('input', () => {
+      const cfg = bot.behavior.config as AutonomousBehaviorConfig;
+      if (!cfg.targetPosition) cfg.targetPosition = { x: 0, y: 0 };
+      cfg.targetPosition.y = parseFloat(targetYInput.value) || 0;
+    });
+    
+    // Keep distance
+    const keepDistanceInput = document.getElementById('prop-auto-keep-distance') as HTMLInputElement;
+    keepDistanceInput?.addEventListener('input', () => {
+      (bot.behavior.config as AutonomousBehaviorConfig).keepDistance = parseFloat(keepDistanceInput.value) || 0;
+    });
+    
+    // Reaction delay
+    const reactionInput = document.getElementById('prop-auto-reaction') as HTMLInputElement;
     reactionInput?.addEventListener('input', () => {
-      const value = parseFloat(reactionInput.value);
-      if (bot.behavior.config.type === 'ai_preset') {
-        ((bot.behavior.config as any).params).reactionTime = value;
-      }
+      (bot.behavior.config as AutonomousBehaviorConfig).reactionDelayMs = parseFloat(reactionInput.value) || 0;
     });
     
-    // Kick on contact checkbox
-    const kickCheckbox = document.getElementById('prop-mark-kick') as HTMLInputElement;
-    kickCheckbox?.addEventListener('change', () => {
-      if (bot.behavior.config.type === 'ai_preset') {
-        ((bot.behavior.config as any).params).kickOnContact = kickCheckbox.checked;
-      }
-    });
-  }
-
-  private setupChaseBallControls(bot: EditorBot): void {
-    if (bot.behavior.config.type !== 'ai_preset') return;
-    
-    const chaseParams = (bot.behavior.config as any).params;
-    
-    // Speed slider
-    const speedInput = document.getElementById('prop-chase-speed') as HTMLInputElement;
-    const speedValue = document.getElementById('prop-chase-speed-value');
-    if (speedInput && chaseParams.speed !== undefined) {
-      speedInput.value = chaseParams.speed.toString();
-      if (speedValue) speedValue.textContent = chaseParams.speed.toFixed(1);
-    }
-    speedInput?.addEventListener('input', () => {
-      const value = parseFloat(speedInput.value);
-      if (bot.behavior.config.type === 'ai_preset') {
-        ((bot.behavior.config as any).params).speed = value;
-        if (speedValue) speedValue.textContent = value.toFixed(1);
-      }
+    // Kick distance
+    const kickDistanceInput = document.getElementById('prop-auto-kick-distance') as HTMLInputElement;
+    kickDistanceInput?.addEventListener('input', () => {
+      (bot.behavior.config as AutonomousBehaviorConfig).kickDistance = parseFloat(kickDistanceInput.value) || 35;
     });
     
-    // Kick when close checkbox
-    const kickCheckbox = document.getElementById('prop-chase-kick') as HTMLInputElement;
-    kickCheckbox?.addEventListener('change', () => {
-      if (bot.behavior.config.type === 'ai_preset') {
-        ((bot.behavior.config as any).params).kickWhenClose = kickCheckbox.checked;
-      }
+    // Kick when aligned
+    const kickAlignedCheckbox = document.getElementById('prop-auto-kick-aligned') as HTMLInputElement;
+    kickAlignedCheckbox?.addEventListener('change', () => {
+      (bot.behavior.config as AutonomousBehaviorConfig).kickWhenAligned = kickAlignedCheckbox.checked;
     });
   }
 
   private setupPatrolControls(bot: EditorBot): void {
-    if (bot.behavior.config.type !== 'ai_preset') return;
+    if (bot.behavior.preset !== 'patrol') return;
     
-    this.updatePatrolPointsList(bot);
+    this.updatePatrolCommandsList(bot);
     
-    const patrolParams = (bot.behavior.config as any).params;
+    const config = bot.behavior.config as PatrolBehaviorConfig;
     
     // Loop checkbox
     const loopCheckbox = document.getElementById('prop-patrol-loop') as HTMLInputElement;
     if (loopCheckbox) {
-      loopCheckbox.checked = patrolParams.loop !== false; // Padrão true
+      loopCheckbox.checked = config.loop !== false;
     }
     loopCheckbox?.addEventListener('change', () => {
-      if (bot.behavior.config.type === 'ai_preset') {
-        ((bot.behavior.config as any).params as any).loop = loopCheckbox.checked;
-      }
+      (bot.behavior.config as PatrolBehaviorConfig).loop = loopCheckbox.checked;
     });
     
-    // Speed slider
-    const speedInput = document.getElementById('prop-patrol-speed') as HTMLInputElement;
-    const speedValue = document.getElementById('prop-patrol-speed-value');
-    if (speedInput && patrolParams.speed !== undefined) {
-      speedInput.value = patrolParams.speed.toString();
-      if (speedValue) speedValue.textContent = patrolParams.speed.toFixed(1);
-    }
-    speedInput?.addEventListener('input', () => {
-      const value = parseFloat(speedInput.value);
-      if (bot.behavior.config.type === 'ai_preset') {
-        ((bot.behavior.config as any).params as any).speed = value;
-      }
-      if (speedValue) speedValue.textContent = value.toFixed(1);
-    });
-    
-    // Wait time
-    const waitInput = document.getElementById('prop-patrol-wait') as HTMLInputElement;
-    if (waitInput && patrolParams.waitTime !== undefined) {
-      waitInput.value = patrolParams.waitTime.toString();
-    }
-    waitInput?.addEventListener('input', () => {
-      const value = parseFloat(waitInput.value);
-      if (bot.behavior.config.type === 'ai_preset') {
-        ((bot.behavior.config as any).params as any).waitTime = value > 0 ? value : undefined;
-      }
-    });
-    
-    // Kick on contact checkbox
-    const kickCheckbox = document.getElementById('prop-patrol-kick') as HTMLInputElement;
-    kickCheckbox?.addEventListener('change', () => {
-      if (bot.behavior.config.type === 'ai_preset') {
-        ((bot.behavior.config as any).params).kickOnContact = kickCheckbox.checked;
-      }
-    });
-    
-    // Add point button
-    const addButton = document.getElementById('prop-add-patrol-point');
+    // Add command button
+    const addButton = document.getElementById('prop-add-patrol-command');
     if (addButton) {
       addButton.addEventListener('click', () => {
-        if (bot.behavior.config.type === 'ai_preset') {
-          const params = (bot.behavior.config as any).params;
-          if (!params.points) params.points = [];
-          params.points.push({ x: 500, y: 300 });
-          this.updatePatrolPointsList(bot);
-        }
+        const cfg = bot.behavior.config as PatrolBehaviorConfig;
+        cfg.commands.push({ action: 'move', direction: 'RIGHT', durationMs: 1000 });
+        this.updatePatrolCommandsList(bot);
       });
     }
   }
 
-  private updatePatrolPointsList(bot: EditorBot): void {
-    const listContainer = document.getElementById('patrol-points-list');
-    if (!listContainer || bot.behavior.config.type !== 'ai_preset') return;
+  private updatePatrolCommandsList(bot: EditorBot): void {
+    const listContainer = document.getElementById('patrol-commands-list');
+    if (!listContainer || bot.behavior.preset !== 'patrol') return;
     
-    const params = (bot.behavior.config as any).params;
-    if (!params.points || params.points.length === 0) {
-      listContainer.innerHTML = '<p style="color: #888; font-size: 12px;">Nenhum ponto adicionado</p>';
+    const config = bot.behavior.config as PatrolBehaviorConfig;
+    if (!config.commands || config.commands.length === 0) {
+      listContainer.innerHTML = '<p style="color: #888; font-size: 12px;">Nenhum comando adicionado</p>';
       return;
     }
     
-    listContainer.innerHTML = params.points.map((point: any, index: number) => `
-      <div class="patrol-point" style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0; border-radius: 5px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-          <strong>Ponto ${index + 1}</strong>
-          <div>
-            <button class="capture-patrol-point" data-index="${index}" title="Capturar coordenada clicando no campo" style="background: #667eea; border: none; color: white; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 11px; margin-right: 5px;"><i class="fas fa-crosshairs"></i></button>
-            <button class="delete-patrol-point" data-index="${index}" style="background: #ff4444; border: none; color: white; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;"><i class="fas fa-times"></i></button>
+    const directions: Direction[] = ['UP', 'DOWN', 'LEFT', 'RIGHT', 'UP_LEFT', 'UP_RIGHT', 'DOWN_LEFT', 'DOWN_RIGHT'];
+    
+    const compactInputStyle = 'padding: 6px 8px; font-size: 12px;';
+    const reorderBtnStyle = 'background: rgba(99, 102, 241, 0.6); border: none; color: white; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-size: 9px; transition: all 0.2s;';
+    const reorderBtnDisabledStyle = 'background: rgba(99, 102, 241, 0.2); border: none; color: rgba(255,255,255,0.3); padding: 3px 6px; border-radius: 3px; cursor: not-allowed; font-size: 9px;';
+    
+    listContainer.innerHTML = config.commands.map((cmd: PatrolCommand, index: number) => `
+      <div class="patrol-command" style="background: rgba(255,255,255,0.05); padding: 8px; margin: 4px 0; border-radius: 6px; border: 1px solid rgba(99, 102, 241, 0.2);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="color: #a5b4fc; font-size: 12px; font-weight: 600;">Cmd ${index + 1}</span>
+            <div style="display: flex; gap: 2px;">
+              <button class="move-patrol-cmd-up" data-index="${index}" style="${index === 0 ? reorderBtnDisabledStyle : reorderBtnStyle}" ${index === 0 ? 'disabled' : ''}><i class="fas fa-chevron-up"></i></button>
+              <button class="move-patrol-cmd-down" data-index="${index}" style="${index === config.commands.length - 1 ? reorderBtnDisabledStyle : reorderBtnStyle}" ${index === config.commands.length - 1 ? 'disabled' : ''}><i class="fas fa-chevron-down"></i></button>
+            </div>
           </div>
+          <button class="delete-patrol-cmd" data-index="${index}" style="background: rgba(239, 68, 68, 0.8); border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; transition: all 0.2s;"><i class="fas fa-times"></i></button>
         </div>
-        <div style="display: flex; gap: 10px;">
-          <div style="flex: 1;">
-            <label style="font-size: 11px; color: #aaa;">X:</label>
-            <input type="number" class="patrol-point-x" data-index="${index}" value="${Math.round(point.x)}" style="width: 100%; padding: 4px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 3px;" />
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <div class="property" style="margin-bottom: 0; flex: 1; min-width: 70px;">
+            <label style="font-size: 10px; margin-bottom: 3px;">Ação</label>
+            <select class="patrol-cmd-action" data-index="${index}" style="${compactInputStyle}">
+              <option value="move" ${cmd.action === 'move' ? 'selected' : ''}>Mover</option>
+              <option value="kick" ${cmd.action === 'kick' ? 'selected' : ''}>Chutar</option>
+              <option value="wait" ${cmd.action === 'wait' ? 'selected' : ''}>Esperar</option>
+            </select>
           </div>
-          <div style="flex: 1;">
-            <label style="font-size: 11px; color: #aaa;">Y:</label>
-            <input type="number" class="patrol-point-y" data-index="${index}" value="${Math.round(point.y)}" style="width: 100%; padding: 4px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 3px;" />
+          <div class="property patrol-cmd-direction-wrapper" data-index="${index}" style="margin-bottom: 0; flex: 1; min-width: 80px; ${cmd.action !== 'move' ? 'display:none;' : ''}">
+            <label style="font-size: 10px; margin-bottom: 3px;">Direção</label>
+            <select class="patrol-cmd-direction" data-index="${index}" style="${compactInputStyle}">
+              ${directions.map(d => `<option value="${d}" ${cmd.direction === d ? 'selected' : ''}>${d}</option>`).join('')}
+            </select>
           </div>
-          <div style="flex: 1;">
-            <label style="font-size: 11px; color: #aaa;">Delay (s):</label>
-            <input type="number" class="patrol-point-delay" data-index="${index}" value="${point.delay || 0}" min="0" max="10" step="0.1" style="width: 100%; padding: 4px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 3px;" />
+          <div class="property patrol-cmd-duration-wrapper" data-index="${index}" style="margin-bottom: 0; flex: 1; min-width: 70px; ${cmd.action === 'kick' ? 'display:none;' : ''}">
+            <label style="font-size: 10px; margin-bottom: 3px;">Duração</label>
+            <input type="number" class="patrol-cmd-duration" data-index="${index}" value="${cmd.durationMs}" min="100" max="10000" step="100" style="${compactInputStyle}" />
           </div>
         </div>
       </div>
     `).join('');
     
-    // Event listeners para inputs
-    listContainer.querySelectorAll('.patrol-point-x').forEach(input => {
-      input.addEventListener('input', (e) => {
-        const index = parseInt((e.target as HTMLInputElement).dataset.index || '0');
-        const value = parseFloat((e.target as HTMLInputElement).value);
-        params.points[index].x = value;
-      });
-    });
-    
-    listContainer.querySelectorAll('.patrol-point-y').forEach(input => {
-      input.addEventListener('input', (e) => {
-        const index = parseInt((e.target as HTMLInputElement).dataset.index || '0');
-        const value = parseFloat((e.target as HTMLInputElement).value);
-        params.points[index].y = value;
-      });
-    });
-    
-    listContainer.querySelectorAll('.patrol-point-delay').forEach(input => {
-      input.addEventListener('input', (e) => {
-        const index = parseInt((e.target as HTMLInputElement).dataset.index || '0');
-        const value = parseFloat((e.target as HTMLInputElement).value);
-        params.points[index].delay = value > 0 ? value : undefined;
-      });
-    });
-    
-    // Event listeners para botões de delete
-    listContainer.querySelectorAll('.delete-patrol-point').forEach(button => {
-      button.addEventListener('click', (e) => {
-        const index = parseInt((e.target as HTMLButtonElement).dataset.index || '0');
-        if (params.points.length > 2) {
-          params.points.splice(index, 1);
-          this.updatePatrolPointsList(bot);
-        } else {
-          alert('O bot precisa ter pelo menos 2 pontos de patrulha!');
+    // Event listeners para selects de ação
+    listContainer.querySelectorAll('.patrol-cmd-action').forEach(select => {
+      select.addEventListener('change', (e) => {
+        const index = parseInt((e.target as HTMLSelectElement).dataset.index || '0');
+        const action = (e.target as HTMLSelectElement).value as 'move' | 'kick' | 'wait';
+        config.commands[index].action = action;
+        
+        // Show/hide direction based on action (only 'move' needs direction)
+        const dirWrapper = listContainer.querySelector(`.patrol-cmd-direction-wrapper[data-index="${index}"]`) as HTMLElement;
+        if (dirWrapper) {
+          dirWrapper.style.display = action === 'move' ? 'block' : 'none';
+        }
+        
+        // Show/hide duration based on action (kick is instant, no duration needed)
+        const durWrapper = listContainer.querySelector(`.patrol-cmd-duration-wrapper[data-index="${index}"]`) as HTMLElement;
+        if (durWrapper) {
+          durWrapper.style.display = action === 'kick' ? 'none' : 'block';
         }
       });
     });
     
-    // Event listeners para botões de captura
-    listContainer.querySelectorAll('.capture-patrol-point').forEach(button => {
+    // Event listeners para selects de direção
+    listContainer.querySelectorAll('.patrol-cmd-direction').forEach(select => {
+      select.addEventListener('change', (e) => {
+        const index = parseInt((e.target as HTMLSelectElement).dataset.index || '0');
+        config.commands[index].direction = (e.target as HTMLSelectElement).value as Direction;
+      });
+    });
+    
+    // Event listeners para inputs de duração
+    listContainer.querySelectorAll('.patrol-cmd-duration').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const index = parseInt((e.target as HTMLInputElement).dataset.index || '0');
+        config.commands[index].durationMs = parseInt((e.target as HTMLInputElement).value) || 1000;
+      });
+    });
+    
+    // Event listeners para botões de delete
+    listContainer.querySelectorAll('.delete-patrol-cmd').forEach(button => {
       button.addEventListener('click', (e) => {
         const index = parseInt((e.target as HTMLButtonElement).dataset.index || '0');
-        this.capturingPatrolPoint = { bot, pointIndex: index };
-        this.canvas.style.cursor = 'crosshair';
-        
-        // Mostrar feedback visual
-        const overlay = document.createElement('div');
-        overlay.id = 'capture-overlay';
-        overlay.style.cssText = `
-          position: fixed;
-          top: 10px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(102, 126, 234, 0.95);
-          color: white;
-          padding: 15px 30px;
-          border-radius: 10px;
-          z-index: 10000;
-          font-size: 14px;
-          font-weight: bold;
-          box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-        `;
-        overlay.textContent = `Clique no campo para definir o Ponto ${index + 1} (ESC para cancelar)`;
-        document.body.appendChild(overlay);
+        config.commands.splice(index, 1);
+        this.updatePatrolCommandsList(bot);
+      });
+    });
+    
+    // Event listeners para botões de mover para cima
+    listContainer.querySelectorAll('.move-patrol-cmd-up').forEach(button => {
+      button.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest('button') as HTMLButtonElement;
+        const index = parseInt(btn?.dataset.index || '0');
+        if (index > 0) {
+          const temp = config.commands[index];
+          config.commands[index] = config.commands[index - 1];
+          config.commands[index - 1] = temp;
+          this.updatePatrolCommandsList(bot);
+        }
+      });
+    });
+    
+    // Event listeners para botões de mover para baixo
+    listContainer.querySelectorAll('.move-patrol-cmd-down').forEach(button => {
+      button.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest('button') as HTMLButtonElement;
+        const index = parseInt(btn?.dataset.index || '0');
+        if (index < config.commands.length - 1) {
+          const temp = config.commands[index];
+          config.commands[index] = config.commands[index + 1];
+          config.commands[index + 1] = temp;
+          this.updatePatrolCommandsList(bot);
+        }
       });
     });
   }
@@ -1777,6 +1826,7 @@ export class PlaylistEditor {
     }
     this.selectedEntity = null;
     this.hidePropertiesPanel();
+    this.triggerAutoSave();
   }
 
   private saveCurrentScenario(): void {
@@ -1784,6 +1834,8 @@ export class PlaylistEditor {
       settings: { ...this.scenarioSettings },
       entities: [...this.entities]
     };
+    // Auto-save no localStorage
+    this.saveToLocalStorage();
   }
 
   private loadScenario(index: number): void {
@@ -1849,6 +1901,7 @@ export class PlaylistEditor {
       }
       
       this.loadScenario(this.currentScenarioIndex);
+      this.triggerAutoSave();
     }
   }
 
@@ -1884,6 +1937,7 @@ export class PlaylistEditor {
     this.playlistSettings.description = (document.getElementById('prop-playlist-description') as HTMLTextAreaElement).value;
     
     this.propertiesPanel?.classList.add('hidden');
+    this.triggerAutoSave();
   }
 
   private showScenarioSettings(): void {
@@ -2251,14 +2305,6 @@ export class PlaylistEditor {
       }
     });
     
-    // Renderizar pontos de patrulha se um bot com patrol estiver selecionado
-    if (this.selectedEntity && typeof this.selectedEntity === 'object' && 'spawn' in this.selectedEntity) {
-      const bot = this.selectedEntity as EditorBot;
-      if (bot.behavior.type === 'ai_preset' && bot.behavior.config.type === 'ai_preset' && bot.behavior.config.preset === 'patrol') {
-        this.renderPatrolWaypoints(ctx, bot);
-      }
-    }
-    
     // Renderizar visualização de velocidade inicial
     if (this.velocityVisualizationEnabled.player && this.selectedEntity === 'player') {
       this.renderVelocityVisualization(ctx, 'player');
@@ -2266,51 +2312,6 @@ export class PlaylistEditor {
     if (this.velocityVisualizationEnabled.ball && this.selectedEntity === 'ball') {
       this.renderVelocityVisualization(ctx, 'ball');
     }
-  }
-
-  private renderPatrolWaypoints(ctx: CanvasRenderingContext2D, bot: EditorBot): void {
-    if (bot.behavior.config.type !== 'ai_preset') return;
-    if (!bot.behavior.config.params) return;
-    
-    const patrolParams = bot.behavior.config.params as PatrolParams;
-    if (!patrolParams.points || patrolParams.points.length === 0) return;
-    
-    ctx.save();
-    
-    // Desenhar linhas conectando os pontos
-    if (patrolParams.points.length > 1) {
-      ctx.beginPath();
-      ctx.moveTo(patrolParams.points[0].x, patrolParams.points[0].y);
-      for (let i = 1; i < patrolParams.points.length; i++) {
-        ctx.lineTo(patrolParams.points[i].x, patrolParams.points[i].y);
-      }
-      ctx.strokeStyle = 'rgba(255, 200, 0, 0.5)';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 5]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    
-    // Desenhar círculos numerados em cada ponto
-    patrolParams.points.forEach((point, index) => {
-      // Círculo externo
-      ctx.beginPath();
-      ctx.arc(point.x, point.y, 12, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffc800';
-      ctx.fill();
-      ctx.strokeStyle = '#ff8800';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      
-      // Número da ordem
-      ctx.fillStyle = '#000000';
-      ctx.font = 'bold 14px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText((index + 1).toString(), point.x, point.y);
-    });
-    
-    ctx.restore();
   }
 
   private renderPlayer(ctx: CanvasRenderingContext2D): void {
@@ -3000,6 +3001,8 @@ export class PlaylistEditor {
 
   private exit(): void {
     if (confirm('Deseja sair do editor? Mudanças não salvas serão perdidas.')) {
+      // Limpar auto-save ao confirmar saída
+      this.clearLocalStorage();
       this.cleanup();
       // Voltar ao menu principal - disparar evento customizado
       window.dispatchEvent(new CustomEvent('editor-exit'));
@@ -3007,6 +3010,18 @@ export class PlaylistEditor {
   }
 
   public cleanup(): void {
+    // Remover event listener do beforeunload
+    if (this.boundBeforeUnload) {
+      window.removeEventListener('beforeunload', this.boundBeforeUnload);
+      this.boundBeforeUnload = null;
+    }
+    
+    // Cancelar timeout de auto-save pendente
+    if (this.autoSaveTimeout) {
+      clearTimeout(this.autoSaveTimeout);
+      this.autoSaveTimeout = null;
+    }
+    
     this.toolbarElement?.remove();
     this.propertiesPanel?.remove();
   }

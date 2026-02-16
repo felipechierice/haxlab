@@ -6,7 +6,7 @@
  * 
  * Como funciona:
  * 1. Clona o estado atual do jogo
- * 2. Aplica os inputs do jogador ao clone
+ * 2. Aplica os inputs dos jogadores/bots ao clone
  * 3. Simula física por N milissegundos
  * 4. Retorna posições extrapoladas para renderização
  * 
@@ -14,10 +14,16 @@
  * - 0ms: Sem extrapolation (padrão)
  * - 20-60ms: Sweet spot - predições precisas, gameplay suave
  * - 100ms+: Mais "shaky", mas alguns jogadores preferem
+ * 
+ * NOTA: Com o Input Adapter pattern, a extrapolação funciona de forma
+ * idêntica para jogadores e bots, pois ambos usam a mesma interface
+ * baseada em direções discretas (InputController).
  */
 
 import { GameState, Player, Circle, Segment, Vector2D, GameConfig, Ball } from './types.js';
 import { Physics } from './physics.js';
+import type { InputController } from './input/index.js';
+import { directionToInputFlags } from './input/index.js';
 
 /** Posições extrapoladas para renderização */
 export interface ExtrapolatedPositions {
@@ -103,9 +109,10 @@ export class Extrapolation {
    * 
    * @param state Estado atual do jogo
    * @param segments Segmentos do mapa (paredes)
-   * @param controlledPlayerId ID do jogador controlado
-   * @param playerInput Input atual do jogador
+   * @param controlledPlayerId ID do jogador controlado (legacy, para compatibilidade)
+   * @param playerInput Input atual do jogador controlado (legacy)
    * @param config Configurações do jogo
+   * @param inputControllers Map de InputControllers por ID do jogador (opcional)
    * @returns Posições extrapoladas para renderização
    */
   extrapolate(
@@ -113,7 +120,8 @@ export class Extrapolation {
     segments: Segment[],
     controlledPlayerId: string,
     playerInput: { up: boolean; down: boolean; left: boolean; right: boolean },
-    config: GameConfig
+    config: GameConfig,
+    inputControllers?: Map<string, InputController>
   ): ExtrapolatedPositions {
     // Se extrapolation está desligado, retorna posições atuais
     if (this.extrapolationMs <= 0) {
@@ -147,7 +155,8 @@ export class Extrapolation {
         controlledPlayerId,
         playerInput,
         config,
-        stepDt
+        stepDt,
+        inputControllers
       );
     }
 
@@ -155,7 +164,6 @@ export class Extrapolation {
     this.cachedResult.ball.x = this.simState.ballPos.x;
     this.cachedResult.ball.y = this.simState.ballPos.y;
     
-    // Todos os jogadores usam posição extrapolada (player e bots)
     this.cachedResult.players.clear();
     for (const [playerId, pos] of this.simState.playerPos) {
       this.cachedResult.players.set(playerId, { x: pos.x, y: pos.y });
@@ -192,7 +200,6 @@ export class Extrapolation {
 
   /**
    * Executa um step de simulação
-   * Simula player controlado e bots baseado em seus inputs atuais.
    */
   private simulateStep(
     state: GameState,
@@ -200,18 +207,28 @@ export class Extrapolation {
     controlledPlayerId: string,
     playerInput: { up: boolean; down: boolean; left: boolean; right: boolean },
     config: GameConfig,
-    dt: number
+    dt: number,
+    inputControllers?: Map<string, InputController>
   ): void {
-    // 1. Atualiza todos os jogadores (player e bots)
+    // 1. Atualiza jogadores
     for (const player of state.players) {
       const pos = this.simState.playerPos.get(player.id)!;
       const vel = this.simState.playerVel.get(player.id)!;
       
-      // Aplica input: player controlado usa input do teclado, bots usam seu próprio input
-      if (player.id === controlledPlayerId) {
+      // Verifica se há um InputController para este jogador/bot
+      const controller = inputControllers?.get(player.id);
+      
+      if (controller) {
+        // Usa o InputController para obter direção de movimento
+        const direction = controller.getMovementDirection();
+        const inputFlags = directionToInputFlags(direction);
+        this.applyPlayerInput(vel, inputFlags, config, dt);
+      } else if (player.id === controlledPlayerId) {
+        // Fallback: aplica input do jogador controlado (legacy)
         this.applyPlayerInput(vel, playerInput, config, dt);
-      } else if (player.isBot && player.input) {
-        // Bots: usa o input atual definido pela IA (patrulhar, perseguir, marcar, etc)
+      } else if (player.isBot) {
+        // Bots sem InputController: usa o input atual do bot
+        // Isso permite que o sistema de extrapolação atualize inputs de bots
         this.applyPlayerInput(vel, player.input, config, dt);
       }
       

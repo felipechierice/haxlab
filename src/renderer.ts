@@ -309,8 +309,11 @@ export class Renderer {
       
       this.drawCircle(drawX, drawY, circle.radius, color, true);
       
-      // Desenha círculo de carregamento de chute (só se não tiver chutado ainda ou se está no feedback visual)
-      const shouldShowKickIndicator = (player.isChargingKick && !player.hasKickedThisPress) || player.kickFeedbackTime > 0;
+      // Desenha círculo de carregamento de chute
+      // Para bots: mostra sempre que está carregando (mesmo após chutar, enquanto comando ativo)
+      // Para jogadores: só mostra se não tiver chutado ainda
+      // Sempre mostra durante feedback visual (após chute)
+      const shouldShowKickIndicator = player.isChargingKick && (player.isBot || !player.hasKickedThisPress) || player.kickFeedbackTime > 0;
       if (shouldShowKickIndicator) {
         // Se está no feedback visual (após chute), mostra círculo completo
         const chargeToShow = player.kickFeedbackTime > 0 ? 1 : player.kickCharge;
