@@ -962,7 +962,7 @@ export class PlaylistEditor {
     
     // Get current config values based on preset type
     const noneConfig = preset === 'none' ? config as NoneBehaviorConfig : { kickOnContact: false };
-    const patrolConfig = preset === 'patrol' ? config as PatrolBehaviorConfig : { commands: [], loop: true };
+    const patrolConfig = preset === 'patrol' ? config as PatrolBehaviorConfig : { commands: [], loop: false };
     const autoConfig: AutonomousBehaviorConfig = preset === 'autonomous' 
       ? config as AutonomousBehaviorConfig 
       : { strategy: 'chase_ball', kickDistance: 35, reactionDelayMs: 0, keepDistance: 30 };
@@ -1153,7 +1153,7 @@ export class PlaylistEditor {
                 { action: 'move', direction: 'LEFT', durationMs: 1000 },
                 { action: 'wait', durationMs: 500 }
               ],
-              loop: true
+              loop: false
             } as PatrolBehaviorConfig
           };
           break;

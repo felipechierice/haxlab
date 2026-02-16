@@ -11,42 +11,7 @@ import { trackPageView } from '../analytics';
 
 
 const AVAILABLE_PLAYLISTS: PlaylistInfo[] = [
-  { 
-    file: 'torneio-1.json', 
-    name: 'TORNEIO A.D. BRK - Edição 1', 
-    description: 'Playlist oficial do 1º Torneio A.D. BRK', 
-    icon: 'fa-trophy' 
-  },
-  { 
-    file: 'cruzamento-facil.json', 
-    name: 'Cruzamento - Fácil', 
-    description: 'Pratique cruzamentos e finalizações', 
-    icon: 'fa-futbol' 
-  },
-  { 
-    file: 'drible-e-gol.json', 
-    name: 'Drible e Gol', 
-    description: 'Melhore suas habilidades de drible', 
-    icon: 'fa-bullseye' 
-  },
-  { 
-    file: 'conducao-facil.json', 
-    name: 'Condução - Fácil', 
-    description: 'Exercícios focados em condução de bola', 
-    icon: 'fa-person-running' 
-  },
-  { 
-    file: 'finalizacoes-facil.json', 
-    name: 'Finalizações - Fácil', 
-    description: 'Seu time penetrou pela defesa adversária. Finalize com sucesso marcando gol.', 
-    icon: 'fa-crosshairs' 
-  },
-//   { 
-//     file: 'goleiro-treino.json', 
-//     name: 'Treino de Goleiro', 
-//     description: 'Defenda seu gol contra ataques cada vez mais difíceis. Dos chutes simples até blitz com múltiplos atacantes.', 
-//     icon: 'fa-hand' 
-//   }
+  // Playlists serão adicionadas aqui
 ];
 
 function PlaylistsPage() {
