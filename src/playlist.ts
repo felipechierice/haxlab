@@ -919,6 +919,12 @@ export class PlaylistMode {
       this.resetTimeoutId = null;
     }
     
+    // Acumular tempo do cenário atual antes de resetar (se não foi já acumulado por fail/complete)
+    if (this.game && !this.scenarioCompleted && !this.scenarioFailed) {
+      const scenarioTime = this.game.getState().time - this.progress.scenarioStartTime;
+      this.totalPlaylistTime += scenarioTime;
+    }
+    
     // Gravar reset no replay (antes de reiniciar o cenário)
     if (this.replayRecorder) {
       this.replayRecorder.recordScenarioStart(this.progress.currentScenarioIndex, true);
@@ -938,6 +944,12 @@ export class PlaylistMode {
       this.nextScenarioTimeoutId = null;
     }
     
+    // Acumular tempo do cenário atual se não foi já acumulado por fail/complete
+    if (this.game && !this.scenarioCompleted && !this.scenarioFailed) {
+      const scenarioTime = this.game.getState().time - this.progress.scenarioStartTime;
+      this.totalPlaylistTime += scenarioTime;
+    }
+    
     const nextIndex = this.progress.currentScenarioIndex + 1;
     if (nextIndex < this.playlist.scenarios.length) {
       this.startScenario(nextIndex);
@@ -945,6 +957,12 @@ export class PlaylistMode {
   }
   
   prevScenario(): void {
+    // Acumular tempo do cenário atual se não foi já acumulado por fail/complete
+    if (this.game && !this.scenarioCompleted && !this.scenarioFailed) {
+      const scenarioTime = this.game.getState().time - this.progress.scenarioStartTime;
+      this.totalPlaylistTime += scenarioTime;
+    }
+    
     const prevIndex = this.progress.currentScenarioIndex - 1;
     if (prevIndex >= 0) {
       this.startScenario(prevIndex);
