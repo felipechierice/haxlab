@@ -259,6 +259,22 @@
   color: #e0e7ff;
   font-size: 18px;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-nickname .edit-icon {
+  font-size: 14px;
+  color: #94a3b8;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+.user-profile-info:hover .edit-icon {
+  opacity: 1;
+  color: #6366f1;
+  transform: scale(1.1);
 }
 
 .user-status {

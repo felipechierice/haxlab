@@ -94,7 +94,10 @@ function HomePage() {
             <div className="user-profile-info" onClick={handleAuth} style={{ cursor: 'pointer' }} title={t('auth.clickToManage')}>
               <i className={`fas ${userProfile.isGuest ? 'fa-user' : 'fa-user-circle'}`}></i>
               <div>
-                <div className="user-nickname">{userProfile.nickname}</div>
+                <div className="user-nickname">
+                  {userProfile.nickname}
+                  <i className="fas fa-pencil-alt edit-icon" title={t('auth.clickToEdit')}></i>
+                </div>
                 {userProfile.isGuest && (
                   <div className="user-status">{t('auth.guest')}</div>
                 )}
