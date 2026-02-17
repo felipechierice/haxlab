@@ -1,0 +1,1372 @@
+{
+  "name": "Desafio 2",
+  "description": "Você consegue completar todos os 8 cenários? Finalização, situações de 2x1, escanteios e condução de bola — teste seus reflexos e tome decisões rápidas!",
+  "scenarios": [
+    {
+      "name": "Finalização 1",
+      "map": "default",
+      "timeLimit": 9,
+      "objectives": [
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 388,
+            "y": 155
+          },
+          "radius": 20,
+          "timeLimit": 10
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 430,
+            "y": 62
+          },
+          "radius": 20,
+          "timeLimit": 10
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 935,
+            "y": 65
+          },
+          "radius": 20,
+          "timeLimit": 10
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 806,
+            "y": 375
+          },
+          "radius": 20,
+          "timeLimit": 10
+        },
+        {
+          "type": "goal",
+          "team": "red",
+          "scoredBy": "player"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "kick_count",
+          "exact": 1
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771358093494",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 921,
+            "y": 379
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "kick",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "kick",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771358120764",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 133,
+            "y": 296
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 200
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 200
+                },
+                {
+                  "action": "move",
+                  "direction": "UP_RIGHT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "kick",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN_LEFT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "LEFT",
+                  "durationMs": 200
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 200
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771358127320",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 394,
+            "y": 180
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 1180
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 100
+                },
+                {
+                  "action": "kick",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "kick",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 550
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 2000
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 100
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 300
+                },
+                {
+                  "action": "kick",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN_LEFT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771358151320",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 664,
+            "y": 180
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "LEFT",
+                  "durationMs": 1200
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 400
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 2200
+                },
+                {
+                  "action": "move",
+                  "direction": "UP_RIGHT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "UP_LEFT",
+                  "durationMs": 300
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN_RIGHT",
+                  "durationMs": 300
+                },
+                {
+                  "action": "move",
+                  "direction": "UP_LEFT",
+                  "durationMs": 300
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN_RIGHT",
+                  "durationMs": 300
+                },
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771358156536",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 324,
+            "y": 443
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "durationMs": 1000,
+                  "direction": "UP_LEFT"
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 300
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN_LEFT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 750
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 156,
+        "y": 282
+      },
+      "playerSpawn": {
+        "x": 762,
+        "y": 415
+      }
+    },
+    {
+      "name": "Finalização 2",
+      "map": "default",
+      "timeLimit": 9,
+      "objectives": [
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 388,
+            "y": 445
+          },
+          "radius": 20,
+          "timeLimit": 10
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 430,
+            "y": 538
+          },
+          "radius": 20,
+          "timeLimit": 10
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 935,
+            "y": 535
+          },
+          "radius": 20,
+          "timeLimit": 10
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 806,
+            "y": 225
+          },
+          "radius": 20,
+          "timeLimit": 10
+        },
+        {
+          "type": "goal",
+          "team": "red"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "kick_count",
+          "exact": 1
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-2771358093494",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 921,
+            "y": 221
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "kick",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "kick",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771358120764",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 133,
+            "y": 304
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 200
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 200
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN_RIGHT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "kick",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "UP_LEFT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "LEFT",
+                  "durationMs": 200
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 200
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771358127320",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 394,
+            "y": 420
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 1180
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 100
+                },
+                {
+                  "action": "kick",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "kick",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 550
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 2000
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 100
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 300
+                },
+                {
+                  "action": "kick",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "UP_LEFT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771358151320",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 664,
+            "y": 420
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "LEFT",
+                  "durationMs": 1200
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 400
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 2200
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN_RIGHT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN_LEFT",
+                  "durationMs": 300
+                },
+                {
+                  "action": "move",
+                  "direction": "UP_RIGHT",
+                  "durationMs": 300
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN_LEFT",
+                  "durationMs": 300
+                },
+                {
+                  "action": "move",
+                  "direction": "UP_RIGHT",
+                  "durationMs": 300
+                },
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771358156536",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 324,
+            "y": 157
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "durationMs": 1000,
+                  "direction": "DOWN_LEFT"
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 300
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "UP_LEFT",
+                  "durationMs": 500
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 750
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 156,
+        "y": 318
+      },
+      "playerSpawn": {
+        "x": 762,
+        "y": 185
+      }
+    },
+    {
+      "name": "2x1 - Borda Inferior Direita",
+      "map": "default",
+      "timeLimit": 5,
+      "objectives": [
+        {
+          "type": "goal",
+          "team": "red"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-1771360637134",
+            "bot-1771360639332"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771360637134",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 928,
+            "y": 220
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771360639332",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 666,
+            "y": 533
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 917,
+        "y": 516
+      },
+      "playerSpawn": {
+        "x": 885,
+        "y": 491
+      }
+    },
+    {
+      "name": "2x1 - Borda Superior Direita",
+      "map": "default",
+      "timeLimit": 5,
+      "objectives": [
+        {
+          "type": "goal",
+          "team": "red"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-2771360637134",
+            "bot-2771360639332"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-2771360637134",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 928,
+            "y": 380
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771360639332",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 666,
+            "y": 67
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 917,
+        "y": 84
+      },
+      "playerSpawn": {
+        "x": 885,
+        "y": 109
+      }
+    },
+    {
+      "name": "Escanteio - Inferior Direito",
+      "map": "default",
+      "timeLimit": 3,
+      "objectives": [
+        {
+          "type": "goal",
+          "team": "red"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771360886036",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 952,
+            "y": 563
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "wait",
+                  "durationMs": 500
+                },
+                {
+                  "action": "kick",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771360910157",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 72,
+            "y": 301
+          },
+          "behavior": {
+            "preset": "none",
+            "config": {
+              "kickOnContact": false
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771360918604",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 907,
+            "y": 167
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771360920609",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 724,
+            "y": 352
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771360922174",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 948,
+            "y": 336
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "intercept_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 942,
+        "y": 541
+      },
+      "playerSpawn": {
+        "x": 802,
+        "y": 253
+      }
+    },
+    {
+      "name": "Escanteio - Superior Direito",
+      "map": "default",
+      "timeLimit": 3,
+      "objectives": [
+        {
+          "type": "goal",
+          "team": "red"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-2771360886036",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 952,
+            "y": 37
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "wait",
+                  "durationMs": 500
+                },
+                {
+                  "action": "kick",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771360910157",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 72,
+            "y": 299
+          },
+          "behavior": {
+            "preset": "none",
+            "config": {
+              "kickOnContact": false
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771360918604",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 907,
+            "y": 433
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771360920609",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 724,
+            "y": 248
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771360922174",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 948,
+            "y": 264
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "intercept_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 942,
+        "y": 59
+      },
+      "playerSpawn": {
+        "x": 802,
+        "y": 347
+      }
+    },
+    {
+      "name": "Domínio e Posso de Bola - Esquerda",
+      "map": "default",
+      "timeLimit": 10,
+      "objectives": [
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 500,
+            "y": 300
+          },
+          "radius": 30,
+          "timeLimit": 10
+        },
+        {
+          "type": "path",
+          "points": [
+            {
+              "x": 500,
+              "y": 70
+            },
+            {
+              "x": 200,
+              "y": 300
+            },
+            {
+              "x": 500,
+              "y": 300
+            }
+          ],
+          "width": 80
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-1771361432905",
+            "bot-1771361477725"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771361333986",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 500,
+            "y": 71
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "kick",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771361432905",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 433,
+            "y": 385
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771361477725",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 344,
+            "y": 217
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "durationMs": 1000,
+                  "direction": "DOWN"
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 479,
+        "y": 87
+      },
+      "playerSpawn": {
+        "x": 176,
+        "y": 306
+      },
+      "initialBallVelocity": {
+        "x": -103,
+        "y": 80
+      }
+    },
+    {
+      "name": "Domínio e Posse de Bola - Direita",
+      "map": "default",
+      "timeLimit": 10,
+      "objectives": [
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 500,
+            "y": 300
+          },
+          "radius": 30,
+          "timeLimit": 10
+        },
+        {
+          "type": "path",
+          "points": [
+            {
+              "x": 500,
+              "y": 530
+            },
+            {
+              "x": 800,
+              "y": 300
+            },
+            {
+              "x": 500,
+              "y": 300
+            }
+          ],
+          "width": 80
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-2771361432905",
+            "bot-2771361477725"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-2771361333986",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 500,
+            "y": 529
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "kick",
+                  "direction": "LEFT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771361432905",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 567,
+            "y": 215
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771361477725",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 656,
+            "y": 383
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "durationMs": 1000,
+                  "direction": "UP"
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 521,
+        "y": 513
+      },
+      "playerSpawn": {
+        "x": 824,
+        "y": 294
+      },
+      "initialBallVelocity": {
+        "x": 103,
+        "y": -80
+      }
+    }
+  ],
+  "gameConfig": {
+    "kickStrength": 500,
+    "kickMode": "classic",
+    "playerRadius": 15,
+    "playerSpeed": 150,
+    "playerAcceleration": 7.5,
+    "kickSpeedMultiplier": 1,
+    "ballConfig": {
+      "radius": 8,
+      "mass": 5,
+      "damping": 0.99,
+      "color": "#ffff00",
+      "borderColor": "#000000",
+      "borderWidth": 2
+    }
+  },
+  "randomizeOrder": false
+}

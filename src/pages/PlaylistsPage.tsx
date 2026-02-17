@@ -27,6 +27,12 @@ const AVAILABLE_PLAYLISTS: PlaylistInfo[] = [
     name: 'Desafio 1',
     description: '9 cenários combinando habilidades de passe, drible, finalizações e mais.',
     icon: 'fa-trophy'
+  },
+  {
+    file: 'desafio-2.json',
+    name: 'Desafio 2',
+    description: 'Você consegue completar todos os 8 cenários? Finalização, situações de 2x1, escanteios e condução de bola.',
+    icon: 'fa-fire'
   }
 ];
 

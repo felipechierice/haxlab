@@ -39,6 +39,7 @@ const OFFICIAL_PLAYLISTS = [
   'TORNEIO A.D. BRK - Edição 1',
   'Finalizações - Fácil',
   'Desafio 1',
+  'Desafio 2',
 //   'Treino de Goleiro'
 ];
 
