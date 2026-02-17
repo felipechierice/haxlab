@@ -31,7 +31,7 @@ const AVAILABLE_PLAYLISTS: PlaylistInfo[] = [
   {
     file: 'desafio-2.json',
     name: 'Desafio 2',
-    description: 'Você consegue completar todos os 8 cenários? Finalização, situações de 2x1, escanteios e condução de bola.',
+    description: '6 cenários de situações de 2x1, escanteios e condução de bola — teste seus reflexos e tome decisões rápidas!',
     icon: 'fa-fire'
   }
 ];
