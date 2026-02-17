@@ -6,6 +6,7 @@ import {
   signInWithEmail, 
   signInWithGoogle,
   createGuestSession,
+  updateGuestNickname,
   updateUserNickname,
   signOut
 } from '../auth';
@@ -154,15 +155,26 @@ export default function AuthModal({ onClose, allowGuest = true }: AuthModalProps
     }
   };
 
-  const handleChangeNickname = () => {
+  const handleChangeNickname = async () => {
     if (!nickname.trim()) {
       setError('Digite um nickname');
       return;
     }
 
-    const profile = createGuestSession(nickname.trim());
-    setUserProfile(profile);
-    onClose();
+    const oldNickname = userProfile?.nickname || '';
+    
+    setLoading(true);
+    setError('');
+    
+    try {
+      const profile = await updateGuestNickname(oldNickname, nickname.trim());
+      setUserProfile(profile);
+      onClose();
+    } catch (err: any) {
+      setError('Erro ao salvar nickname');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChangeNicknameLoggedIn = async () => {
@@ -235,7 +247,7 @@ export default function AuthModal({ onClose, allowGuest = true }: AuthModalProps
           onClick={handleChangeNickname}
           disabled={loading}
         >
-          <i className="fas fa-check"></i> Salvar Nickname
+          {loading ? 'Salvando...' : <><i className="fas fa-check"></i> Salvar Nickname</>}
         </button>
 
         <div className="auth-divider">ou</div>

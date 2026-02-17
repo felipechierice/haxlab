@@ -11,7 +11,7 @@ import {
   updateProfile
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, updateNicknameInRankings } from './firebase';
 
 // Inicializar Firebase Auth
 export const auth: Auth = getAuth();
@@ -144,13 +144,19 @@ export async function signInWithGoogle(): Promise<{ user: UserProfile; needsNick
 /**
  * Atualizar nickname de usuário
  * Se o perfil não existir (novo usuário Google), cria o perfil completo
+ * Também atualiza o nickname em todos os registros de ranking
  */
 export async function updateUserNickname(uid: string, nickname: string): Promise<void> {
   try {
     const userDocRef = doc(db, 'users', uid);
     const userDoc = await getDoc(userDocRef);
     
+    let oldNickname: string | null = null;
+    
     if (userDoc.exists()) {
+      // Guardar nickname antigo para atualizar rankings
+      oldNickname = userDoc.data().nickname || null;
+      
       // Perfil existe, apenas atualizar nickname
       await updateDoc(userDocRef, { nickname });
     } else {
@@ -170,6 +176,17 @@ export async function updateUserNickname(uid: string, nickname: string): Promise
     const currentUser = auth.currentUser;
     if (currentUser && currentUser.uid === uid) {
       await updateProfile(currentUser, { displayName: nickname });
+    }
+    
+    // Atualizar nickname em todos os rankings (se havia nickname antigo e mudou)
+    if (oldNickname && oldNickname !== nickname) {
+      try {
+        const result = await updateNicknameInRankings(oldNickname, nickname);
+        console.log(`Rankings updated - Official: ${result.official}, Community: ${result.community}`);
+      } catch (rankingError) {
+        // Log do erro mas não falha a operação principal
+        console.error('Error updating rankings (non-critical):', rankingError);
+      }
     }
   } catch (error) {
     console.error('Error updating nickname:', error);
@@ -213,6 +230,44 @@ export function createGuestSession(nickname: string): UserProfile {
 
   // Salvar no localStorage
   localStorage.setItem('guestProfile', JSON.stringify(guestProfile));
+
+  return guestProfile;
+}
+
+/**
+ * Atualizar nickname de convidado (guest)
+ * Também atualiza o nickname em todos os registros de ranking
+ */
+export async function updateGuestNickname(oldNickname: string, newNickname: string): Promise<UserProfile> {
+  // Validar novo nickname
+  if (!newNickname || newNickname.trim().length === 0) {
+    throw new Error('Nickname não pode estar vazio');
+  }
+  
+  const trimmedNewNickname = newNickname.trim();
+  
+  // Criar novo perfil de convidado
+  const guestProfile: UserProfile = {
+    uid: `guest_${Date.now()}`,
+    email: null,
+    nickname: trimmedNewNickname,
+    isGuest: true,
+    createdAt: Date.now()
+  };
+
+  // Salvar no localStorage
+  localStorage.setItem('guestProfile', JSON.stringify(guestProfile));
+  
+  // Atualizar nickname em todos os rankings (se nickname mudou)
+  if (oldNickname && oldNickname !== trimmedNewNickname) {
+    try {
+      const result = await updateNicknameInRankings(oldNickname, trimmedNewNickname);
+      console.log(`Guest rankings updated - Official: ${result.official}, Community: ${result.community}`);
+    } catch (rankingError) {
+      // Log do erro mas não falha a operação principal
+      console.error('Error updating guest rankings (non-critical):', rankingError);
+    }
+  }
 
   return guestProfile;
 }

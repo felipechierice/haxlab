@@ -1,5 +1,5 @@
 import { initializeApp, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore, collection, addDoc, query, orderBy, limit, getDocs, where, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { getFirestore, Firestore, collection, addDoc, query, orderBy, limit, getDocs, where, updateDoc, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { initAnalytics } from './analytics.js';
 
 // Configuração do Firebase
@@ -364,5 +364,57 @@ export async function getAvailablePlaylists(): Promise<string[]> {
   } catch (error) {
     console.error('Error getting available playlists:', error);
     return [];
+  }
+}
+
+/**
+ * Atualiza o nickname em todos os rankings do jogador
+ * Atualiza tanto rankings oficiais quanto da comunidade
+ */
+export async function updateNicknameInRankings(oldNickname: string, newNickname: string): Promise<{ official: number; community: number }> {
+  const result = { official: 0, community: 0 };
+  
+  try {
+    // Atualizar rankings oficiais
+    const officialQuery = query(
+      collection(db, 'rankings'),
+      where('nickname', '==', oldNickname)
+    );
+    
+    const officialSnapshot = await getDocs(officialQuery);
+    
+    if (!officialSnapshot.empty) {
+      const batch = writeBatch(db);
+      officialSnapshot.forEach((docSnapshot) => {
+        batch.update(docSnapshot.ref, { nickname: newNickname });
+        result.official++;
+      });
+      await batch.commit();
+      console.log(`Updated ${result.official} official ranking entries`);
+    }
+    
+    // Atualizar rankings da comunidade
+    const communityQuery = query(
+      collection(db, 'community_rankings'),
+      where('nickname', '==', oldNickname)
+    );
+    
+    const communitySnapshot = await getDocs(communityQuery);
+    
+    if (!communitySnapshot.empty) {
+      const batch = writeBatch(db);
+      communitySnapshot.forEach((docSnapshot) => {
+        batch.update(docSnapshot.ref, { nickname: newNickname });
+        result.community++;
+      });
+      await batch.commit();
+      console.log(`Updated ${result.community} community ranking entries`);
+    }
+    
+    console.log(`Total rankings updated - Official: ${result.official}, Community: ${result.community}`);
+    return result;
+  } catch (error) {
+    console.error('Error updating nickname in rankings:', error);
+    throw error;
   }
 }

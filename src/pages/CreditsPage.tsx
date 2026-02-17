@@ -43,11 +43,6 @@ function CreditsPage() {
               <p>{t('credits.mainDeveloper')}</p>
               <p className="credit-discord">Discord: byomess</p>
             </div>
-            <div className="credit-item">
-              <strong>Ferraz</strong>
-              <p>{t('credits.developerAndPlaylists')}</p>
-              <p className="credit-discord">Discord: ferrazzxxx</p>
-            </div>
           </section>
 
           <section className="credits-section">
