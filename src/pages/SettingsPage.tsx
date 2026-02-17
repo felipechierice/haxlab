@@ -453,7 +453,7 @@ function SettingsPage() {
                 type="range"
                 id="settings-extrapolation"
                 min="0"
-                max="200"
+                max="500"
                 step="10"
                 value={settings.extrapolationMs}
                 onChange={(e) => handleChange('extrapolationMs', parseInt(e.target.value))}

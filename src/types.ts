@@ -173,7 +173,7 @@ export interface GameConfig {
   disableGoalReset?: boolean; // Se true, não reseta posições após gol
   kickSpeedMultiplier?: number; // Multiplicador de velocidade ao segurar chute (padrão 1.0)
   disableGameOver?: boolean; // Se true, não mostra tela de game over
-  extrapolation?: number; // Tempo de extrapolation em ms (0-200, padrão 0 = desligado)
+  extrapolation?: number; // Tempo de extrapolation em ms (0-500, padrão 0 = desligado)
   interpolation?: boolean; // Se true, suaviza movimento entre frames (padrão true)
 }
 

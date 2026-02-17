@@ -160,7 +160,7 @@ function AppSettingsPage() {
                 type="range"
                 className="volume-slider"
                 min="0"
-                max="200"
+                max="500"
                 step="10"
                 value={extrapolationMs}
                 onChange={handleExtrapolationChange}

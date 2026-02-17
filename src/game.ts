@@ -1258,7 +1258,7 @@ export class Game {
   
   /**
    * Define o tempo de extrapolation em milissegundos
-   * @param ms Tempo de extrapolation (0-200, 0 = desligado)
+   * @param ms Tempo de extrapolation (0-500, 0 = desligado)
    */
   setExtrapolation(ms: number): void {
     extrapolation.setExtrapolation(ms);

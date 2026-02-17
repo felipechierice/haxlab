@@ -92,7 +92,7 @@ export class Extrapolation {
    * @param ms Milissegundos de extrapolation (0 = desligado)
    */
   setExtrapolation(ms: number): void {
-    this.extrapolationMs = Math.max(0, Math.min(200, ms)); // Limita entre 0 e 200ms
+    this.extrapolationMs = Math.max(0, Math.min(500, ms)); // Limita entre 0 e 500ms
     // Invalida posições anteriores ao mudar configuração
     this.hasValidPrevPositions = false;
   }
