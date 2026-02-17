@@ -105,20 +105,20 @@ function PlaylistResultModal({
   const isNewRecord = score > highscoreValue;
 
   // Calcular posição do jogador no ranking
-  // Se for novo recorde, calcular a posição estimada com base no novo score
-  let playerRankPosition = 0;
-  if (isNewRecord) {
+  // Primeiro tenta encontrar o jogador no ranking carregado (que já pode incluir o novo score)
+  let playerRankPosition = rankings.findIndex(entry => entry.nickname === nickname) + 1;
+  
+  // Se não encontrou no ranking (jogador não está no top 10), estimar posição
+  if (playerRankPosition === 0 && isNewRecord) {
     // Encontrar onde o novo score se encaixaria no ranking
-    const newPosition = rankings.findIndex(entry => score > entry.score);
+    // Usar >= porque o score do jogador pode já estar no ranking
+    const newPosition = rankings.findIndex(entry => score >= entry.score);
     if (newPosition === -1) {
       // Score é menor que todos no top 10, ou ranking está vazio
       playerRankPosition = rankings.length > 0 ? rankings.length + 1 : 1;
     } else {
       playerRankPosition = newPosition + 1;
     }
-  } else {
-    // Usar a posição existente do jogador no ranking
-    playerRankPosition = rankings.findIndex(entry => entry.nickname === nickname) + 1;
   }
   const hasRankPosition = playerRankPosition > 0;
 
