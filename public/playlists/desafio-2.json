@@ -415,6 +415,10 @@
           "width": 80
         },
         {
+          "type": "kick_count",
+          "exact": 0
+        },
+        {
           "type": "prevent_touch",
           "preventBotIds": [
             "bot-1771361432905",
@@ -547,6 +551,10 @@
             }
           ],
           "width": 80
+        },
+        {
+          "type": "kick_count",
+          "exact": 0
         },
         {
           "type": "prevent_touch",
