@@ -64,6 +64,21 @@ service cloud.firestore {
                     && request.auth.uid == resource.data.userId;
     }
     
+    // Registros de plays para tracking de trending
+    match /playlist_plays/{playId} {
+      // Permitir leitura para todos (para contar trending)
+      allow read: if true;
+      
+      // Permitir criar registro de play (qualquer um pode registrar play)
+      allow create: if request.resource.data.keys().hasAll(['playlistId', 'nickname', 'timestamp'])
+                    && request.resource.data.playlistId is string
+                    && request.resource.data.nickname is string
+                    && request.resource.data.timestamp is number;
+      
+      // Não permitir atualização ou deleção
+      allow update, delete: if false;
+    }
+    
     // Completions de playlists (para contar plays únicos)
     match /playlist_completions/{completionId} {
       // Permitir leitura para todos (para verificar se já completou)

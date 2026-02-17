@@ -39,7 +39,7 @@ export interface PlaylistLike {
   timestamp: number;
 }
 
-export type PlaylistSortBy = 'likes' | 'recent' | 'plays' | 'name';
+export type PlaylistSortBy = 'trending' | 'likes' | 'recent' | 'plays' | 'name';
 
 /**
  * Publicar playlist na comunidade
@@ -83,10 +83,15 @@ export async function publishCommunityPlaylist(
  * Buscar playlists da comunidade
  */
 export async function getCommunityPlaylists(
-  sortBy: PlaylistSortBy = 'recent',
+  sortBy: PlaylistSortBy = 'trending',
   limitCount: number = 50
 ): Promise<CommunityPlaylist[]> {
   try {
+    // Para trending, precisamos buscar plays das últimas 24 horas
+    if (sortBy === 'trending') {
+      return await getTrendingPlaylists(limitCount);
+    }
+
     let q;
     
     switch (sortBy) {
@@ -330,9 +335,91 @@ export async function incrementPlaylistPlays(playlistId: string, nickname: strin
       plays: increment(1)
     });
     
+    // Registrar play individual para tracking de trending
+    await addDoc(collection(db, 'playlist_plays'), {
+      playlistId,
+      nickname,
+      timestamp: Date.now()
+    });
+    
     console.log('Play counted for playlist:', playlistId);
   } catch (error) {
     console.error('Error incrementing plays:', error);
+  }
+}
+
+/**
+ * Buscar playlists em destaque (mais jogadas nas últimas 24 horas)
+ */
+async function getTrendingPlaylists(limitCount: number = 50): Promise<CommunityPlaylist[]> {
+  try {
+    const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+    
+    // Buscar plays das últimas 24 horas
+    const playsQuery = query(
+      collection(db, 'playlist_plays'),
+      where('timestamp', '>=', twentyFourHoursAgo)
+    );
+    
+    const playsSnapshot = await getDocs(playsQuery);
+    
+    // Contar plays por playlist
+    const playCountMap = new Map<string, number>();
+    playsSnapshot.forEach((doc) => {
+      const data = doc.data();
+      const currentCount = playCountMap.get(data.playlistId) || 0;
+      playCountMap.set(data.playlistId, currentCount + 1);
+    });
+    
+    // Buscar todas as playlists
+    const playlistsQuery = query(
+      collection(db, 'community_playlists'),
+      limit(200) // Buscar mais para ordenar
+    );
+    
+    const playlistsSnapshot = await getDocs(playlistsQuery);
+    const playlists: (CommunityPlaylist & { recentPlays: number })[] = [];
+    
+    playlistsSnapshot.forEach((doc) => {
+      const data = doc.data() as Omit<CommunityPlaylist, 'id'>;
+      const recentPlays = playCountMap.get(doc.id) || 0;
+      playlists.push({
+        id: doc.id,
+        ...data,
+        recentPlays
+      });
+    });
+    
+    // Ordenar por plays recentes (desc), depois por likes (desc) como desempate
+    playlists.sort((a, b) => {
+      if (b.recentPlays !== a.recentPlays) {
+        return b.recentPlays - a.recentPlays;
+      }
+      return b.likes - a.likes;
+    });
+    
+    // Retornar apenas o limite solicitado (sem recentPlays no retorno)
+    return playlists.slice(0, limitCount).map(({ recentPlays, ...playlist }) => playlist);
+  } catch (error) {
+    console.error('Error getting trending playlists:', error);
+    // Fallback para ordenação por likes
+    const q = query(
+      collection(db, 'community_playlists'),
+      orderBy('likes', 'desc'),
+      limit(limitCount)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const playlists: CommunityPlaylist[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      playlists.push({
+        id: doc.id,
+        ...doc.data()
+      } as CommunityPlaylist);
+    });
+    
+    return playlists;
   }
 }
 

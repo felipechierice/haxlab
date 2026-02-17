@@ -343,6 +343,11 @@ export const translations: Translations = {
     pt: 'Ordenar por:',
     es: 'Ordenar por:'
   },
+  'playlists.sortTrending': {
+    en: 'Trending',
+    pt: 'Destaques',
+    es: 'Destacados'
+  },
   'playlists.sortLikes': {
     en: 'Likes',
     pt: 'Likes',

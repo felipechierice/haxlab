@@ -41,7 +41,7 @@ function PlaylistsPage() {
   const [selectedCommunityPlaylist, setSelectedCommunityPlaylist] = useState<CommunityPlaylist | null>(null);
   const [playlistData, setPlaylistData] = useState<Playlist | null>(null);
   const [communityPlaylists, setCommunityPlaylists] = useState<CommunityPlaylist[]>([]);
-  const [sortBy, setSortBy] = useState<PlaylistSortBy>('recent');
+  const [sortBy, setSortBy] = useState<PlaylistSortBy>('trending');
   const [loading, setLoading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [userLikes, setUserLikes] = useState<Map<string, 'like' | 'dislike'>>(new Map());
@@ -455,6 +455,7 @@ function PlaylistsPage() {
                   <div className="community-sort">
                     <label>{t('playlists.sortBy')}</label>
                     <select value={sortBy} onChange={(e) => setSortBy(e.target.value as PlaylistSortBy)}>
+                      <option value="trending">{t('playlists.sortTrending')}</option>
                       <option value="likes">{t('playlists.sortLikes')}</option>
                       <option value="recent">{t('playlists.sortRecent')}</option>
                       <option value="plays">{t('playlists.sortPlays')}</option>
