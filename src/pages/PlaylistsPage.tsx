@@ -23,16 +23,16 @@ import '../styles/PlaylistsPage.css';
 const AVAILABLE_PLAYLISTS: PlaylistInfo[] = [
   // Playlists serão adicionadas aqui
   {
-    file: 'mix-1.json',
-    name: 'Desafio 1',
-    description: '9 cenários combinando habilidades de passe, drible, finalizações e mais.',
-    icon: 'fa-trophy'
-  },
-  {
     file: 'desafio-2.json',
     name: 'Desafio 2',
     description: '6 cenários de situações de 2x1, escanteios e condução de bola — teste seus reflexos e tome decisões rápidas!',
     icon: 'fa-fire'
+  },
+  {
+    file: 'mix-1.json',
+    name: 'Desafio 1',
+    description: '9 cenários combinando habilidades de passe, drible, finalizações e mais.',
+    icon: 'fa-trophy'
   }
 ];
 
