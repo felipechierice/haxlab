@@ -35,13 +35,15 @@ service cloud.firestore {
                     && request.resource.data.scenarios is list
                     && request.resource.data.scenarios.size() > 0;
       
-      // Permitir atualizar apenas o próprio playlist OU atualizar contadores de likes/dislikes
+      // Permitir atualizar apenas o próprio playlist OU atualizar contadores de likes/dislikes/plays
       allow update: if request.auth != null && (
                       // Autor pode atualizar tudo
                       request.auth.uid == resource.data.authorId ||
-                      // Qualquer um autenticado pode atualizar apenas likes/dislikes
-                      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'dislikes', 'updatedAt']))
-                    );
+                      // Qualquer um autenticado pode atualizar apenas likes/dislikes/plays
+                      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'dislikes', 'plays', 'updatedAt']))
+                    )
+                    // OU permitir apenas incremento de plays sem autenticação
+                    || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['plays']);
       
       // Permitir deletar apenas o próprio playlist
       allow delete: if request.auth != null
@@ -60,6 +62,18 @@ service cloud.firestore {
       // Permitir deletar apenas o próprio like
       allow delete: if request.auth != null
                     && request.auth.uid == resource.data.userId;
+    }
+    
+    // Completions de playlists (para contar plays únicos)
+    match /playlist_completions/{completionId} {
+      // Permitir leitura para todos (para verificar se já completou)
+      allow read: if true;
+      
+      // Permitir criar registro de completion
+      allow create: if request.resource.data.keys().hasAll(['playlistId', 'nickname', 'timestamp'])
+                    && request.resource.data.playlistId is string
+                    && request.resource.data.nickname is string
+                    && request.resource.data.timestamp is number;
     }
     
     // Permitir leitura do ranking para todos
@@ -111,6 +125,48 @@ service cloud.firestore {
       // Deletar registros duplicados
       allow delete: if true;
     }
+    
+    // ==================== REPLAYS ====================
+    
+    // Replays de playlists oficiais
+    match /replays/{replayId} {
+      // Permitir leitura para todos (para assistir replays)
+      allow read: if true;
+      
+      // Permitir criar replay (qualquer usuário pode gravar replay)
+      allow create: if request.resource.data.keys().hasAll(['playlistName', 'playerNickname', 'totalTime', 'events', 'scenarios', 'recordedAt', 'version'])
+                    && request.resource.data.playlistName is string
+                    && request.resource.data.playerNickname is string
+                    && request.resource.data.totalTime is number
+                    && request.resource.data.events is list
+                    && request.resource.data.scenarios is list;
+      
+      // Não permitir atualização de replays
+      allow update: if false;
+      
+      // Permitir deletar apenas para admins (desabilitado por padrão)
+      allow delete: if false;
+    }
+    
+    // Replays de playlists da comunidade
+    match /community_replays/{replayId} {
+      // Permitir leitura para todos (para assistir replays)
+      allow read: if true;
+      
+      // Permitir criar replay (qualquer usuário pode gravar replay)
+      allow create: if request.resource.data.keys().hasAll(['playlistId', 'playlistName', 'playerNickname', 'totalTime', 'events', 'scenarios', 'recordedAt', 'version'])
+                    && request.resource.data.playlistId is string
+                    && request.resource.data.playlistName is string
+                    && request.resource.data.playerNickname is string
+                    && request.resource.data.totalTime is number
+                    && request.resource.data.events is list
+                    && request.resource.data.scenarios is list;
+      
+      // Não permitir atualização de replays
+      allow update: if false;
+      
+      // Permitir deletar apenas para admins (desabilitado por padrão)
+      allow delete: if false;
+    }
   }
 }
-

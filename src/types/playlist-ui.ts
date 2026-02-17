@@ -25,4 +25,5 @@ export interface RankingEntry {
   score: number;
   time: number;
   playlistName: string;
+  replayId?: string;
 }

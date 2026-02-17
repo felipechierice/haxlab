@@ -1,4 +1,4 @@
-import { GameState, Player, GameMap, Goal, Vector2D, GameConfig, BotBehavior, NoneBehaviorConfig } from './types.js';
+import { GameState, Player, GameMap, Goal, Vector2D, GameConfig, BotBehavior } from './types.js';
 import { Physics } from './physics.js';
 import { Renderer } from './renderer.js';
 import { GameConsole } from './console.js';
@@ -38,6 +38,10 @@ export class Game {
   // Event handlers (guardados para poder remover depois)
   private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
   private keyupHandler: ((e: KeyboardEvent) => void) | null = null;
+  private visibilityHandler: (() => void) | null = null;
+  
+  // Estado para auto-pause quando janela fica inativa
+  private wasRunningBeforeHidden: boolean = false;
   
   // Cache de elementos DOM para evitar lookups repetidos
   private uiElements: {
@@ -96,6 +100,7 @@ export class Game {
 
     this.setupControls();
     this.setupConsole();
+    this.setupVisibilityHandler();
   }
 
   addPlayer(id: string, name: string, team: 'red' | 'blue'): void {
@@ -244,6 +249,34 @@ export class Game {
       window.removeEventListener('keyup', this.keyupHandler);
       this.keyupHandler = null;
     }
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
+    }
+  }
+  
+  /**
+   * Configura auto-pause quando a janela/aba fica inativa
+   * Isso evita que o timer continue rodando enquanto a física está pausada
+   */
+  private setupVisibilityHandler(): void {
+    this.visibilityHandler = () => {
+      if (document.hidden) {
+        // Janela ficou inativa - pausar se estava rodando
+        if (this.state.running && !this.isPaused && !this.state.finished) {
+          this.wasRunningBeforeHidden = true;
+          this.pause();
+        }
+      } else {
+        // Janela voltou a ficar ativa - resumir se foi pausado automaticamente
+        if (this.wasRunningBeforeHidden && this.isPaused && !this.state.finished) {
+          this.wasRunningBeforeHidden = false;
+          this.resume();
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', this.visibilityHandler);
   }
   
   private setupConsole(): void {
@@ -792,17 +825,6 @@ export class Game {
           }
         }
         
-        // Para bots com kickOnContact: chuta imediatamente na colisão
-        if (player.isBot && player.botBehavior && !player.hasKickedThisPress) {
-          if (player.botBehavior.preset === 'none') {
-            const config = player.botBehavior.config as NoneBehaviorConfig;
-            if (config.kickOnContact) {
-              this.tryKick(player, 1);
-              player.input.kick = false;
-            }
-          }
-        }
-        
         // Rastreia quem tocou na bola por último  
         if (player.team !== 'spectator') {
           this.lastBallToucher = { 
@@ -982,6 +1004,11 @@ export class Game {
   pause(): void {
     this.isPaused = true;
     this.state.running = false;
+    // Cancela o animation frame atual para evitar loops duplicados ao resumir
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = 0;
+    }
   }
   
   resume(): void {

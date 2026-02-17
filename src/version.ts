@@ -9,6 +9,11 @@
 export const GAME_VERSION = '0.1.0-alpha';
 
 /**
+ * Versão da aplicação (usado para compatibilidade de replays)
+ */
+export const APP_VERSION = GAME_VERSION;
+
+/**
  * Chaves do localStorage que devem ser resetadas quando a versão mudar
  */
 const CONFIG_KEYS_TO_RESET = [

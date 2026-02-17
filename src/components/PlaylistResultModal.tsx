@@ -5,7 +5,7 @@ import { getNickname } from '../player';
 import { Playlist } from '../types';
 import { useI18n } from '../hooks/useI18n';
 import { useKeyboardNav } from '../hooks/useKeyboardNav';
-
+import { CommunityPlaylist } from '../community-playlists';
 
 interface PlaylistResultModalProps {
   isOpen: boolean;
@@ -16,6 +16,12 @@ interface PlaylistResultModalProps {
   isOfficial: boolean;
   playlistData: Playlist | null;
   communityPlaylistId?: string;
+  communityPlaylist?: CommunityPlaylist | null;
+  userLike?: 'like' | 'dislike';
+  hadPreviousLike?: boolean; // Se o usuário já tinha like/dislike no Firebase antes de abrir o modal
+  likeLoaded?: boolean; // Se o like já foi carregado do Firebase
+  onLike?: () => void;
+  onDislike?: () => void;
   onRetry: () => void;
   onClose: () => void;
 }
@@ -35,6 +41,12 @@ function PlaylistResultModal({
   isOfficial,
   playlistData,
   communityPlaylistId,
+  communityPlaylist,
+  userLike,
+  hadPreviousLike,
+  likeLoaded,
+  onLike,
+  onDislike,
   onRetry,
   onClose,
 }: PlaylistResultModalProps) {
@@ -51,12 +63,12 @@ function PlaylistResultModal({
 
   const { containerRef } = useKeyboardNav({
     onEscape: handleClose,
-    autoFocus: isOpen,
+    autoFocus: false, // Não auto-foca em nada no modal de resultado
     enabled: isOpen
   });
 
   useEffect(() => {
-    if (isOpen && isOfficial) {
+    if (isOpen && (isOfficial || communityPlaylistId)) {
       loadRankings();
     }
   }, [isOpen, playlistName, isOfficial, communityPlaylistId]);
@@ -92,6 +104,24 @@ function PlaylistResultModal({
   const highscoreValue = previousHighscore ? previousHighscore.score : 0;
   const isNewRecord = score > highscoreValue;
 
+  // Calcular posição do jogador no ranking
+  // Se for novo recorde, calcular a posição estimada com base no novo score
+  let playerRankPosition = 0;
+  if (isNewRecord) {
+    // Encontrar onde o novo score se encaixaria no ranking
+    const newPosition = rankings.findIndex(entry => score > entry.score);
+    if (newPosition === -1) {
+      // Score é menor que todos no top 10, ou ranking está vazio
+      playerRankPosition = rankings.length > 0 ? rankings.length + 1 : 1;
+    } else {
+      playerRankPosition = newPosition + 1;
+    }
+  } else {
+    // Usar a posição existente do jogador no ranking
+    playerRankPosition = rankings.findIndex(entry => entry.nickname === nickname) + 1;
+  }
+  const hasRankPosition = playerRankPosition > 0;
+
   return (
     <div className="modal-overlay result-modal-overlay" onClick={handleClose}>
       <div
@@ -99,126 +129,207 @@ function PlaylistResultModal({
         onClick={(e) => e.stopPropagation()}
         ref={containerRef}
       >
-        <h2 className="modal-title gradient-text">
-          <i className="fas fa-trophy"></i> {t('result.title')}
-        </h2>
+        {/* Header */}
+        <div className="result-trophy-header">
+          <h2 className="result-title">{t('result.title')}</h2>
+        </div>
 
-        {/* Seu Score */}
-        <div className="result-score-card">
-          <h3>
-            <i className="fas fa-chart-bar"></i> {t('result.yourResult')}
-          </h3>
-          <div className="result-stats">
-            <div className="stat">
-              <div className="stat-label">{t('result.time')}</div>
-              <div className="stat-value">{formatTime(time)}</div>
+        {/* Playlist Info Card */}
+        <div className="result-playlist-card">
+          <div className="result-playlist-info-row">
+            <div className="result-playlist-name">
+              <i className="fas fa-list-ul"></i>
+              <span>{playlistName}</span>
             </div>
-            <div className="stat">
-              <div className="stat-label">{t('result.score')}</div>
-              <div className="stat-value highlight">{score.toLocaleString()}</div>
-            </div>
+            {isOfficial ? (
+              <span className="playlist-badge official">
+                <i className="fas fa-shield-alt"></i> {t('result.official')}
+              </span>
+            ) : (
+              <span className="playlist-badge community">
+                <i className="fas fa-users"></i> {t('result.community')}
+              </span>
+            )}
+            {!isOfficial && communityPlaylist && (
+              <span className="result-playlist-author">
+                <i className="fas fa-user"></i> {communityPlaylist.authorNickname}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Highscore Pessoal */}
-        {isOfficial && (
-          <div className="result-highscore-card">
-            <h3>
-              <i className="fas fa-star"></i> {t('result.yourHighscore')}
-            </h3>
-            <div className="highscore-content">
-              <div>
-                <span className="highscore-label">{t('result.bestScore')}</span>
-                <span className="highscore-value">
-                  {isNewRecord ? score.toLocaleString() : highscoreValue.toLocaleString()}
-                </span>
+        {/* Score Display Principal */}
+        <div className="result-score-display">
+          <div className="result-main-stats">
+            <div className="result-stat-box time">
+              <span className="result-stat-label">{t('result.time')}</span>
+              <span className="result-stat-value">{formatTime(time)}</span>
+            </div>
+            <div className="result-stat-divider"></div>
+            <div className="result-stat-box score">
+              <span className="result-stat-label">{t('result.score')}</span>
+              <span className="result-stat-value golden">{score.toLocaleString()}</span>
+            </div>
+          </div>
+
+          {/* Highscore Section */}
+          {(isOfficial || communityPlaylistId) && (
+            <div className={`result-highscore-box ${isNewRecord ? 'new-record' : ''}`}>
+              <div className="highscore-content">
+                <div className="highscore-icon-wrapper">
+                  <i className="fas fa-star"></i>
+                </div>
+                <div className="highscore-data">
+                  <span className="highscore-label">{t('result.bestScore')}</span>
+                  <div className="highscore-values">
+                    <span className="highscore-score">
+                      {isNewRecord ? score.toLocaleString() : highscoreValue.toLocaleString()}
+                    </span>
+                    <span className="highscore-time">
+                      <i className="fas fa-clock"></i>
+                      {isNewRecord ? formatTime(time) : (previousHighscore ? formatTime(previousHighscore.time) : '—')}
+                    </span>
+                    {hasRankPosition && (
+                      <span className="highscore-rank">
+                        <i className="fas fa-ranking-star"></i>
+                        #{playerRankPosition}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
               {isNewRecord && (
                 <div className="new-record-badge">
-                  <i className="fas fa-fire"></i> {t('result.newRecord')}
+                  <i className="fas fa-fire"></i>
+                  <span>{t('result.newRecord')}</span>
                 </div>
               )}
-            </div>
-          </div>
-        )}
-
-        {/* Top 10 ou Custom Playlist Message */}
-        <div className="result-ranking-card">
-          {isOfficial ? (
-            <>
-              <h3>
-                <i className="fas fa-trophy"></i> {t('result.top10')} - {playlistName}
-              </h3>
-              {loading ? (
-                <div className="ranking-loading">{t('result.loadingRanking')}</div>
-              ) : (
-                <table className="result-ranking-table">
-                  <thead>
-                    <tr>
-                      <th>{t('result.rank')}</th>
-                      <th>{t('result.player')}</th>
-                      <th>{t('result.time')}</th>
-                      <th>{t('result.score')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rankings.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="no-rankings">
-                          {t('result.noRankings')}
-                        </td>
-                      </tr>
-                    ) : (
-                      rankings.map((entry, index) => {
-                        const isCurrentPlayer = entry.nickname === nickname;
-                        let rankDisplay: React.ReactNode = (index + 1).toString();
-
-                        if (index === 0) {
-                          rankDisplay = <i className="fas fa-medal gold-medal"></i>;
-                        } else if (index === 1) {
-                          rankDisplay = <i className="fas fa-medal silver-medal"></i>;
-                        } else if (index === 2) {
-                          rankDisplay = <i className="fas fa-medal bronze-medal"></i>;
-                        }
-
-                        return (
-                          <tr
-                            key={`${entry.nickname}-${index}`}
-                            className={isCurrentPlayer ? 'current-player' : ''}
-                          >
-                            <td className="rank">{rankDisplay}</td>
-                            <td className="nickname">{entry.nickname}</td>
-                            <td className="center">{formatTime(entry.time)}</td>
-                            <td className="score">{entry.score.toLocaleString()}</td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              )}
-            </>
-          ) : (
-            <div className="custom-playlist-message">
-              <div className="custom-playlist-icon">
-                <i className="fas fa-clipboard-list"></i>
-              </div>
-              <div className="custom-playlist-text">
-                {t('result.customPlaylist')}
-              </div>
-              <div className="custom-playlist-subtext">
-                {t('result.customPlaylistNote')}
-              </div>
             </div>
           )}
         </div>
 
-        <div className="modal-actions">
-          <button className="btn-primary" onClick={handleRetry}>
-            <i className="fas fa-redo"></i> {t('result.tryAgain')}
+        {/* Like/Dislike ANTES do ranking - se não tinha avaliação prévia no Firebase */}
+        {communityPlaylistId && communityPlaylist && onLike && onDislike && !hadPreviousLike && (
+          <div className="result-rating-section">
+            <div className="result-rating-header">
+              <i className="fas fa-heart"></i>
+              <span>{t('result.ratePlaylist')}</span>
+            </div>
+            <div className="result-rating-buttons">
+              <button 
+                className={`result-rate-btn like ${userLike === 'like' ? 'active' : ''}`}
+                onClick={onLike}
+              >
+                <i className="fas fa-heart"></i>
+                <span>{t('result.like')}</span>
+                <span className="rate-count">({communityPlaylist.likes})</span>
+              </button>
+              <button 
+                className={`result-rate-btn dislike ${userLike === 'dislike' ? 'active' : ''}`}
+                onClick={onDislike}
+              >
+                <i className="fas fa-heart-broken"></i>
+                <span>{t('result.dislike')}</span>
+                <span className="rate-count">({communityPlaylist.dislikes})</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Ranking Section */}
+        <div className="result-ranking-section">
+          {isOfficial || communityPlaylistId ? (
+            <>
+              <div className="result-ranking-header">
+                <i className="fas fa-trophy"></i>
+                <span>{t('result.top10')}</span>
+              </div>
+              <div className="result-ranking-content">
+                {loading ? (
+                  <div className="result-ranking-loading">
+                    <div className="loading-spinner"></div>
+                    <span>{t('result.loadingRanking')}</span>
+                  </div>
+                ) : rankings.length === 0 ? (
+                  <div className="result-ranking-empty">
+                    <i className="fas fa-medal"></i>
+                    <span>{t('result.noRankings')}</span>
+                  </div>
+                ) : (
+                  <div className="result-ranking-list">
+                    {rankings.map((entry, index) => {
+                      const isCurrentPlayer = entry.nickname === nickname;
+                      return (
+                        <div
+                          key={`${entry.nickname}-${index}`}
+                          className={`result-ranking-item ${isCurrentPlayer ? 'current' : ''} ${index < 3 ? `top-${index + 1}` : ''}`}
+                        >
+                          <div className="ranking-position">
+                            {index === 0 && <i className="fas fa-crown gold"></i>}
+                            {index === 1 && <i className="fas fa-medal silver"></i>}
+                            {index === 2 && <i className="fas fa-medal bronze"></i>}
+                            {index > 2 && <span className="ranking-number">{index + 1}</span>}
+                          </div>
+                          <div className="ranking-player">{entry.nickname}</div>
+                          <div className="ranking-stats">
+                            <span className="ranking-time">{formatTime(entry.time)}</span>
+                            <span className="ranking-score">{entry.score.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="result-custom-message">
+              <div className="custom-message-icon">
+                <i className="fas fa-clipboard-list"></i>
+              </div>
+              <div className="custom-message-text">{t('result.customPlaylist')}</div>
+              <div className="custom-message-subtext">{t('result.customPlaylistNote')}</div>
+            </div>
+          )}
+        </div>
+
+        {/* Like/Dislike DEPOIS do ranking - se já tinha avaliação prévia no Firebase */}
+        {communityPlaylistId && communityPlaylist && onLike && onDislike && hadPreviousLike && (
+          <div className="result-rating-section">
+            <div className="result-rating-header">
+              <i className="fas fa-heart"></i>
+              <span>{t('result.ratePlaylist')}</span>
+            </div>
+            <div className="result-rating-buttons">
+              <button 
+                className={`result-rate-btn like ${userLike === 'like' ? 'active' : ''}`}
+                onClick={onLike}
+              >
+                <i className="fas fa-heart"></i>
+                <span>{t('result.like')}</span>
+                <span className="rate-count">({communityPlaylist.likes})</span>
+              </button>
+              <button 
+                className={`result-rate-btn dislike ${userLike === 'dislike' ? 'active' : ''}`}
+                onClick={onDislike}
+              >
+                <i className="fas fa-heart-broken"></i>
+                <span>{t('result.dislike')}</span>
+                <span className="rate-count">({communityPlaylist.dislikes})</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="result-actions">
+          <button className="result-btn primary" onClick={handleRetry}>
+            <i className="fas fa-redo"></i>
+            <span>{t('result.tryAgain')}</span>
           </button>
-          <button className="btn-secondary" onClick={handleClose}>
-            <i className="fas fa-list"></i> {t('result.backToPlaylists')}
+          <button className="result-btn secondary" onClick={handleClose}>
+            <i className="fas fa-list"></i>
+            <span>{t('result.backToPlaylists')}</span>
           </button>
         </div>
       </div>

@@ -56,6 +56,7 @@ export interface RankingEntry {
   time: number; // tempo em segundos
   score: number; // pontuação calculada
   timestamp: number;
+  replayId?: string; // ID do replay associado (opcional)
 }
 
 /**
@@ -79,7 +80,8 @@ export async function submitScore(
   nickname: string,
   playlistName: string,
   timeInSeconds: number,
-  playlistId?: string
+  playlistId?: string,
+  replayId?: string
 ): Promise<void> {
   // Verificar se é uma playlist oficial ou da comunidade
   const collectionName = playlistId ? 'community_rankings' : 'rankings';
@@ -97,7 +99,8 @@ export async function submitScore(
     time: timeInSeconds,
     score,
     timestamp: Date.now(),
-    ...(playlistId && { playlistId })
+    ...(playlistId && { playlistId }),
+    ...(replayId && { replayId })
   };
 
   try {
@@ -125,11 +128,17 @@ export async function submitScore(
       
       if (score > existingEntry.score) {
         // Novo score é melhor - atualizar o primeiro e deletar os outros
-        await updateDoc(doc(db, collectionName, existingDocs[0].id), {
+        const updateData: any = {
           time: entry.time,
           score: entry.score,
           timestamp: entry.timestamp
-        });
+        };
+        
+        if (replayId) {
+          updateData.replayId = replayId;
+        }
+        
+        await updateDoc(doc(db, collectionName, existingDocs[0].id), updateData);
         
         // Deletar registros duplicados se existirem
         for (let i = 1; i < existingDocs.length; i++) {

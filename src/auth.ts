@@ -119,6 +119,8 @@ export async function signInWithGoogle(): Promise<{ user: UserProfile; needsNick
       };
     } else {
       // Novo usuário - precisa escolher nickname
+      // NÃO criar perfil no Firestore ainda (as regras exigem nickname válido)
+      // O perfil será criado quando o usuário escolher um nickname
       const userProfile: UserProfile = {
         uid: user.uid,
         email: user.email,
@@ -126,8 +128,6 @@ export async function signInWithGoogle(): Promise<{ user: UserProfile; needsNick
         isGuest: false,
         createdAt: Date.now()
       };
-      
-      await setDoc(doc(db, 'users', user.uid), userProfile);
       
       return {
         user: userProfile,
@@ -143,10 +143,28 @@ export async function signInWithGoogle(): Promise<{ user: UserProfile; needsNick
 
 /**
  * Atualizar nickname de usuário
+ * Se o perfil não existir (novo usuário Google), cria o perfil completo
  */
 export async function updateUserNickname(uid: string, nickname: string): Promise<void> {
   try {
-    await updateDoc(doc(db, 'users', uid), { nickname });
+    const userDocRef = doc(db, 'users', uid);
+    const userDoc = await getDoc(userDocRef);
+    
+    if (userDoc.exists()) {
+      // Perfil existe, apenas atualizar nickname
+      await updateDoc(userDocRef, { nickname });
+    } else {
+      // Perfil não existe (novo usuário Google), criar completo
+      const currentUser = auth.currentUser;
+      const userProfile: UserProfile = {
+        uid,
+        email: currentUser?.email || null,
+        nickname,
+        isGuest: false,
+        createdAt: Date.now()
+      };
+      await setDoc(userDocRef, userProfile);
+    }
     
     // Atualizar também no Firebase Auth
     const currentUser = auth.currentUser;

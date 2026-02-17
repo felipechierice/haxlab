@@ -4,6 +4,7 @@ import {
   getDocs, 
   getDoc,
   doc,
+  setDoc,
   query, 
   orderBy, 
   limit, 
@@ -82,7 +83,7 @@ export async function publishCommunityPlaylist(
  * Buscar playlists da comunidade
  */
 export async function getCommunityPlaylists(
-  sortBy: PlaylistSortBy = 'likes',
+  sortBy: PlaylistSortBy = 'recent',
   limitCount: number = 50
 ): Promise<CommunityPlaylist[]> {
   try {
@@ -321,12 +322,15 @@ export async function getUserPlaylistLike(
 /**
  * Incrementar contador de plays de uma playlist
  */
-export async function incrementPlaylistPlays(playlistId: string): Promise<void> {
+export async function incrementPlaylistPlays(playlistId: string, nickname: string): Promise<void> {
   try {
+    // Incrementar contador de plays
     const playlistRef = doc(db, 'community_playlists', playlistId);
     await updateDoc(playlistRef, {
       plays: increment(1)
     });
+    
+    console.log('Play counted for playlist:', playlistId);
   } catch (error) {
     console.error('Error incrementing plays:', error);
   }

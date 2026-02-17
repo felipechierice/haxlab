@@ -27,6 +27,9 @@ export {
   BotVirtualInputController
 } from './BotVirtualInputController.js';
 
+// Controlador de replay para reprodução
+export { ReplayInputController } from './ReplayInputController.js';
+
 // Types re-exported from types.ts via BotVirtualInputController
 export type {
   BotPresetType,

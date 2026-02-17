@@ -408,6 +408,11 @@ export const translations: Translations = {
     pt: 'Erro ao curtir playlist',
     es: 'Error al dar me gusta a la lista'
   },
+  'playlists.dislikeError': {
+    en: 'Error disliking playlist',
+    pt: 'Erro ao descurtir playlist',
+    es: 'Error al dar no me gusta a la lista'
+  },
   'playlists.randomizeOrder': {
     en: 'Random scenario order',
     pt: 'Ordem aleatória dos cenários',
@@ -500,6 +505,46 @@ export const translations: Translations = {
     pt: 'Voltar às Playlists',
     es: 'Volver a las Listas'
   },
+  'result.ratePlaylist': {
+    en: 'Rate this Playlist',
+    pt: 'Avaliar esta Playlist',
+    es: 'Calificar esta Lista'
+  },
+  'result.like': {
+    en: 'Like',
+    pt: 'Curtir',
+    es: 'Me Gusta'
+  },
+  'result.dislike': {
+    en: 'Dislike',
+    pt: 'Descurtir',
+    es: 'No Me Gusta'
+  },
+  'result.officialPlaylist': {
+    en: 'Official Playlist',
+    pt: 'Playlist Oficial',
+    es: 'Lista Oficial'
+  },
+  'result.communityPlaylist': {
+    en: 'Community Playlist',
+    pt: 'Playlist da Comunidade',
+    es: 'Lista de la Comunidad'
+  },
+  'result.by': {
+    en: 'by',
+    pt: 'por',
+    es: 'por'
+  },
+  'result.official': {
+    en: 'Official',
+    pt: 'Oficial',
+    es: 'Oficial'
+  },
+  'result.community': {
+    en: 'Community',
+    pt: 'Comunidade',
+    es: 'Comunidad'
+  },
 
   // Ranking Modal
   'ranking.title': {
@@ -581,6 +626,93 @@ export const translations: Translations = {
     en: '— End of ranking —',
     pt: '— Fim do ranking —',
     es: '— Fin de la clasificación —'
+  },
+  'ranking.replay': {
+    en: 'Replay',
+    pt: 'Replay',
+    es: 'Repetición'
+  },
+  'ranking.watchReplay': {
+    en: 'Watch Replay',
+    pt: 'Assistir Replay',
+    es: 'Ver Repetición'
+  },
+
+  // Replay Viewer
+  'replay.title': {
+    en: 'Watch Replay',
+    pt: 'Assistir Replay',
+    es: 'Ver Repetición'
+  },
+  'replay.close': {
+    en: 'Close',
+    pt: 'Fechar',
+    es: 'Cerrar'
+  },
+  'replay.loading': {
+    en: 'Loading replay...',
+    pt: 'Carregando replay...',
+    es: 'Cargando repetición...'
+  },
+  'replay.notFound': {
+    en: 'Replay not found',
+    pt: 'Replay não encontrado',
+    es: 'Repetición no encontrada'
+  },
+  'replay.loadError': {
+    en: 'Error loading replay',
+    pt: 'Erro ao carregar replay',
+    es: 'Error al cargar repetición'
+  },
+  'replay.playlistNotFound': {
+    en: 'Playlist not found',
+    pt: 'Playlist não encontrada',
+    es: 'Lista de reproducción no encontrada'
+  },
+  'replay.startError': {
+    en: 'Error starting replay',
+    pt: 'Erro ao iniciar replay',
+    es: 'Error al iniciar repetición'
+  },
+  'replay.time': {
+    en: 'Time',
+    pt: 'Tempo',
+    es: 'Tiempo'
+  },
+  'replay.scenarios': {
+    en: 'Scenarios',
+    pt: 'Cenários',
+    es: 'Escenarios'
+  },
+  'replay.inputs': {
+    en: 'Inputs',
+    pt: 'Comandos',
+    es: 'Entradas'
+  },
+  'replay.recordedAt': {
+    en: 'Recorded',
+    pt: 'Gravado em',
+    es: 'Grabado el'
+  },
+  'replay.watch': {
+    en: 'Watch Replay',
+    pt: 'Assistir',
+    es: 'Ver'
+  },
+  'replay.stop': {
+    en: 'Stop',
+    pt: 'Parar',
+    es: 'Detener'
+  },
+  'replay.noData': {
+    en: 'No replay data available',
+    pt: 'Sem dados de replay',
+    es: 'Sin datos de repetición'
+  },
+  'replay.retry': {
+    en: 'Retry',
+    pt: 'Tentar Novamente',
+    es: 'Reintentar'
   },
 
   // Settings Menu

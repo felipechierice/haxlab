@@ -13,6 +13,8 @@ import {
   inputFlagsToDirection 
 } from './InputController.js';
 import { keyBindings } from '../keybindings.js';
+import type { ReplayRecorder } from '../replay.js';
+import { keyToReplayAction } from '../replay.js';
 
 export class KeyboardInputController implements InputController {
   private keyState: Map<string, boolean> = new Map();
@@ -30,8 +32,18 @@ export class KeyboardInputController implements InputController {
   // Flag para ignorar inputs (quando digitando em input/textarea)
   private ignoreInputs: boolean = false;
   
+  // Replay recorder (opcional)
+  private replayRecorder: ReplayRecorder | null = null;
+  
   constructor() {
     this.setupEventListeners();
+  }
+  
+  /**
+   * Define o replay recorder para gravar inputs
+   */
+  setReplayRecorder(recorder: ReplayRecorder | null): void {
+    this.replayRecorder = recorder;
   }
   
   private setupEventListeners(): void {
@@ -48,6 +60,12 @@ export class KeyboardInputController implements InputController {
       if (e.repeat) return;
       
       this.keyState.set(e.key, true);
+      
+      // Gravar evento no replay se estiver gravando
+      const action = keyToReplayAction(e.key);
+      if (action && this.replayRecorder) {
+        this.replayRecorder.recordInputEvent('keydown', action);
+      }
       
       // Chute
       if (keyBindings.isKeyBound(e.key, 'kick')) {
@@ -66,6 +84,12 @@ export class KeyboardInputController implements InputController {
       }
       
       this.keyState.set(e.key, false);
+      
+      // Gravar evento no replay se estiver gravando
+      const action = keyToReplayAction(e.key);
+      if (action && this.replayRecorder) {
+        this.replayRecorder.recordInputEvent('keyup', action);
+      }
       
       // Soltar tecla de chute
       if (keyBindings.isKeyBound(e.key, 'kick')) {

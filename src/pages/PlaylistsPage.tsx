@@ -41,7 +41,7 @@ function PlaylistsPage() {
   const [selectedCommunityPlaylist, setSelectedCommunityPlaylist] = useState<CommunityPlaylist | null>(null);
   const [playlistData, setPlaylistData] = useState<Playlist | null>(null);
   const [communityPlaylists, setCommunityPlaylists] = useState<CommunityPlaylist[]>([]);
-  const [sortBy, setSortBy] = useState<PlaylistSortBy>('likes');
+  const [sortBy, setSortBy] = useState<PlaylistSortBy>('recent');
   const [loading, setLoading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [userLikes, setUserLikes] = useState<Map<string, 'like' | 'dislike'>>(new Map());

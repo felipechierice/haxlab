@@ -6,6 +6,7 @@ import { useKeyboardNav } from '../hooks/useKeyboardNav';
 interface RankingModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onWatchReplay?: (entry: RankingEntry) => void;
 }
 
 interface AggregatedPlayer {
@@ -37,7 +38,7 @@ const getMedalClass = (index: number): string => {
   return '';
 };
 
-function RankingModal({ isOpen, onClose }: RankingModalProps) {
+function RankingModal({ isOpen, onClose, onWatchReplay }: RankingModalProps) {
   const { t } = useI18n();
   const [selectedPlaylist, setSelectedPlaylist] = useState<string>('');
   const [allRankings, setAllRankings] = useState<RankingEntry[]>([]);
@@ -353,6 +354,7 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
                     <th>{t('ranking.playlistName')}</th>
                     <th>{t('result.time')}</th>
                     <th>{t('result.score')}</th>
+                    <th>{t('ranking.replay')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -380,6 +382,19 @@ function RankingModal({ isOpen, onClose }: RankingModalProps) {
                         <td className="playlist-cell">{entry.playlistName}</td>
                         <td className="time-cell">{formatTime(entry.time)}</td>
                         <td className="score-cell">{entry.score.toLocaleString()}</td>
+                        <td className="replay-cell">
+                          {entry.replayId && onWatchReplay ? (
+                            <button
+                              className="replay-button"
+                              onClick={() => onWatchReplay(entry)}
+                              title={t('ranking.watchReplay')}
+                            >
+                              <i className="fas fa-play"></i>
+                            </button>
+                          ) : (
+                            <span className="no-replay">-</span>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}

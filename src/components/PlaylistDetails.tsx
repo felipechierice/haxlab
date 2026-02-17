@@ -4,6 +4,7 @@ import { Playlist } from '../types';
 import { CommunityPlaylist } from '../community-playlists';
 import { useI18n } from '../hooks/useI18n';
 import { useAuth } from '../contexts/AuthContext';
+import ReplayViewer from './ReplayViewer';
 
 interface PlaylistDetailsProps {
   playlist: PlaylistInfo | null;
@@ -34,6 +35,8 @@ function PlaylistDetails({
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [isLoadingRanking, setIsLoadingRanking] = useState(false);
   const rankingListRef = useRef<HTMLDivElement>(null);
+  const [selectedReplayId, setSelectedReplayId] = useState<string | null>(null);
+  const [showReplayViewer, setShowReplayViewer] = useState(false);
 
   useEffect(() => {
     if ((!playlist && !communityPlaylist) || !playlistData) {
@@ -181,6 +184,16 @@ function PlaylistDetails({
     return `${minutes}:${seconds.toString().padStart(2, '0')}.${cs.toString().padStart(2, '0')}`;
   };
 
+  const handleWatchReplay = (replayId: string) => {
+    setSelectedReplayId(replayId);
+    setShowReplayViewer(true);
+  };
+
+  const handleCloseReplayViewer = () => {
+    setShowReplayViewer(false);
+    setSelectedReplayId(null);
+  };
+
   if ((!playlist && !communityPlaylist) || !playlistData) {
     return (
       <div className="playlist-details">
@@ -200,6 +213,16 @@ function PlaylistDetails({
 
   return (
     <div className="playlist-details">
+      {/* Replay Viewer Modal */}
+      {showReplayViewer && selectedReplayId && (
+        <ReplayViewer
+          replayId={selectedReplayId}
+          isCommunityPlaylist={!!communityPlaylist}
+          playlistId={communityPlaylist?.id}
+          onClose={handleCloseReplayViewer}
+        />
+      )}
+
       {/* Header */}
       <div className="playlist-header">
         <div>
@@ -338,6 +361,19 @@ function PlaylistDetails({
                     <strong>{entry.score.toLocaleString()}</strong> {t('playlists.pts')}
                   </div>
                   <div className="ranking-stat">{formatTime(entry.time)}</div>
+                  <div className="ranking-replay">
+                    {entry.replayId ? (
+                      <button
+                        className="replay-button"
+                        onClick={() => handleWatchReplay(entry.replayId!)}
+                        title={t('ranking.watchReplay')}
+                      >
+                        <i className="fas fa-play"></i>
+                      </button>
+                    ) : (
+                      <span className="no-replay">-</span>
+                    )}
+                  </div>
                 </div>
               );
             })}

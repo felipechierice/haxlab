@@ -6,6 +6,9 @@ import { RankingEntry } from '../firebase';
 import PlaylistResultModal from '../components/PlaylistResultModal';
 import ExitConfirmModal from '../components/ExitConfirmModal';
 import { trackPageView, trackFreePlayEnd } from '../analytics';
+import { useAuth } from '../contexts/AuthContext';
+import { CommunityPlaylist, likePlaylist, getUserPlaylistLike, getCommunityPlaylist } from '../community-playlists';
+import { audioManager } from '../audio';
 
 
 declare global {
@@ -51,6 +54,7 @@ function GamePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useI18n();
+  const { userProfile } = useAuth();
   const state = location.state as LocationState;
 
   useEffect(() => {
@@ -62,6 +66,89 @@ function GamePage() {
   const [playlistResult, setPlaylistResult] = useState<PlaylistResult | null>(null);
   const [gameOver, setGameOver] = useState<GameOverInfo | null>(null);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [communityPlaylist, setCommunityPlaylist] = useState<CommunityPlaylist | null>(null);
+  const [userLike, setUserLike] = useState<'like' | 'dislike' | undefined>(undefined);
+  const [hadPreviousLike, setHadPreviousLike] = useState(false); // Rastreia se já tinha like/dislike no Firebase
+  const [likeLoaded, setLikeLoaded] = useState(false); // Rastreia se o like já foi carregado do Firebase
+
+  // Carregar dados da playlist da comunidade se necessário
+  useEffect(() => {
+    if (state?.communityPlaylistId) {
+      loadCommunityPlaylistData();
+    }
+  }, [state?.communityPlaylistId, userProfile]); // Adiciona userProfile como dependência
+
+  const loadCommunityPlaylistData = async () => {
+    if (!state?.communityPlaylistId) return;
+
+    try {
+      const playlist = await getCommunityPlaylist(state.communityPlaylistId);
+      setCommunityPlaylist(playlist);
+
+      // Carregar like do usuário se estiver autenticado
+      if (userProfile && playlist) {
+        const like = await getUserPlaylistLike(playlist.id, userProfile.uid);
+        setUserLike(like?.type);
+        setHadPreviousLike(!!like?.type); // Marca se já tinha avaliação prévia
+        setLikeLoaded(true);
+      } else {
+        setLikeLoaded(true); // Marca como carregado mesmo sem userProfile
+      }
+    } catch (error) {
+      console.error('Error loading community playlist data:', error);
+      setLikeLoaded(true);
+    }
+  };
+
+  const handleLike = async () => {
+    if (!state?.communityPlaylistId || !userProfile) return;
+
+    // Verificar se é usuário guest
+    if (userProfile.isGuest) {
+      audioManager.play('menuBack');
+      alert(t('playlists.guestCantLike'));
+      return;
+    }
+
+    try {
+      await likePlaylist(state.communityPlaylistId, userProfile.uid, 'like');
+      
+      // Atualizar estado local
+      setUserLike(prev => prev === 'like' ? undefined : 'like');
+      
+      // Recarregar dados da playlist para atualizar contadores
+      await loadCommunityPlaylistData();
+    } catch (error: any) {
+      console.error('Error liking playlist:', error);
+      audioManager.play('menuBack');
+      alert(error.message || t('playlists.likeError'));
+    }
+  };
+
+  const handleDislike = async () => {
+    if (!state?.communityPlaylistId || !userProfile) return;
+
+    // Verificar se é usuário guest
+    if (userProfile.isGuest) {
+      audioManager.play('menuBack');
+      alert(t('playlists.guestCantLike'));
+      return;
+    }
+
+    try {
+      await likePlaylist(state.communityPlaylistId, userProfile.uid, 'dislike');
+      
+      // Atualizar estado local
+      setUserLike(prev => prev === 'dislike' ? undefined : 'dislike');
+      
+      // Recarregar dados da playlist para atualizar contadores
+      await loadCommunityPlaylistData();
+    } catch (error: any) {
+      console.error('Error disliking playlist:', error);
+      audioManager.play('menuBack');
+      alert(error.message || t('playlists.dislikeError'));
+    }
+  };
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     const isPlaylist = window.getIsPlaylistMode?.();
@@ -324,6 +411,12 @@ function GamePage() {
           isOfficial={playlistResult.isOfficial}
           playlistData={playlistResult.playlistData}
           communityPlaylistId={playlistResult.communityPlaylistId}
+          communityPlaylist={communityPlaylist}
+          userLike={userLike}
+          hadPreviousLike={hadPreviousLike}
+          likeLoaded={likeLoaded}
+          onLike={handleLike}
+          onDislike={handleDislike}
           onRetry={handleRetryPlaylist}
           onClose={handleCloseResult}
         />

@@ -5,11 +5,13 @@
 
 import { Game } from './game.js';
 import { DEFAULT_MAP, CLASSIC_MAP } from './maps.js';
-import { GameConfig, Playlist } from './types.js';
+import { GameConfig, Playlist, ReplayData } from './types.js';
 import { PlaylistMode } from './playlist.js';
 import { PlaylistEditor } from './editor.js';
 import { getNickname } from './player.js';
 import { submitScore, getPlayerHighscore, calculateScore, isOfficialPlaylist, RankingEntry } from './firebase.js';
+import { saveReplay, getReplayById } from './replay.js';
+import { KeyboardInputController, ReplayInputController } from './input/index.js';
 import {
   trackFreePlayStart,
   trackFreePlayEnd,
@@ -26,6 +28,8 @@ let currentGame: Game | null = null;
 let currentPlaylist: PlaylistMode | null = null;
 let currentEditor: PlaylistEditor | null = null;
 let currentConfig: GameConfig = loadConfigFromStorage();
+let currentReplayController: ReplayInputController | null = null;
+let isReplayMode: boolean = false;
 let currentMapType: string = localStorage.getItem('mapType') || 'default';
 let isPlaylistMode: boolean = false;
 let communityPlaylistId: string | undefined = undefined; // ID da playlist da comunidade (se aplicável)
@@ -127,12 +131,19 @@ function startPlaylistHUDLoop(): void {
     
     if (!scenario) return;
     
-    const elapsed = (Date.now() - progress.scenarioStartTime) / 1000;
+    const game = currentPlaylist.getGame();
+    if (!game) return;
+    
+    const elapsed = game.getState().time - progress.scenarioStartTime;
     const remaining = Math.max(0, scenario.timeLimit - elapsed);
     
     const timerEl = document.getElementById('scenario-timer');
     if (timerEl) {
-      timerEl.textContent = remaining.toFixed(1);
+      // Formatar como MM:SS.S
+      const minutes = Math.floor(remaining / 60);
+      const seconds = remaining % 60;
+      const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toFixed(1).padStart(4, '0')}`;
+      timerEl.textContent = formattedTime;
       
       if (remaining < 5) {
         timerEl.style.color = '#ff0000';
@@ -310,6 +321,21 @@ window.addEventListener('game-play-again', handlePlayAgain);
       const time = currentPlaylist!.getPlaylistTime();
       const score = calculateScore(time);
       
+      // Parar gravação do replay e salvar
+      let savedReplayId: string | undefined;
+      try {
+        const replayRecorder = currentPlaylist!.stopReplayRecording();
+        if (replayRecorder) {
+          const replayData = replayRecorder.getReplayData(time);
+          if (replayData && replayData.events.length > 0) {
+            savedReplayId = await saveReplay(replayData);
+            console.log('Replay saved with ID:', savedReplayId);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to save replay:', error);
+      }
+      
       let previousHighscore: RankingEntry | null = null;
       try {
         // Se for playlist da comunidade, buscar do ranking da comunidade
@@ -324,17 +350,28 @@ window.addEventListener('game-play-again', handlePlayAgain);
       }
       
       // Playlists oficiais e playlists da comunidade salvam scores
-      const isOfficial = isOfficialPlaylist(playlist.name) || !!communityPlaylistId;
+      // Se tem communityPlaylistId, é playlist da comunidade (não oficial)
+      const isOfficial = !communityPlaylistId && isOfficialPlaylist(playlist.name);
       trackPlaylistComplete(playlist.name, time, score, isOfficial);
       
       try {
-        // Se for playlist da comunidade, passar o ID
-        await submitScore(nickname, playlist.name, time, communityPlaylistId);
-        console.log('Score submitted!');
+        // Se for playlist da comunidade, passar o ID e o replayId
+        await submitScore(nickname, playlist.name, time, communityPlaylistId, savedReplayId);
+        console.log('Score submitted with replayId:', savedReplayId);
         const isNewHighscore = !previousHighscore || score > previousHighscore.score;
         trackScoreSubmit(playlist.name, score, isNewHighscore);
       } catch (error) {
         console.error('Failed to submit score:', error);
+      }
+      
+      // Incrementar contador de plays se for playlist da comunidade (apenas ao completar)
+      if (communityPlaylistId) {
+        try {
+          const { incrementPlaylistPlays } = await import('./community-playlists.js');
+          await incrementPlaylistPlays(communityPlaylistId, nickname);
+        } catch (error) {
+          console.error('Error incrementing playlist plays:', error);
+        }
       }
       
       setTimeout(() => {
@@ -364,6 +401,24 @@ window.addEventListener('game-play-again', handlePlayAgain);
   
   updatePlaylistHUD();
   currentPlaylist.resetPlaylistStats();
+  
+  // Iniciar gravação de replay
+  const nickname = getNickname();
+  currentPlaylist.startReplayRecording(nickname, communityPlaylistId);
+  
+  // Conectar o replay recorder ao input controller do player
+  const game = currentPlaylist.getGame();
+  if (game) {
+    const players = game.getPlayers();
+    if (players.length > 0) {
+      const playerInputController = game.getInputController(players[0].id);
+      if (playerInputController instanceof KeyboardInputController) {
+        const recorder = currentPlaylist.getReplayRecorder();
+        playerInputController.setReplayRecorder(recorder);
+      }
+    }
+  }
+  
   currentPlaylist.startScenario(0);
   startPlaylistHUDLoop();
   
@@ -443,4 +498,149 @@ window.addEventListener('game-play-again', handlePlayAgain);
 };
 (window as any).getIsEditorTestMode = () => {
   return currentEditor ? currentEditor.getIsTestMode() : false;
+};
+
+// ==================== REPLAY SYSTEM ====================
+
+/**
+ * Inicia reprodução de um replay
+ */
+(window as any).startReplay = async (
+  replayId: string, 
+  playlist: Playlist, 
+  isCommunity: boolean = false,
+  playlistId?: string
+) => {
+  const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
+  if (!canvas) {
+    console.error('Canvas not found');
+    return { success: false, error: 'Canvas not found' };
+  }
+
+  try {
+    // Buscar dados do replay
+    const replayData = await getReplayById(replayId, isCommunity);
+    if (!replayData) {
+      return { success: false, error: 'Replay not found' };
+    }
+
+    // Limpar estado anterior
+    if (currentGame) {
+      currentGame.stop();
+      currentGame = null;
+    }
+    if (currentPlaylist) {
+      currentPlaylist.stop();
+      currentPlaylist = null;
+    }
+    if (currentEditor) {
+      currentEditor.cleanup();
+      currentEditor = null;
+    }
+
+    stopPlaylistHUDLoop();
+    
+    isPlaylistMode = true;
+    isReplayMode = true;
+    isEditorMode = false;
+
+    document.getElementById('playlist-hud')?.classList.remove('hidden');
+    document.getElementById('playlist-hud-bottom')?.classList.remove('hidden');
+    document.getElementById('game-info')?.classList.add('hidden');
+
+    // Configuração base
+    const baseConfig = getDefaultConfig();
+    let playlistConfig: GameConfig;
+    if (playlist.gameConfig) {
+      const { ballConfig: playlistBallConfig, ...restGameConfig } = playlist.gameConfig;
+      playlistConfig = {
+        ...baseConfig,
+        ...restGameConfig,
+        ballConfig: playlistBallConfig
+          ? { ...baseConfig.ballConfig, ...playlistBallConfig }
+          : baseConfig.ballConfig
+      };
+    } else {
+      playlistConfig = baseConfig;
+    }
+
+    // Criar replay controller
+    currentReplayController = new ReplayInputController(replayData);
+
+    // Criar playlist em modo replay (sem gravação)
+    currentPlaylist = new PlaylistMode(canvas, playlist, playlistConfig, {
+      onScenarioComplete: (_index) => {
+        showFeedback('<i class="fas fa-check"></i> Cenário Completo!', '#00ff00');
+      },
+      onPlaylistComplete: async () => {
+        showFeedback('<i class="fas fa-flag-checkered"></i> Replay Finalizado!', '#ffff00', true);
+        isReplayMode = false;
+        
+        setTimeout(() => {
+          hideFeedback();
+          window.dispatchEvent(new CustomEvent('replay-complete', {
+            detail: {
+              replayData,
+              playlistName: playlist.name
+            }
+          }));
+        }, 2000);
+      },
+      onScenarioFail: (reason) => {
+        showFeedback(`<i class="fas fa-times"></i> ${reason}`, '#ff0000');
+      },
+      onScenarioStart: (_index) => {
+        updatePlaylistHUD();
+        
+        // Conectar o replay controller ao jogo quando cenário inicia
+        const game = currentPlaylist?.getGame();
+        if (game && currentReplayController) {
+          const players = game.getPlayers();
+          if (players.length > 0) {
+            game.setInputController(players[0].id, currentReplayController);
+          }
+        }
+      }
+    });
+
+    updatePlaylistHUD();
+    currentPlaylist.resetPlaylistStats();
+    
+    // Iniciar replay controller
+    currentReplayController.start();
+    
+    currentPlaylist.startScenario(0);
+    startPlaylistHUDLoop();
+    
+    document.body.classList.add('game-active');
+    
+    return { success: true, replayData };
+  } catch (error) {
+    console.error('Error starting replay:', error);
+    return { success: false, error: String(error) };
+  }
+};
+
+/**
+ * Para a reprodução do replay atual
+ */
+(window as any).stopReplay = () => {
+  if (currentReplayController) {
+    currentReplayController.stop();
+    currentReplayController = null;
+  }
+  isReplayMode = false;
+  (window as any).cleanupGame();
+};
+
+/**
+ * Verifica se está em modo replay
+ */
+(window as any).getIsReplayMode = () => isReplayMode;
+
+/**
+ * Obtém dados do replay atual
+ */
+(window as any).getCurrentReplayData = () => {
+  return currentReplayController?.getReplayData() || null;
 };

@@ -260,3 +260,48 @@ export interface PlaylistProgress {
   scenarioStartTime: number;
   checkpointTimers: number[]; // Timer para cada checkpoint ativo
 }
+
+// ==================== REPLAY SYSTEM ====================
+
+/**
+ * Tipos de eventos de input que podem ser gravados
+ */
+export type ReplayInputEventType = 'keydown' | 'keyup';
+
+/**
+ * Ações que podem ser gravadas no replay
+ */
+export type ReplayAction = 'up' | 'down' | 'left' | 'right' | 'kick';
+
+/**
+ * Evento individual de input no replay
+ */
+export interface ReplayInputEvent {
+  timestamp: number; // Tempo em ms desde o início da playlist
+  type: ReplayInputEventType;
+  action: ReplayAction;
+  scenarioIndex: number; // Índice do cenário quando o evento ocorreu
+}
+
+/**
+ * Informação sobre um cenário no replay
+ */
+export interface ReplayScenarioInfo {
+  scenarioIndex: number;
+  startTime: number; // Timestamp quando o cenário começou
+  wasReset: boolean; // Se foi resetado com R
+}
+
+/**
+ * Dados completos de um replay
+ */
+export interface ReplayData {
+  playlistName: string;
+  playlistId?: string; // ID se for playlist da comunidade
+  playerNickname: string;
+  totalTime: number; // Tempo total em segundos
+  events: ReplayInputEvent[]; // Todos os eventos de input
+  scenarios: ReplayScenarioInfo[]; // Informação sobre os cenários
+  recordedAt: number; // Timestamp de quando foi gravado
+  version: string; // Versão do jogo para compatibilidade
+}

@@ -6,9 +6,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { audioManager } from '../audio';
 import { signOut } from '../auth';
 import RankingModal from '../components/RankingModal';
+import ReplayViewer from '../components/ReplayViewer';
 import AuthModal from '../components/AuthModal';
 import { trackPageView } from '../analytics';
 import { GAME_VERSION } from '../version';
+import { RankingEntry } from '../firebase';
 
 
 function HomePage() {
@@ -18,6 +20,8 @@ function HomePage() {
   const { userProfile, isAuthenticated, setUserProfile } = useAuth();
   const [showRankingModal, setShowRankingModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showReplayViewer, setShowReplayViewer] = useState(false);
+  const [selectedReplayEntry, setSelectedReplayEntry] = useState<RankingEntry | null>(null);
   
   const { containerRef } = useKeyboardNav({
     autoFocus: true,
@@ -39,6 +43,13 @@ function HomePage() {
   const handleRanking = () => {
     audioManager.play('menuSelect');
     setShowRankingModal(true);
+  };
+
+  const handleWatchReplay = (entry: RankingEntry) => {
+    audioManager.play('menuSelect');
+    setSelectedReplayEntry(entry);
+    setShowReplayViewer(true);
+    setShowRankingModal(false);
   };
 
   const handleSettings = () => {
@@ -129,7 +140,24 @@ function HomePage() {
         </div>
       </div>
 
-      {showRankingModal && <RankingModal isOpen={showRankingModal} onClose={() => setShowRankingModal(false)} />}
+      {showRankingModal && (
+        <RankingModal 
+          isOpen={showRankingModal} 
+          onClose={() => setShowRankingModal(false)}
+          onWatchReplay={handleWatchReplay}
+        />
+      )}
+      {showReplayViewer && (
+        <ReplayViewer
+          isOpen={showReplayViewer}
+          onClose={() => {
+            setShowReplayViewer(false);
+            setSelectedReplayEntry(null);
+          }}
+          rankingEntry={selectedReplayEntry}
+          isCommunityPlaylist={false}
+        />
+      )}
       {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} allowGuest={true} />}
     </div>
   );

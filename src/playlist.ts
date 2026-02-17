@@ -21,6 +21,7 @@ import { Game } from './game.js';
 import { Physics } from './physics.js';
 import { DEFAULT_MAP, CLASSIC_MAP } from './maps.js';
 import { audioManager } from './audio.js';
+import { ReplayRecorder } from './replay.js';
 
 /**
  * Converte comportamento de bot do formato antigo para o novo formato
@@ -210,6 +211,12 @@ export class PlaylistMode {
   // Tracking para ranking
   private playlistStartTime: number = 0;
   private totalKicks: number = 0;
+  private totalPlaylistTime: number = 0; // Tempo acumulado de todos os cenários completados
+  
+  // Replay recording
+  private replayRecorder: ReplayRecorder | null = null;
+  private playerNickname: string = '';
+  private communityPlaylistId: string | undefined;
   
   constructor(
     canvas: HTMLCanvasElement,
@@ -318,10 +325,15 @@ export class PlaylistMode {
     // Preparar objetivos
     this.prepareObjectives(scenario);
     
-    // Iniciar timer
-    this.progress.scenarioStartTime = Date.now();
+    // Iniciar timer (usar o tempo do game state ao invés de Date.now())
+    this.progress.scenarioStartTime = this.game.getState().time;
     this.scenarioFailed = false;
     this.scenarioCompleted = false;
+    
+    // Gravar início do cenário no replay
+    if (this.replayRecorder) {
+      this.replayRecorder.recordScenarioStart(index, false);
+    }
     
     // Registrar callback customizado para renderização
     this.game.setCustomRenderCallback((ctx) => this.renderObjectives(ctx));
@@ -389,7 +401,7 @@ export class PlaylistMode {
     if (!scenario) return;
     
     const ball = this.game.getBall();
-    const elapsedTime = (Date.now() - this.progress.scenarioStartTime) / 1000;
+    const elapsedTime = this.game.getState().time - this.progress.scenarioStartTime;
     
     // Verificar timeout do cenário
     if (elapsedTime > scenario.timeLimit) {
@@ -746,6 +758,13 @@ export class PlaylistMode {
   private completeScenario(): void {
     if (this.scenarioCompleted) return; // Evitar múltiplas chamadas
     this.scenarioCompleted = true;
+    
+    // Acumular tempo do cenário
+    if (this.game) {
+      const scenarioTime = this.game.getState().time - this.progress.scenarioStartTime;
+      this.totalPlaylistTime += scenarioTime;
+    }
+    
     this.progress.completedScenarios[this.progress.currentScenarioIndex] = true;
     
     // Som de sucesso
@@ -772,6 +791,12 @@ export class PlaylistMode {
     if (this.scenarioFailed) return; // Evitar múltiplas chamadas
     this.scenarioFailed = true;
     
+    // Acumular tempo do cenário mesmo ao falhar
+    if (this.game) {
+      const scenarioTime = this.game.getState().time - this.progress.scenarioStartTime;
+      this.totalPlaylistTime += scenarioTime;
+    }
+    
     // Som de falha
     audioManager.play('fail');
     
@@ -793,11 +818,12 @@ export class PlaylistMode {
     }
     
     // Renderizar checkpoints
-    if (this.activeCheckpoints.length > 0) {
+    if (this.activeCheckpoints.length > 0 && this.progress && this.game) {
       // Renderizar apenas o checkpoint atual
       if (this.currentCheckpointIndex < this.activeCheckpoints.length) {
         const checkpoint = this.activeCheckpoints[this.currentCheckpointIndex];
-        const elapsedTime = (Date.now() - this.progress.scenarioStartTime) / 1000;
+        const progress = this.progress; // TypeScript flow analysis
+        const elapsedTime = this.game.getState().time - progress.scenarioStartTime;
         const checkpointElapsedTime = this.currentCheckpointStartTime > 0 ? elapsedTime - this.currentCheckpointStartTime : 0;
         this.renderCheckpoint(ctx, checkpoint, checkpointElapsedTime);
       }
@@ -892,6 +918,12 @@ export class PlaylistMode {
       clearTimeout(this.resetTimeoutId);
       this.resetTimeoutId = null;
     }
+    
+    // Gravar reset no replay (antes de reiniciar o cenário)
+    if (this.replayRecorder) {
+      this.replayRecorder.recordScenarioStart(this.progress.currentScenarioIndex, true);
+    }
+    
     this.startScenario(this.progress.currentScenarioIndex);
   }
   
@@ -945,18 +977,59 @@ export class PlaylistMode {
     return this.playlist;
   }
   
+  getGame(): Game | null {
+    return this.game;
+  }
+  
   getTotalKicks(): number {
     return this.totalKicks;
   }
   
   getPlaylistTime(): number {
-    if (this.playlistStartTime === 0) return 0;
-    return (Date.now() - this.playlistStartTime) / 1000;
+    // Retornar tempo acumulado dos cenários
+    // Se está jogando, somar o tempo do cenário atual
+    if (this.game && !this.scenarioCompleted && !this.scenarioFailed) {
+      const currentScenarioTime = this.game.getState().time - this.progress.scenarioStartTime;
+      return this.totalPlaylistTime + currentScenarioTime;
+    }
+    return this.totalPlaylistTime;
   }
   
   resetPlaylistStats(): void {
     this.totalKicks = 0;
+    this.totalPlaylistTime = 0;
     this.playlistStartTime = Date.now();
+  }
+  
+  /**
+   * Inicia a gravação de replay
+   */
+  startReplayRecording(playerNickname: string, communityPlaylistId?: string): void {
+    this.playerNickname = playerNickname;
+    this.communityPlaylistId = communityPlaylistId;
+    this.replayRecorder = new ReplayRecorder(
+      this.playlist.name,
+      playerNickname,
+      communityPlaylistId
+    );
+    this.replayRecorder.start();
+  }
+  
+  /**
+   * Para a gravação de replay e retorna os dados
+   */
+  stopReplayRecording(): ReplayRecorder | null {
+    if (this.replayRecorder) {
+      this.replayRecorder.stop();
+    }
+    return this.replayRecorder;
+  }
+  
+  /**
+   * Obtém o replay recorder atual
+   */
+  getReplayRecorder(): ReplayRecorder | null {
+    return this.replayRecorder;
   }
   
   restartPlaylist(): void {
@@ -978,6 +1051,11 @@ export class PlaylistMode {
     
     // Resetar estatísticas
     this.resetPlaylistStats();
+    
+    // Reiniciar gravação de replay se estava gravando
+    if (this.replayRecorder && this.playerNickname) {
+      this.replayRecorder.restart();
+    }
     
     // Iniciar primeiro cenário
     this.startScenario(0);
