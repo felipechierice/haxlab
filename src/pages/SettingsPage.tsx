@@ -28,6 +28,7 @@ interface SettingsFormData {
   ballBorderColor: string;
   kickSpeedMultiplier: number;
   extrapolationMs: number;
+  controlIndicatorOpacity: number;
 }
 
 function SettingsPage() {
@@ -51,12 +52,13 @@ function SettingsPage() {
     ballRadius: 8,
     ballMass: 5,
     ballDamping: 0.99,
-    ballBounce: 0.5,
-    ballPlayerRestitution: 0.35,
+    ballBounce: 0.45,
+    ballPlayerRestitution: 0.30,
     ballColor: '#ffff00',
     ballBorderColor: '#000000',
     kickSpeedMultiplier: 1.0,
     extrapolationMs: 0,
+    controlIndicatorOpacity: 0.3,
   };
   
   const [settings, setSettings] = useState<SettingsFormData>(defaultSettings);
@@ -101,6 +103,7 @@ function SettingsPage() {
           ballBorderColor: config.ballConfig.borderColor,
           kickSpeedMultiplier: config.kickSpeedMultiplier ?? 1.0,
           extrapolationMs: parseInt(localStorage.getItem('extrapolation') || '0'),
+          controlIndicatorOpacity: parseFloat(localStorage.getItem('controlIndicatorOpacity') || '0.6'),
         });
       } catch (e) {
         console.error('Error loading saved config:', e);
@@ -154,6 +157,9 @@ function SettingsPage() {
     // Salvar e aplicar extrapolation
     localStorage.setItem('extrapolation', settings.extrapolationMs.toString());
     extrapolation.setExtrapolation(settings.extrapolationMs);
+    
+    // Salvar opacidade do indicador de controle
+    localStorage.setItem('controlIndicatorOpacity', settings.controlIndicatorOpacity.toString());
 
     // Voltar para a tela anterior (reinicia o jogo se estava em jogo)
     navigate(-1);
@@ -597,6 +603,39 @@ function SettingsPage() {
             </div>
             <div className="form-group full-width">
               <p className="setting-hint-inline">{t('appSettings.extrapolationHint')}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Control Indicator Opacity */}
+        <div className="settings-category">
+          <h3><i className="fas fa-circle-notch"></i> {t('appSettings.controlIndicatorOpacity')}</h3>
+          <div className="settings-grid">
+            <div className="form-group">
+              <label htmlFor="settings-control-indicator-opacity">
+                <span>{t('appSettings.controlIndicatorOpacity')}</span>
+                <button 
+                  type="button"
+                  className="reset-field-btn" 
+                  onClick={() => handleChange('controlIndicatorOpacity', 0.3)}
+                  title={t('settings.resetDefault')}
+                >
+                  <i className="fas fa-undo"></i>
+                </button>
+              </label>
+              <input
+                type="range"
+                id="settings-control-indicator-opacity"
+                min="0"
+                max="1"
+                step="0.05"
+                value={settings.controlIndicatorOpacity}
+                onChange={(e) => handleChange('controlIndicatorOpacity', parseFloat(e.target.value))}
+              />
+              <span>{Math.round(settings.controlIndicatorOpacity * 100)}%</span>
+            </div>
+            <div className="form-group full-width">
+              <p className="setting-hint-inline">{t('appSettings.controlIndicatorOpacityHint')}</p>
             </div>
           </div>
         </div>

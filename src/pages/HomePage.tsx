@@ -86,7 +86,7 @@ function HomePage() {
   return (
     <div className="home-page">
       <div className="menu-container" ref={containerRef}>
-        <img src="/images/haxlab-logo.webp" alt="HaxLab" className="logo" />
+        <img src="/images/haxlab-logo-text-transparent.webp" alt="HaxLab" className="logo" />
         
         {/* User Info or Auth Button */}
         {userProfile ? (

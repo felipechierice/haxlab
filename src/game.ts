@@ -104,6 +104,10 @@ export class Game {
     if (config.extrapolation !== undefined) {
       extrapolation.setExtrapolation(config.extrapolation);
     }
+    
+    // Aplicar opacidade do indicador de controle se configurado
+    const controlIndicatorOpacity = parseFloat(localStorage.getItem('controlIndicatorOpacity') || '0.3');
+    this.renderer.setControlIndicatorOpacity(controlIndicatorOpacity);
 
     this.setupControls();
     this.setupConsole();
@@ -321,11 +325,19 @@ export class Game {
       return;
     }
     
-    // Modo clássico: kick imediato e mostra indicador enquanto tecla pressionada
+    // Modo clássico: tenta kick imediato
     player.isChargingKick = true;
     player.kickCharge = 1;
     player.hasKickedThisPress = false;
-    this.tryKick(player); // tryKick vai marcar hasKickedThisPress se chutar
+    
+    // Tenta chutar imediatamente
+    this.tryKick(player);
+    
+    // Se não conseguiu chutar (estava longe da bola), marca para tentar no próximo frame
+    // Isso elimina o delay de até 16ms do fixed timestep
+    if (!player.hasKickedThisPress) {
+      player.input.kick = true;
+    }
     
     // Notificar callback customizado
     if (this.customKickCallback) {
@@ -354,6 +366,7 @@ export class Game {
     player.isChargingKick = false;
     player.kickCharge = 0;
     player.hasKickedThisPress = false;
+    player.input.kick = false; // Cancela qualquer kick pendente ao soltar a tecla
   }
 
   private switchPlayer(): void {
@@ -397,7 +410,8 @@ export class Game {
       input.down = binds.down.some(key => this.keyState[key]);
       input.left = binds.left.some(key => this.keyState[key]);
       input.right = binds.right.some(key => this.keyState[key]);
-      input.kick = false; // Kick é processado no keydown
+      // Não sobrescreve kick se já houver um pendente (setado pelo handleKickInput)
+      // Isso permite que o chute seja processado no próximo frame se falhou no keydown
       
       // Copia valores para o player
       player.input.up = input.up;
@@ -1014,6 +1028,10 @@ export class Game {
     }
     // Remover event listeners de teclado
     this.removeControls();
+  }
+  
+  setControlIndicatorOpacity(opacity: number): void {
+    this.renderer.setControlIndicatorOpacity(opacity);
   }
   
   pause(): void {

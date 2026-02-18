@@ -4,6 +4,7 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
+  position: relative;
 }
 
 .credits-container {
@@ -289,6 +290,34 @@
   color: #64748b;
 }
 
+.logo-section {
+  margin-top: 40px;
+  padding: 0 !important;
+  background: none !important;
+  border: none !important;
+}
+
+.logo-container-credits {
+  background: #0C1735;
+  padding: 60px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.credits-logo {
+  max-width: 180px;
+  height: auto;
+  opacity: 0.9;
+  transition: all 0.3s ease;
+}
+
+.credits-logo:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
 @media (max-width: 768px) {
   .credits-container {
     padding: 24px;
@@ -306,5 +335,13 @@
 
   .credits-section {
     padding: 20px;
+  }
+
+  .logo-container-credits {
+    padding: 40px;
+  }
+
+  .credits-logo {
+    max-width: 140px;
   }
 }

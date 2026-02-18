@@ -36,6 +36,9 @@ export class Renderer {
     indicator: '#fff700'
   };
   
+  // Opacidade do indicador de controle (círculo pontilhado)
+  private controlIndicatorOpacity: number = 0.3;
+  
   // Cache de arrays para evitar alocações por frame
   private readonly lineDashPattern = [10, 10];
   private readonly lineDashEmpty: number[] = [];
@@ -260,7 +263,7 @@ export class Renderer {
     const segments = 10;
     
     ctx.save();
-    ctx.globalAlpha = 0.6;
+    ctx.globalAlpha = this.controlIndicatorOpacity;
     ctx.strokeStyle = this.colors.indicator;
     ctx.lineWidth = 4;
     
@@ -420,5 +423,9 @@ export class Renderer {
   
   getContext(): CanvasRenderingContext2D {
     return this.ctx;
+  }
+  
+  setControlIndicatorOpacity(opacity: number): void {
+    this.controlIndicatorOpacity = Math.max(0, Math.min(1, opacity));
   }
 }

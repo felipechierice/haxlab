@@ -271,6 +271,10 @@ export class PlaylistMode {
     this.game = new Game(this.canvas, map, gameConfig);
     this.game.initPlayers();
     
+    // Aplicar opacidade do indicador de controle se configurado
+    const controlIndicatorOpacity = parseFloat(localStorage.getItem('controlIndicatorOpacity') || '0.3');
+    this.game.setControlIndicatorOpacity(controlIndicatorOpacity);
+    
     // Criar bots se existirem
     if (scenario.bots) {
       for (const botDef of scenario.bots) {

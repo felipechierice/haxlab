@@ -3,9 +3,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .menu-container {
+  position: relative;
   background: rgba(30, 41, 59, 0.95);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(99, 102, 241, 0.2);
@@ -16,13 +18,28 @@
   min-width: 480px;
   max-width: 540px;
   animation: fadeInScaleContainer 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
 
+
 .logo {
-  max-width: 224px;
+  position: relative;
+  z-index: 1;
+  max-width: 280px;
   height: auto;
   margin-bottom: 32px;
   animation: fadeInScale 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-width: 640px) {
+  .logo {
+    max-width: 200px;
+  }
+  
+  .menu-container::before {
+    width: 200px;
+    height: 200px;
+  }
 }
 
 .title {

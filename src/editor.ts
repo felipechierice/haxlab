@@ -113,6 +113,10 @@ export class PlaylistEditor {
     this.game = new Game(canvas, map, this.config);
     this.renderer = new Renderer(canvas);
     
+    // Aplicar opacidade do indicador de controle se configurado
+    const controlIndicatorOpacity = parseFloat(localStorage.getItem('controlIndicatorOpacity') || '0.3');
+    this.renderer.setControlIndicatorOpacity(controlIndicatorOpacity);
+    
     // Tentar carregar do localStorage primeiro
     const loaded = this.loadFromLocalStorage();
     
@@ -297,8 +301,8 @@ export class PlaylistEditor {
         radius: 8,
         mass: 5,
         damping: 0.99,
-        bounce: 0.5,
-        playerRestitution: 0.35,
+        bounce: 0.45,
+        playerRestitution: 0.30,
         color: '#ffff00',
         borderColor: '#000000',
         borderWidth: 2

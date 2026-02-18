@@ -97,6 +97,16 @@ export const translations: Translations = {
     pt: 'Suaviza movimento entre frames. Ativado por padrão.',
     es: 'Suaviza el movimiento entre fotogramas. Activado por defecto.'
   },
+  'appSettings.controlIndicatorOpacity': {
+    en: 'Control Indicator Opacity',
+    pt: 'Opacidade do Círculo de Controle',
+    es: 'Opacidad del Círculo de Control'
+  },
+  'appSettings.controlIndicatorOpacityHint': {
+    en: 'Adjusts the transparency of the dotted circle around your player.',
+    pt: 'Ajusta a transparência do círculo pontilhado ao redor do seu jogador.',
+    es: 'Ajusta la transparencia del círculo punteado alrededor de tu jugador.'
+  },
   'appSettings.enabled': {
     en: 'Enabled',
     pt: 'Ativado',

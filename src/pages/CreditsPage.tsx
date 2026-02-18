@@ -110,6 +110,12 @@ function CreditsPage() {
               <p className="credits-copyright">© 2026 HaxLab - {t('credits.allRightsReserved')}</p>
             </div>
           </section>
+
+          <section className="credits-section logo-section">
+            <div className="logo-container-credits">
+              <img src="/images/haxlab-logo-graph-transparent.webp" alt="HaxLab Logo" className="credits-logo" />
+            </div>
+          </section>
         </div>
       </div>
     </div>

@@ -26,6 +26,11 @@ function AppSettingsPage() {
     const saved = localStorage.getItem('interpolation');
     return saved ? saved === 'true' : true; // Padrão: ativado
   });
+  
+  const [controlIndicatorOpacity, setControlIndicatorOpacity] = useState<number>(() => {
+    const saved = localStorage.getItem('controlIndicatorOpacity');
+    return saved ? parseFloat(saved) : 0.3;
+  });
 
   const [keybinds, setKeybinds] = useState<KeyBindings>(keyBindings.getBindings());
   const [configuringKey, setConfiguringKey] = useState<keyof KeyBindings | null>(null);
@@ -101,6 +106,12 @@ function AppSettingsPage() {
     const enabled = e.target.checked;
     setInterpolationEnabled(enabled);
     localStorage.setItem('interpolation', enabled.toString());
+  };
+  
+  const handleControlIndicatorOpacityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const opacity = parseFloat(e.target.value);
+    setControlIndicatorOpacity(opacity);
+    localStorage.setItem('controlIndicatorOpacity', opacity.toString());
   };
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -187,6 +198,26 @@ function AppSettingsPage() {
               </label>
             </div>
             <p className="setting-hint">{t('appSettings.interpolationHint')}</p>
+          </div>
+          
+          {/* Control Indicator Opacity */}
+          <div className="setting-section">
+            <label className="setting-label">
+              <i className="fas fa-circle-notch"></i> {t('appSettings.controlIndicatorOpacity')}
+            </label>
+            <div className="volume-control">
+              <input
+                type="range"
+                className="volume-slider"
+                min="0"
+                max="1"
+                step="0.05"
+                value={controlIndicatorOpacity}
+                onChange={handleControlIndicatorOpacityChange}
+              />
+              <span className="volume-value">{Math.round(controlIndicatorOpacity * 100)}%</span>
+            </div>
+            <p className="setting-hint">{t('appSettings.controlIndicatorOpacityHint')}</p>
           </div>
 
           {/* Controls / Keybindings */}

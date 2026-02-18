@@ -6,6 +6,32 @@
 @import './GamePage.css';
 @import './Modal.css';
 
+/* Background Animation - Global and persistent across navigation */
+body::before {
+  content: '';
+  position: fixed;
+  top: -100%;
+  left: -100%;
+  width: 400%;
+  height: 400%;
+  background-image: url('/images/haxlab-logo-graph-transparent.webp');
+  background-size: 100px 100px;
+  background-repeat: repeat;
+  opacity: 0.1;
+  pointer-events: none;
+  z-index: 0;
+  animation: diagonalMove 60s linear infinite;
+}
+
+@keyframes diagonalMove {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(25%, -25%);
+  }
+}
+
 /* Keyboard Navigation Focus Styles */
 button:focus,
 input:focus,

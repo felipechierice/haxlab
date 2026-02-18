@@ -22,6 +22,42 @@ interface ChangelogEntry {
 
 const changelogs: ChangelogEntry[] = [
   {
+    version: '0.1.2-alpha',
+    date: '2026-02-18',
+    changes: [
+      {
+        type: 'bugfix',
+        text: {
+          en: 'Fixed kick input delay caused by fixed timestep timing',
+          pt: 'Corrigido delay no chute causado pelo timing do fixed timestep',
+          es: 'Corregido retraso en el pateo causado por el timing del fixed timestep'
+        }
+      }
+    ]
+  },
+  {
+    version: '0.1.1-alpha',
+    date: '2026-02-18',
+    changes: [
+      {
+        type: 'feature',
+        text: {
+          en: 'Added control indicator opacity setting',
+          pt: 'Adicionada configuração de opacidade do círculo de controle',
+          es: 'Agregada configuración de opacidad del círculo de control'
+        }
+      },
+      {
+        type: 'improvement',
+        text: {
+          en: 'Adjusted default ball physics (bounce: 0.45, player restitution: 0.30)',
+          pt: 'Ajustados valores padrão da bola (quique: 0.45, restituição: 0.30)',
+          es: 'Ajustados valores predeterminados del balón (rebote: 0.45, restitución: 0.30)'
+        }
+      }
+    ]
+  },
+  {
     version: '0.1.0-alpha',
     date: '2026-02-16',
     changes: [
