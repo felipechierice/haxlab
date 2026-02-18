@@ -17,6 +17,7 @@ export interface Segment {
   p2: Vector2D;
   normal: Vector2D;
   bounce: number;
+  playerBounce?: number; // Bounce específico para jogadores (se não especificado, usa bounce)
   playerCollision?: boolean;
 }
 
@@ -155,6 +156,8 @@ export interface BallConfig {
   radius: number;
   mass: number;
   damping: number;
+  bounce: number; // Quique contra paredes (0-1)
+  playerRestitution: number; // Restituição em colisões com jogadores (0-1)
   color: string;
   borderColor: string;
   borderWidth: number;
@@ -169,6 +172,9 @@ export interface GameConfig {
   playerRadius: number;
   playerSpeed?: number; // Velocidade máxima do jogador (padrão 150)
   playerAcceleration?: number; // Aceleração do jogador (padrão 7.5)
+  playerDamping?: number; // Amortecimento/fricção do jogador (padrão 0.96)
+  playerMass?: number; // Massa do jogador para colisões (padrão 10)
+  playerBounce?: number; // Quique do jogador contra paredes (padrão 0.5)
   ballConfig: BallConfig;
   disableGoalReset?: boolean; // Se true, não reseta posições após gol
   kickSpeedMultiplier?: number; // Multiplicador de velocidade ao segurar chute (padrão 1.0)

@@ -836,6 +836,31 @@ export const translations: Translations = {
     pt: 'Amortecimento da Bola (fricção)',
     es: 'Amortiguación del Balón (fricción)'
   },
+  'settings.ballBounce': {
+    en: 'Ball Bounce (wall)',
+    pt: 'Quique da Bola (parede)',
+    es: 'Rebote del Balón (pared)'
+  },
+  'settings.ballPlayerRestitution': {
+    en: 'Ball Restitution (player)',
+    pt: 'Restituição da Bola (jogador)',
+    es: 'Restitución del Balón (jugador)'
+  },
+  'settings.playerDamping': {
+    en: 'Player Damping (friction)',
+    pt: 'Amortecimento do Jogador (fricção)',
+    es: 'Amortiguación del Jugador (fricción)'
+  },
+  'settings.playerMass': {
+    en: 'Player Mass',
+    pt: 'Massa do Jogador',
+    es: 'Masa del Jugador'
+  },
+  'settings.playerBounce': {
+    en: 'Player Bounce (wall)',
+    pt: 'Quique do Jogador (parede)',
+    es: 'Rebote del Jugador (pared)'
+  },
   'settings.resetDefault': {
     en: 'Restore default',
     pt: 'Restaurar padrão',

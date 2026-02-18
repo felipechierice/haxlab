@@ -45,11 +45,16 @@ function getDefaultConfig(): GameConfig {
     playerRadius: 15,
     playerSpeed: 150,
     playerAcceleration: 7.5,
+    playerDamping: 0.96,
+    playerMass: 10,
+    playerBounce: 0.5,
     kickSpeedMultiplier: 1.0,
     ballConfig: {
       radius: 8,
       mass: 5,
       damping: 0.99,
+      bounce: 0.5,
+      playerRestitution: 0.35,
       color: '#ffff00',
       borderColor: '#000000',
       borderWidth: 2

@@ -297,6 +297,8 @@ export class PlaylistEditor {
         radius: 8,
         mass: 5,
         damping: 0.99,
+        bounce: 0.5,
+        playerRestitution: 0.35,
         color: '#ffff00',
         borderColor: '#000000',
         borderWidth: 2
@@ -1869,6 +1871,8 @@ export class PlaylistEditor {
           radius: 8,
           mass: 5,
           damping: 0.99,
+          bounce: 0.5,
+          playerRestitution: 0.35,
           color: '#ffff00',
           borderColor: '#000000',
           borderWidth: 2

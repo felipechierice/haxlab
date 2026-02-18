@@ -174,7 +174,7 @@ export class Physics {
     return distSq < minDist * minDist;
   }
 
-  static resolveCircleCollision(c1: Circle, c2: Circle): void {
+  static resolveCircleCollision(c1: Circle, c2: Circle, restitution: number = 0.35): void {
     const dx = c2.pos.x - c1.pos.x;
     const dy = c2.pos.y - c1.pos.y;
     const distSq = dx * dx + dy * dy;
@@ -206,7 +206,6 @@ export class Physics {
 
     if (velAlongNormal > 0) return;
 
-    const restitution = 0.35;
     const impulse = -(1 + restitution) * velAlongNormal;
     const impulseMagnitude = impulse / (c1.invMass + c2.invMass);
 
@@ -244,7 +243,7 @@ export class Physics {
     return distSq < circle.radius * circle.radius;
   }
 
-  static resolveSegmentCollision(circle: Circle, segment: Segment): void {
+  static resolveSegmentCollision(circle: Circle, segment: Segment, bounceOverride?: number): void {
     const toStartX = circle.pos.x - segment.p1.x;
     const toStartY = circle.pos.y - segment.p1.y;
     const segDirX = segment.p2.x - segment.p1.x;
@@ -289,7 +288,7 @@ export class Physics {
 
     const velAlongNormal = circle.vel.x * normalX + circle.vel.y * normalY;
     if (velAlongNormal < 0) {
-      const bounce = segment.bounce || 0.9;
+      const bounce = bounceOverride !== undefined ? bounceOverride : (segment.bounce || 0.9);
       circle.vel.x -= normalX * velAlongNormal * (1 + bounce);
       circle.vel.y -= normalY * velAlongNormal * (1 + bounce);
     }

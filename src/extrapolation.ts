@@ -334,7 +334,8 @@ export class Extrapolation {
       for (const segment of segments) {
         if (segment.playerCollision) {
           if (Physics.checkSegmentCollision(this.tempPlayerCircle, segment)) {
-            Physics.resolveSegmentCollision(this.tempPlayerCircle, segment);
+            const playerBounce = config.playerBounce ?? 0.5;
+            Physics.resolveSegmentCollision(this.tempPlayerCircle, segment, playerBounce);
             pos.x = this.tempPlayerCircle.pos.x;
             pos.y = this.tempPlayerCircle.pos.y;
             vel.x = this.tempPlayerCircle.vel.x;
@@ -395,7 +396,8 @@ export class Extrapolation {
       this.tempBallCircle.invMass = state.ball.circle.invMass;
       
       if (Physics.checkCircleCollision(this.tempPlayerCircle, this.tempBallCircle)) {
-        Physics.resolveCircleCollision(this.tempPlayerCircle, this.tempBallCircle);
+        const restitution = config.ballConfig.playerRestitution ?? 0.35;
+        Physics.resolveCircleCollision(this.tempPlayerCircle, this.tempBallCircle, restitution);
         
         // Atualiza posições após colisão
         playerPos.x = this.tempPlayerCircle.pos.x;

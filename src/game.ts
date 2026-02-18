@@ -75,6 +75,13 @@ export class Game {
     this.config = config;
     this.console = new GameConsole();
     
+    // Atualizar bounce das paredes do mapa se configurado
+    if (config.ballConfig.bounce !== undefined) {
+      for (const segment of this.map.segments) {
+        segment.bounce = config.ballConfig.bounce;
+      }
+    }
+    
     this.state = {
       players: [],
       ball: {
@@ -108,11 +115,14 @@ export class Game {
     const spawnIndex = this.state.players.filter(p => p.team === team).length % spawnPoints.length;
     const spawn = spawnPoints[spawnIndex];
 
+    const playerMass = this.config.playerMass ?? 10;
+    const playerDamping = this.config.playerDamping ?? Physics.PLAYER_DAMPING;
+    
     const player: Player = {
       id,
       name,
       team,
-      circle: Physics.createCircle(spawn.x, spawn.y, this.config.playerRadius, 10),
+      circle: Physics.createCircle(spawn.x, spawn.y, this.config.playerRadius, playerMass, playerDamping),
       input: { up: false, down: false, left: false, right: false, kick: false },
       kickCharge: 0,
       isChargingKick: false,
@@ -126,11 +136,14 @@ export class Game {
 
   addBot(id: string, name: string, team: 'red' | 'blue', spawn: Vector2D, behavior: BotBehavior, initialVelocity?: Vector2D, radius?: number): void {
     const botRadius = radius ?? this.config.playerRadius;
+    const playerMass = this.config.playerMass ?? 10;
+    const playerDamping = this.config.playerDamping ?? Physics.PLAYER_DAMPING;
+    
     const bot: Player = {
       id,
       name,
       team,
-      circle: Physics.createCircle(spawn.x, spawn.y, botRadius, 10),
+      circle: Physics.createCircle(spawn.x, spawn.y, botRadius, playerMass, playerDamping),
       input: { up: false, down: false, left: false, right: false, kick: false },
       kickCharge: 0,
       isChargingKick: false,
@@ -500,7 +513,8 @@ export class Game {
     for (const segment of this.map.segments) {
       if (segment.playerCollision) {
         if (Physics.checkSegmentCollision(player.circle, segment)) {
-          Physics.resolveSegmentCollision(player.circle, segment);
+          const playerBounce = this.config.playerBounce ?? 0.5;
+          Physics.resolveSegmentCollision(player.circle, segment, playerBounce);
         }
       }
     }
@@ -510,7 +524,7 @@ export class Game {
     const ball = this.state.ball.circle;
     if (Physics.checkCircleCollision(player.circle, ball)) {
       // Resolve colisão localmente para evitar sobreposição visual
-      Physics.resolveCircleCollision(player.circle, ball);
+      Physics.resolveCircleCollision(player.circle, ball, this.config.ballConfig.playerRestitution ?? 0.35);
     }
     
     // Colisão local com outros jogadores (para feedback visual imediato)
@@ -808,7 +822,7 @@ export class Game {
           }
         }
         
-        Physics.resolveCircleCollision(player.circle, this.state.ball.circle);
+        Physics.resolveCircleCollision(player.circle, this.state.ball.circle, this.config.ballConfig.playerRestitution ?? 0.35);
         
         // Se o player está segurando a tecla de chute, executa o chute automaticamente
         if (player.isChargingKick && player.id === this.controlledPlayerId) {
@@ -850,7 +864,8 @@ export class Game {
       if (segment.playerCollision) {
         for (const player of this.state.players) {
           if (Physics.checkSegmentCollision(player.circle, segment)) {
-            Physics.resolveSegmentCollision(player.circle, segment);
+            const playerBounce = this.config.playerBounce ?? 0.5;
+            Physics.resolveSegmentCollision(player.circle, segment, playerBounce);
           }
         }
       }

@@ -16,9 +16,14 @@ interface SettingsFormData {
   playerRadius: number;
   playerSpeed: number;
   playerAcceleration: number;
+  playerDamping: number;
+  playerMass: number;
+  playerBounce: number;
   ballRadius: number;
   ballMass: number;
   ballDamping: number;
+  ballBounce: number;
+  ballPlayerRestitution: number;
   ballColor: string;
   ballBorderColor: string;
   kickSpeedMultiplier: number;
@@ -40,9 +45,14 @@ function SettingsPage() {
     playerRadius: 15,
     playerSpeed: 150,
     playerAcceleration: 7.5,
+    playerDamping: 0.96,
+    playerMass: 10,
+    playerBounce: 0.5,
     ballRadius: 8,
     ballMass: 5,
     ballDamping: 0.99,
+    ballBounce: 0.5,
+    ballPlayerRestitution: 0.35,
     ballColor: '#ffff00',
     ballBorderColor: '#000000',
     kickSpeedMultiplier: 1.0,
@@ -79,9 +89,14 @@ function SettingsPage() {
           playerRadius: config.playerRadius,
           playerSpeed: config.playerSpeed ?? 150,
           playerAcceleration: config.playerAcceleration ?? 7.5,
+          playerDamping: config.playerDamping ?? 0.96,
+          playerMass: config.playerMass ?? 10,
+          playerBounce: config.playerBounce ?? 0.5,
           ballRadius: config.ballConfig.radius,
           ballMass: config.ballConfig.mass,
           ballDamping: config.ballConfig.damping,
+          ballBounce: config.ballConfig.bounce ?? 0.5,
+          ballPlayerRestitution: config.ballConfig.playerRestitution ?? 0.35,
           ballColor: config.ballConfig.color,
           ballBorderColor: config.ballConfig.borderColor,
           kickSpeedMultiplier: config.kickSpeedMultiplier ?? 1.0,
@@ -116,12 +131,17 @@ function SettingsPage() {
       playerRadius: settings.playerRadius,
       playerSpeed: settings.playerSpeed,
       playerAcceleration: settings.playerAcceleration,
+      playerDamping: settings.playerDamping,
+      playerMass: settings.playerMass,
+      playerBounce: settings.playerBounce,
       kickSpeedMultiplier: settings.kickSpeedMultiplier,
       interpolation: interpolationEnabled,
       ballConfig: {
         radius: settings.ballRadius,
         mass: settings.ballMass,
         damping: settings.ballDamping,
+        bounce: settings.ballBounce,
+        playerRestitution: settings.ballPlayerRestitution,
         color: settings.ballColor,
         borderColor: settings.ballBorderColor,
         borderWidth: 2,
@@ -316,6 +336,75 @@ function SettingsPage() {
               />
               <span>{settings.kickSpeedMultiplier.toFixed(2)}</span>
             </div>
+            <div className="form-group">
+              <label htmlFor="settings-player-damping">
+                <span>{t('settings.playerDamping')}</span>
+                <button 
+                  type="button"
+                  className="reset-field-btn" 
+                  onClick={() => resetField('playerDamping')}
+                  title={t('settings.resetDefault')}
+                >
+                  <i className="fas fa-undo"></i>
+                </button>
+              </label>
+              <input
+                type="range"
+                id="settings-player-damping"
+                min="0.85"
+                max="0.99"
+                step="0.01"
+                value={settings.playerDamping}
+                onChange={(e) => handleChange('playerDamping', parseFloat(e.target.value))}
+              />
+              <span>{settings.playerDamping.toFixed(2)}</span>
+            </div>
+            <div className="form-group">
+              <label htmlFor="settings-player-mass">
+                <span>{t('settings.playerMass')}</span>
+                <button 
+                  type="button"
+                  className="reset-field-btn" 
+                  onClick={() => resetField('playerMass')}
+                  title={t('settings.resetDefault')}
+                >
+                  <i className="fas fa-undo"></i>
+                </button>
+              </label>
+              <input
+                type="range"
+                id="settings-player-mass"
+                min="5"
+                max="20"
+                step="1"
+                value={settings.playerMass}
+                onChange={(e) => handleChange('playerMass', parseFloat(e.target.value))}
+              />
+              <span>{settings.playerMass}</span>
+            </div>
+            <div className="form-group">
+              <label htmlFor="settings-player-bounce">
+                <span>{t('settings.playerBounce')}</span>
+                <button 
+                  type="button"
+                  className="reset-field-btn" 
+                  onClick={() => resetField('playerBounce')}
+                  title={t('settings.resetDefault')}
+                >
+                  <i className="fas fa-undo"></i>
+                </button>
+              </label>
+              <input
+                type="range"
+                id="settings-player-bounce"
+                min="0"
+                max="1"
+                step="0.05"
+                value={settings.playerBounce}
+                onChange={(e) => handleChange('playerBounce', parseFloat(e.target.value))}
+              />
+              <span>{settings.playerBounce.toFixed(2)}</span>
+            </div>
           </div>
         </div>
 
@@ -429,6 +518,52 @@ function SettingsPage() {
                 onChange={(e) => handleChange('ballDamping', parseFloat(e.target.value))}
               />
               <span>{settings.ballDamping.toFixed(3)}</span>
+            </div>
+            <div className="form-group">
+              <label htmlFor="settings-ball-bounce">
+                <span>{t('settings.ballBounce')}</span>
+                <button 
+                  type="button"
+                  className="reset-field-btn" 
+                  onClick={() => resetField('ballBounce')}
+                  title={t('settings.resetDefault')}
+                >
+                  <i className="fas fa-undo"></i>
+                </button>
+              </label>
+              <input
+                type="range"
+                id="settings-ball-bounce"
+                min="0"
+                max="1"
+                step="0.05"
+                value={settings.ballBounce}
+                onChange={(e) => handleChange('ballBounce', parseFloat(e.target.value))}
+              />
+              <span>{settings.ballBounce.toFixed(2)}</span>
+            </div>
+            <div className="form-group">
+              <label htmlFor="settings-ball-player-restitution">
+                <span>{t('settings.ballPlayerRestitution')}</span>
+                <button 
+                  type="button"
+                  className="reset-field-btn" 
+                  onClick={() => resetField('ballPlayerRestitution')}
+                  title={t('settings.resetDefault')}
+                >
+                  <i className="fas fa-undo"></i>
+                </button>
+              </label>
+              <input
+                type="range"
+                id="settings-ball-player-restitution"
+                min="0"
+                max="1"
+                step="0.05"
+                value={settings.ballPlayerRestitution}
+                onChange={(e) => handleChange('ballPlayerRestitution', parseFloat(e.target.value))}
+              />
+              <span>{settings.ballPlayerRestitution.toFixed(2)}</span>
             </div>
           </div>
         </div>
