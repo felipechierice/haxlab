@@ -159,6 +159,8 @@
   font-weight: 700;
   color: #f1f5f9;
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
 }
 
 .playlist-item-desc {
@@ -723,6 +725,61 @@
   border-color: #6366f1;
 }
 
+/* Completed playlist indicator */
+.playlist-item.completed,
+.community-playlist-item.completed {
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.playlist-item.completed:not(.selected),
+.community-playlist-item.completed:not(.selected) {
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.playlist-item.completed.selected,
+.community-playlist-item.completed.selected {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: #22c55e;
+}
+
+/* Rank badge */
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.3);
+  color: #a5b4fc;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  margin-left: 8px;
+  min-width: 28px;
+}
+
+.rank-badge.top-3 {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.rank-badge.gold {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.3));
+  color: #fbbf24;
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
+}
+
+.rank-badge.silver {
+  background: linear-gradient(135deg, rgba(156, 163, 175, 0.3), rgba(107, 114, 128, 0.3));
+  color: #d1d5db;
+  box-shadow: 0 0 8px rgba(156, 163, 175, 0.3);
+}
+
+.rank-badge.bronze {
+  background: linear-gradient(135deg, rgba(180, 83, 9, 0.3), rgba(146, 64, 14, 0.3));
+  color: #d97706;
+  box-shadow: 0 0 8px rgba(180, 83, 9, 0.3);
+}
+
 .community-playlist-item .playlist-header {
   display: flex;
   align-items: center;
@@ -743,6 +800,9 @@
   color: #f1f5f9;
   font-weight: 700;
   font-size: 15px;
+  display: flex;
+  align-items: center;
+  flex: 1;
 }
 
 .community-playlist-item .playlist-meta {

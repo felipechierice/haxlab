@@ -370,6 +370,94 @@ export async function getAvailablePlaylists(): Promise<string[]> {
 }
 
 /**
+ * Obtém a posição do jogador no ranking de cada playlist oficial que ele completou
+ * Retorna um Map com nome da playlist -> posição no ranking
+ */
+export async function getPlayerOfficialPlaylistRanks(nickname: string): Promise<Map<string, number>> {
+  const ranks = new Map<string, number>();
+  
+  try {
+    // Primeiro, buscar todas as playlists que o jogador completou
+    const playerQuery = query(
+      collection(db, 'rankings'),
+      where('nickname', '==', nickname)
+    );
+    
+    const playerSnapshot = await getDocs(playerQuery);
+    const playerPlaylists: { playlistName: string; score: number }[] = [];
+    
+    playerSnapshot.forEach((doc) => {
+      const data = doc.data() as RankingEntry;
+      if (data.playlistName) {
+        playerPlaylists.push({ playlistName: data.playlistName, score: data.score });
+      }
+    });
+    
+    // Para cada playlist, buscar a posição do jogador
+    for (const { playlistName, score } of playerPlaylists) {
+      const rankQuery = query(
+        collection(db, 'rankings'),
+        where('playlistName', '==', playlistName),
+        where('score', '>', score)
+      );
+      
+      const rankSnapshot = await getDocs(rankQuery);
+      // Posição = número de jogadores com score maior + 1
+      ranks.set(playlistName, rankSnapshot.size + 1);
+    }
+    
+    return ranks;
+  } catch (error) {
+    console.error('Error getting player official playlist ranks:', error);
+    return ranks;
+  }
+}
+
+/**
+ * Obtém a posição do jogador no ranking de cada playlist da comunidade que ele completou
+ * Retorna um Map com ID da playlist -> posição no ranking
+ */
+export async function getPlayerCommunityPlaylistRanks(nickname: string): Promise<Map<string, number>> {
+  const ranks = new Map<string, number>();
+  
+  try {
+    // Primeiro, buscar todas as playlists que o jogador completou
+    const playerQuery = query(
+      collection(db, 'community_rankings'),
+      where('nickname', '==', nickname)
+    );
+    
+    const playerSnapshot = await getDocs(playerQuery);
+    const playerPlaylists: { playlistId: string; score: number }[] = [];
+    
+    playerSnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.playlistId) {
+        playerPlaylists.push({ playlistId: data.playlistId, score: data.score });
+      }
+    });
+    
+    // Para cada playlist, buscar a posição do jogador
+    for (const { playlistId, score } of playerPlaylists) {
+      const rankQuery = query(
+        collection(db, 'community_rankings'),
+        where('playlistId', '==', playlistId),
+        where('score', '>', score)
+      );
+      
+      const rankSnapshot = await getDocs(rankQuery);
+      // Posição = número de jogadores com score maior + 1
+      ranks.set(playlistId, rankSnapshot.size + 1);
+    }
+    
+    return ranks;
+  } catch (error) {
+    console.error('Error getting player community playlist ranks:', error);
+    return ranks;
+  }
+}
+
+/**
  * Atualiza o nickname em todos os rankings do jogador
  * Atualiza tanto rankings oficiais quanto da comunidade
  */

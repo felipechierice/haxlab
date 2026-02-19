@@ -10,6 +10,7 @@ import { PlaylistInfo } from '../types/playlist-ui';
 import { Playlist } from '../types';
 import { audioManager } from '../audio';
 import { trackPageView } from '../analytics';
+import { getPlayerOfficialPlaylistRanks, getPlayerCommunityPlaylistRanks } from '../firebase';
 import { 
   getCommunityPlaylists, 
   CommunityPlaylist,
@@ -53,13 +54,30 @@ function PlaylistsPage() {
   const [selectedCommunityPlaylist, setSelectedCommunityPlaylist] = useState<CommunityPlaylist | null>(null);
   const [playlistData, setPlaylistData] = useState<Playlist | null>(null);
   const [communityPlaylists, setCommunityPlaylists] = useState<CommunityPlaylist[]>([]);
-  const [sortBy, setSortBy] = useState<PlaylistSortBy>('trending');
+  const [sortBy, setSortBy] = useState<PlaylistSortBy>('recent');
   const [loading, setLoading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [userLikes, setUserLikes] = useState<Map<string, 'like' | 'dislike'>>(new Map());
+  const [officialPlaylistRanks, setOfficialPlaylistRanks] = useState<Map<string, number>>(new Map());
+  const [communityPlaylistRanks, setCommunityPlaylistRanks] = useState<Map<string, number>>(new Map());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { trackPageView('PlaylistsPage'); }, []);
+
+  // Carregar posições no ranking do usuário
+  useEffect(() => {
+    const loadPlaylistRanks = async () => {
+      if (userProfile?.nickname) {
+        const [official, community] = await Promise.all([
+          getPlayerOfficialPlaylistRanks(userProfile.nickname),
+          getPlayerCommunityPlaylistRanks(userProfile.nickname)
+        ]);
+        setOfficialPlaylistRanks(official);
+        setCommunityPlaylistRanks(community);
+      }
+    };
+    loadPlaylistRanks();
+  }, [userProfile?.nickname]);
 
   // Carregar playlists da comunidade quando a aba mudar
   useEffect(() => {
@@ -444,6 +462,7 @@ function PlaylistsPage() {
                         key={playlist.file}
                         playlist={playlist}
                         isSelected={selectedPlaylist?.file === playlist.file}
+                        rankPosition={officialPlaylistRanks.get(playlist.name)}
                         onSelect={() => handleSelectPlaylist(playlist)}
                       />
                     ))}
@@ -467,10 +486,10 @@ function PlaylistsPage() {
                   <div className="community-sort">
                     <label>{t('playlists.sortBy')}</label>
                     <select value={sortBy} onChange={(e) => setSortBy(e.target.value as PlaylistSortBy)}>
-                      <option value="trending">{t('playlists.sortTrending')}</option>
-                      <option value="likes">{t('playlists.sortLikes')}</option>
                       <option value="recent">{t('playlists.sortRecent')}</option>
+                      <option value="trending">{t('playlists.sortTrending')}</option>
                       <option value="plays">{t('playlists.sortPlays')}</option>
+                      <option value="likes">{t('playlists.sortLikes')}</option>
                       <option value="name">{t('playlists.sortName')}</option>
                     </select>
                   </div>
@@ -481,15 +500,24 @@ function PlaylistsPage() {
                     ) : communityPlaylists.length === 0 ? (
                       <div className="empty-message">{t('playlists.noCommunityPlaylists')}</div>
                     ) : (
-                      communityPlaylists.map((playlist) => (
+                      communityPlaylists.map((playlist) => {
+                        const rankPosition = communityPlaylistRanks.get(playlist.id);
+                        return (
                         <div 
                           key={playlist.id}
-                          className={`community-playlist-item ${selectedCommunityPlaylist?.id === playlist.id ? 'selected' : ''}`}
+                          className={`community-playlist-item ${selectedCommunityPlaylist?.id === playlist.id ? 'selected' : ''} ${rankPosition ? 'completed' : ''}`}
                           onClick={() => handleSelectCommunityPlaylist(playlist)}
                         >
                           <div className="playlist-header">
                             <i className="fas fa-list-ul"></i>
-                            <span className="playlist-name">{playlist.name}</span>
+                            <span className="playlist-name">
+                              {playlist.name}
+                              {rankPosition && (
+                                <span className={`rank-badge ${rankPosition <= 3 ? 'top-3' : ''} ${rankPosition === 1 ? 'gold' : rankPosition === 2 ? 'silver' : rankPosition === 3 ? 'bronze' : ''}`}>
+                                  #{rankPosition}
+                                </span>
+                              )}
+                            </span>
                           </div>
                           <div className="playlist-meta">
                             <span className="author">
@@ -505,7 +533,7 @@ function PlaylistsPage() {
                             </div>
                           </div>
                         </div>
-                      ))
+                      );})
                     )}
                   </div>
                 </>
