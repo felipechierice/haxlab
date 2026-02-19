@@ -1,6 +1,14 @@
 import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore, collection, addDoc, query, orderBy, limit, getDocs, where, updateDoc, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { initAnalytics } from './analytics.js';
+import { auth } from './auth.js';
+
+// Função helper para obter IP (importada depois para evitar circular dependency)
+let getClientIPFunc: (() => Promise<string | null>) | null = null;
+
+export function setGetClientIPFunc(func: () => Promise<string | null>) {
+  getClientIPFunc = func;
+}
 
 // Configuração do Firebase
 const firebaseConfig = {
@@ -59,6 +67,8 @@ export interface RankingEntry {
   score: number; // pontuação calculada
   timestamp: number;
   replayId?: string; // ID do replay associado (opcional)
+  ip?: string; // IP do jogador (opcional)
+  uid?: string; // UID do jogador (opcional)
 }
 
 /**
@@ -95,6 +105,20 @@ export async function submitScore(
   
   const score = calculateScore(timeInSeconds);
   
+  // Obter informações adicionais do usuário
+  const currentUser = auth.currentUser;
+  const uid = currentUser?.uid;
+  
+  // Tentar obter IP (se a função foi configurada)
+  let ip: string | undefined;
+  if (getClientIPFunc) {
+    try {
+      ip = (await getClientIPFunc()) || undefined;
+    } catch (error) {
+      console.warn('Could not get client IP:', error);
+    }
+  }
+  
   const entry: RankingEntry & { playlistId?: string } = {
     nickname,
     playlistName,
@@ -102,7 +126,9 @@ export async function submitScore(
     score,
     timestamp: Date.now(),
     ...(playlistId && { playlistId }),
-    ...(replayId && { replayId })
+    ...(replayId && { replayId }),
+    ...(ip && { ip }),
+    ...(uid && { uid })
   };
 
   try {

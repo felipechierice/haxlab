@@ -10,7 +10,7 @@ import {
   User,
   updateProfile
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import { db, updateNicknameInRankings } from './firebase';
 
 // Inicializar Firebase Auth
@@ -53,6 +53,8 @@ export interface UserProfile {
   nickname: string;
   isGuest: boolean;
   createdAt: number;
+  lastIP?: string;
+  lastIPTimestamp?: number;
 }
 
 /**
@@ -66,16 +68,25 @@ export async function signUpWithEmail(email: string, password: string, nickname:
     // Atualizar perfil do Firebase Auth
     await updateProfile(user, { displayName: nickname });
 
+    // Obter IP do cliente
+    const clientIP = await getClientIP();
+
     // Criar perfil no Firestore
     const userProfile: UserProfile = {
       uid: user.uid,
       email: user.email,
       nickname,
       isGuest: false,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      ...(clientIP && { lastIP: clientIP, lastIPTimestamp: Date.now() })
     };
 
     await setDoc(doc(db, 'users', user.uid), userProfile);
+
+    // Registrar IP no histórico
+    if (clientIP) {
+      await logUserIP(user.uid, nickname, clientIP);
+    }
 
     // Limpar sessão de convidado se existir
     clearGuestSession();
@@ -108,11 +119,26 @@ export async function signInWithEmail(email: string, password: string): Promise<
       throw new Error(`Sua conta foi banida. Motivo: ${bannedCheck.reason}`);
     }
 
+    // Obter IP do cliente
+    const clientIP = await getClientIP();
+
     // Buscar perfil no Firestore
     const userDoc = await getDoc(doc(db, 'users', user.uid));
     
     if (userDoc.exists()) {
       const profile = userDoc.data() as UserProfile;
+      
+      // Atualizar IP no perfil
+      if (clientIP) {
+        await updateDoc(doc(db, 'users', user.uid), {
+          lastIP: clientIP,
+          lastIPTimestamp: Date.now()
+        });
+        await logUserIP(user.uid, profile.nickname, clientIP);
+        profile.lastIP = clientIP;
+        profile.lastIPTimestamp = Date.now();
+      }
+      
       // Limpar sessão de convidado se existir
       clearGuestSession();
       // Sincronizar com sistema legado (player.ts)
@@ -125,9 +151,15 @@ export async function signInWithEmail(email: string, password: string): Promise<
         email: user.email,
         nickname: user.displayName || user.email?.split('@')[0] || 'Jogador',
         isGuest: false,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        ...(clientIP && { lastIP: clientIP, lastIPTimestamp: Date.now() })
       };
       await setDoc(doc(db, 'users', user.uid), userProfile);
+      
+      // Registrar IP no histórico
+      if (clientIP) {
+        await logUserIP(user.uid, userProfile.nickname, clientIP);
+      }
       // Limpar sessão de convidado se existir
       clearGuestSession();
       // Sincronizar com sistema legado (player.ts)
@@ -156,6 +188,9 @@ export async function signInWithGoogle(): Promise<{ user: UserProfile; needsNick
       throw new Error(`Sua conta foi banida. Motivo: ${bannedCheck.reason}`);
     }
 
+    // Obter IP do cliente
+    const clientIP = await getClientIP();
+
     // Limpar sessão de convidado se existir
     clearGuestSession();
 
@@ -164,6 +199,18 @@ export async function signInWithGoogle(): Promise<{ user: UserProfile; needsNick
     
     if (userDoc.exists()) {
       const profile = userDoc.data() as UserProfile;
+      
+      // Atualizar IP no perfil
+      if (clientIP) {
+        await updateDoc(doc(db, 'users', user.uid), {
+          lastIP: clientIP,
+          lastIPTimestamp: Date.now()
+        });
+        await logUserIP(user.uid, profile.nickname, clientIP);
+        profile.lastIP = clientIP;
+        profile.lastIPTimestamp = Date.now();
+      }
+      
       // Sincronizar com sistema legado (player.ts)
       syncNicknameWithLegacy(profile.nickname);
       return {
@@ -432,6 +479,48 @@ async function getClientIP(): Promise<string | null> {
 }
 
 /**
+ * Registrar IP no histórico de IPs do usuário
+ */
+async function logUserIP(uid: string, nickname: string, ip: string): Promise<void> {
+  try {
+    // Verificar se já existe um registro recente deste IP para este usuário (últimas 24h)
+    const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+    const recentQuery = query(
+      collection(db, 'user_ip_history'),
+      where('uid', '==', uid),
+      where('ip', '==', ip),
+      where('timestamp', '>', oneDayAgo)
+    );
+    
+    const recentDocs = await getDocs(recentQuery);
+    
+    // Só adicionar novo registro se não houver um recente
+    if (recentDocs.empty) {
+      await addDoc(collection(db, 'user_ip_history'), {
+        uid,
+        nickname,
+        ip,
+        timestamp: Date.now()
+      });
+      console.log(`IP ${ip} registrado para usuário ${nickname}`);
+    }
+  } catch (error) {
+    console.error('Error logging user IP:', error);
+    // Não bloquear o fluxo se houver erro ao salvar IP
+  }
+}
+
+/**
+ * Exportar função para uso em outros módulos
+ */
+export async function saveUserIP(uid: string, nickname: string): Promise<void> {
+  const ip = await getClientIP();
+  if (ip) {
+    await logUserIP(uid, nickname, ip);
+  }
+}
+
+/**
  * Verificar se o usuário atual está banido (por UID ou IP)
  */
 export async function checkCurrentUserBanned(): Promise<{ banned: boolean; reason?: string }> {
@@ -489,6 +578,7 @@ function getAuthErrorMessage(errorCode?: string): string {
       return 'Permissão negada. Verifique as configurações do Firebase.';
     case 'user-banned':
       return 'Sua conta foi banida.';
+    default:
       return 'Erro de autenticação. Tente novamente.';
   }
 }

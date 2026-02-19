@@ -11,7 +11,10 @@
     "ban-user": "node scripts/ban-user.mjs",
     "unban-user": "node scripts/unban-user.mjs",
     "delete-user-rankings": "node scripts/delete-user-rankings.mjs",
-    "list-banned": "node scripts/list-banned.mjs"
+    "list-banned": "node scripts/list-banned.mjs",
+    "ban-helper": "node scripts/delete-rankings-cli.mjs",
+    "auto-ban": "node scripts/auto-ban.mjs",
+    "get-user-ips": "node scripts/get-user-ips.mjs"
   },
   "keywords": [
     "game",

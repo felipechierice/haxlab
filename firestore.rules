@@ -16,9 +16,15 @@ service cloud.firestore {
                     && request.resource.data.nickname.size() >= 1
                     && request.resource.data.nickname.size() <= 16;
       
-      // Permitir atualizar apenas o próprio perfil
+      // Permitir atualizar apenas o próprio perfil (incluindo lastIP)
       allow update: if request.auth != null 
                     && request.auth.uid == userId;
+    }
+    
+    // Histórico de IPs dos usuários
+    match /user_ip_history/{historyId} {
+      allow read: if false; // Apenas via Admin SDK
+      allow write: if request.auth != null; // Usuários autenticados podem registrar seus IPs
     }
     
     // Usuários banidos - apenas leitura pública, escrita apenas por admin
