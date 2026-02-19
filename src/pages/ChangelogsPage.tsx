@@ -22,6 +22,28 @@ interface ChangelogEntry {
 
 const changelogs: ChangelogEntry[] = [
   {
+    version: '0.1.3-alpha',
+    date: '2026-02-19',
+    changes: [
+      {
+        type: 'feature',
+        text: {
+          en: 'Added duplicate scenario button in playlist editor',
+          pt: 'Adicionado botão de duplicar cenário no editor de playlists',
+          es: 'Agregado botón de duplicar escenario en el editor de playlists'
+        }
+      },
+      {
+        type: 'feature',
+        text: {
+          en: 'Added mirror scenario feature (vertical, horizontal, diagonal) in playlist editor',
+          pt: 'Adicionada função de espelhar cenário (vertical, horizontal, diagonal) no editor de playlists',
+          es: 'Agregada función de espejo de escenario (vertical, horizontal, diagonal) en el editor de playlists'
+        }
+      }
+    ]
+  },
+  {
     version: '0.1.2-alpha',
     date: '2026-02-18',
     changes: [

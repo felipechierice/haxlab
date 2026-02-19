@@ -347,6 +347,12 @@ export class PlaylistEditor {
         <button class="editor-action-btn" id="editor-remove-scenario" title="Remover cenário atual">
           <span class="tool-icon"><i class="fas fa-minus"></i></span>
         </button>
+        <button class="editor-action-btn" id="editor-duplicate-scenario" title="Duplicar cenário atual">
+          <span class="tool-icon"><i class="fas fa-copy"></i></span>
+        </button>
+        <button class="editor-action-btn" id="editor-mirror-scenario" title="Espelhar cenário atual">
+          <span class="tool-icon"><i class="fas fa-arrows-alt-h"></i></span>
+        </button>
       </div>
       <div class="editor-toolbar-divider"></div>
       <button class="editor-action-btn" id="editor-playlist-settings">
@@ -391,6 +397,23 @@ export class PlaylistEditor {
     document.body.appendChild(this.toolbarElement);
     document.body.appendChild(this.propertiesPanel);
     
+    // Criar dropdown de espelhamento (fora da toolbar para evitar overflow)
+    const mirrorDropdown = document.createElement('div');
+    mirrorDropdown.id = 'editor-mirror-dropdown';
+    mirrorDropdown.className = 'editor-dropdown hidden';
+    mirrorDropdown.innerHTML = `
+      <button class="editor-dropdown-item" data-mirror="vertical">
+        <i class="fas fa-arrows-alt-v"></i> Verticalmente
+      </button>
+      <button class="editor-dropdown-item" data-mirror="horizontal">
+        <i class="fas fa-arrows-alt-h"></i> Horizontalmente
+      </button>
+      <button class="editor-dropdown-item" data-mirror="diagonal">
+        <i class="fas fa-compress-arrows-alt"></i> Diagonal (ambos)
+      </button>
+    `;
+    document.body.appendChild(mirrorDropdown);
+    
     // Event listeners dos botões
     this.toolbarElement.querySelectorAll('.editor-tool-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -409,8 +432,30 @@ export class PlaylistEditor {
     document.getElementById('editor-next-scenario')?.addEventListener('click', () => this.nextScenario());
     document.getElementById('editor-add-scenario')?.addEventListener('click', () => this.addScenario());
     document.getElementById('editor-remove-scenario')?.addEventListener('click', () => this.removeScenario());
+    document.getElementById('editor-duplicate-scenario')?.addEventListener('click', () => this.duplicateScenario());
+    document.getElementById('editor-mirror-scenario')?.addEventListener('click', () => this.toggleMirrorDropdown());
     document.getElementById('editor-publish')?.addEventListener('click', () => this.publishPlaylist());
     document.getElementById('editor-exit')?.addEventListener('click', () => this.exit());
+    
+    // Event listeners para dropdown de espelhamento
+    document.querySelectorAll('#editor-mirror-dropdown .editor-dropdown-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        const mode = (e.currentTarget as HTMLElement).dataset.mirror as 'vertical' | 'horizontal' | 'diagonal';
+        this.mirrorScenario(mode);
+        this.hideMirrorDropdown();
+      });
+    });
+    
+    // Fechar dropdown ao clicar fora
+    document.addEventListener('click', (e) => {
+      const dropdown = document.getElementById('editor-mirror-dropdown');
+      const button = document.getElementById('editor-mirror-scenario');
+      if (dropdown && !dropdown.classList.contains('hidden')) {
+        if (!dropdown.contains(e.target as Node) && !button?.contains(e.target as Node)) {
+          this.hideMirrorDropdown();
+        }
+      }
+    });
   }
 
   private selectTool(tool: EditorTool, keepSelection: boolean = false): void {
@@ -1993,6 +2038,216 @@ export class PlaylistEditor {
       this.updateScenarioCounter();
       this.triggerAutoSave();
     }
+  }
+
+  private duplicateScenario(): void {
+    this.saveCurrentScenario();
+    
+    // Criar cópia profunda do cenário atual
+    const duplicatedScenario: EditorScenario = this.deepClone(this.scenarios[this.currentScenarioIndex]);
+    
+    // Atualizar nome do cenário
+    duplicatedScenario.settings.name = `${duplicatedScenario.settings.name} (Cópia)`;
+    
+    // Gerar novos IDs para entidades
+    duplicatedScenario.entities = duplicatedScenario.entities.map(entity => {
+      const newEditorId = `entity-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      if ('spawn' in entity) {
+        // É um bot
+        const newBotId = `bot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        return {
+          ...entity,
+          editorId: newEditorId,
+          id: newBotId
+        };
+      } else {
+        // É checkpoint ou path
+        return {
+          ...entity,
+          editorId: newEditorId
+        };
+      }
+    });
+    
+    // Inserir após o cenário atual
+    this.scenarios.splice(this.currentScenarioIndex + 1, 0, duplicatedScenario);
+    this.loadScenario(this.currentScenarioIndex + 1);
+    this.triggerAutoSave();
+  }
+
+  private toggleMirrorDropdown(): void {
+    const dropdown = document.getElementById('editor-mirror-dropdown');
+    const button = document.getElementById('editor-mirror-scenario');
+    
+    if (dropdown && button) {
+      const isHidden = dropdown.classList.contains('hidden');
+      
+      if (isHidden) {
+        // Posicionar o dropdown ao lado do botão
+        const buttonRect = button.getBoundingClientRect();
+        dropdown.style.left = `${buttonRect.right + 8}px`;
+        dropdown.style.top = `${buttonRect.top}px`;
+      }
+      
+      dropdown.classList.toggle('hidden');
+    }
+  }
+
+  private hideMirrorDropdown(): void {
+    const dropdown = document.getElementById('editor-mirror-dropdown');
+    if (dropdown) {
+      dropdown.classList.add('hidden');
+    }
+  }
+
+  private mirrorScenario(mode: 'vertical' | 'horizontal' | 'diagonal'): void {
+    // Obter dimensões do mapa atual
+    const map = this.mapType === 'classic' ? CLASSIC_MAP : DEFAULT_MAP;
+    const mapWidth = map.width;   // 1000
+    const mapHeight = map.height; // 600
+    
+    // Função helper para espelhar posição
+    const mirrorPosition = (pos: Vector2D): Vector2D => {
+      let x = pos.x;
+      let y = pos.y;
+      
+      if (mode === 'vertical' || mode === 'diagonal') {
+        y = mapHeight - y;
+      }
+      if (mode === 'horizontal' || mode === 'diagonal') {
+        x = mapWidth - x;
+      }
+      
+      return { x: Math.round(x), y: Math.round(y) };
+    };
+    
+    // Função helper para espelhar velocidade
+    const mirrorVelocity = (vel: Vector2D): Vector2D => {
+      let x = vel.x;
+      let y = vel.y;
+      
+      if (mode === 'vertical' || mode === 'diagonal') {
+        y = -y;
+      }
+      if (mode === 'horizontal' || mode === 'diagonal') {
+        x = -x;
+      }
+      
+      return { x: Math.round(x), y: Math.round(y) };
+    };
+    
+    // Função helper para espelhar direção de patrulha
+    const mirrorDirection = (dir: Direction): Direction => {
+      if (dir === null) return null;
+      
+      const directionMap: Record<string, Record<string, Direction>> = {
+        vertical: {
+          'UP': 'DOWN',
+          'DOWN': 'UP',
+          'LEFT': 'LEFT',
+          'RIGHT': 'RIGHT',
+          'UP_LEFT': 'DOWN_LEFT',
+          'UP_RIGHT': 'DOWN_RIGHT',
+          'DOWN_LEFT': 'UP_LEFT',
+          'DOWN_RIGHT': 'UP_RIGHT'
+        },
+        horizontal: {
+          'UP': 'UP',
+          'DOWN': 'DOWN',
+          'LEFT': 'RIGHT',
+          'RIGHT': 'LEFT',
+          'UP_LEFT': 'UP_RIGHT',
+          'UP_RIGHT': 'UP_LEFT',
+          'DOWN_LEFT': 'DOWN_RIGHT',
+          'DOWN_RIGHT': 'DOWN_LEFT'
+        },
+        diagonal: {
+          'UP': 'DOWN',
+          'DOWN': 'UP',
+          'LEFT': 'RIGHT',
+          'RIGHT': 'LEFT',
+          'UP_LEFT': 'DOWN_RIGHT',
+          'UP_RIGHT': 'DOWN_LEFT',
+          'DOWN_LEFT': 'UP_RIGHT',
+          'DOWN_RIGHT': 'UP_LEFT'
+        }
+      };
+      
+      return directionMap[mode][dir] || dir;
+    };
+    
+    // Espelhar spawns do cenário
+    if (this.scenarioSettings.ballSpawn) {
+      this.scenarioSettings.ballSpawn = mirrorPosition(this.scenarioSettings.ballSpawn);
+    }
+    if (this.scenarioSettings.playerSpawn) {
+      this.scenarioSettings.playerSpawn = mirrorPosition(this.scenarioSettings.playerSpawn);
+    }
+    
+    // Espelhar velocidades iniciais
+    if (this.scenarioSettings.initialBallVelocity) {
+      this.scenarioSettings.initialBallVelocity = mirrorVelocity(this.scenarioSettings.initialBallVelocity);
+    }
+    if (this.scenarioSettings.initialPlayerVelocity) {
+      this.scenarioSettings.initialPlayerVelocity = mirrorVelocity(this.scenarioSettings.initialPlayerVelocity);
+    }
+    
+    // Espelhar entidades
+    this.entities = this.entities.map(entity => {
+      if ('spawn' in entity) {
+        // É um bot
+        const bot = entity as EditorBot;
+        const mirroredBot: EditorBot = {
+          ...bot,
+          spawn: mirrorPosition(bot.spawn)
+        };
+        
+        // Espelhar direções de patrulha se for preset patrol
+        if (bot.behavior?.preset === 'patrol' && bot.behavior.config) {
+          const patrolConfig = bot.behavior.config as PatrolBehaviorConfig;
+          if (patrolConfig.commands) {
+            mirroredBot.behavior = {
+              ...bot.behavior,
+              config: {
+                ...patrolConfig,
+                commands: patrolConfig.commands.map(cmd => ({
+                  ...cmd,
+                  direction: cmd.direction ? mirrorDirection(cmd.direction) : cmd.direction
+                }))
+              }
+            };
+          }
+        }
+        
+        return mirroredBot;
+      } else if ('position' in entity && 'radius' in entity) {
+        // É um checkpoint
+        const checkpoint = entity as EditorCheckpoint;
+        return {
+          ...checkpoint,
+          position: mirrorPosition(checkpoint.position)
+        } as EditorCheckpoint;
+      } else if ('points' in entity && 'width' in entity) {
+        // É um path
+        const path = entity as EditorPath;
+        return {
+          ...path,
+          points: path.points.map(point => mirrorPosition(point))
+        } as EditorPath;
+      }
+      
+      // Fallback - não deveria chegar aqui
+      return entity;
+    });
+    
+    // Atualizar o cenário salvo
+    this.scenarios[this.currentScenarioIndex] = {
+      settings: this.deepClone(this.scenarioSettings),
+      entities: this.deepClone(this.entities)
+    };
+    
+    this.triggerAutoSave();
   }
 
   private showPlaylistSettings(): void {
