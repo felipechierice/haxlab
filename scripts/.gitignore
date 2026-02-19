@@ -1,0 +1,6 @@
+# Service Account Key - NUNCA COMMITAR!
+service-account-key.json
+
+# Arquivos temporários
+*.tmp
+*.log

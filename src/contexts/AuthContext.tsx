@@ -4,7 +4,9 @@ import {
   UserProfile, 
   onAuthChanged, 
   getUserProfile, 
-  getGuestSession
+  getGuestSession,
+  checkCurrentUserBanned,
+  signOut
 } from '../auth';
 import { saveNickname } from '../player';
 
@@ -42,6 +44,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setCurrentUser(user);
 
       if (user) {
+        // Verificar se o usuário está banido
+        const bannedCheck = await checkCurrentUserBanned();
+        if (bannedCheck.banned) {
+          console.error('Usuário banido:', bannedCheck.reason);
+          alert(`Sua conta foi banida. Motivo: ${bannedCheck.reason}`);
+          await signOut();
+          setUserProfile(null);
+          setLoading(false);
+          return;
+        }
+
         // Usuário autenticado - buscar perfil
         const profile = await getUserProfile(user.uid);
         setUserProfile(profile);
@@ -68,6 +81,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     return unsubscribe;
   }, []);
+
+  // Verificação periódica de banimento (a cada 30 segundos)
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const checkBanInterval = setInterval(async () => {
+      const bannedCheck = await checkCurrentUserBanned();
+      if (bannedCheck.banned) {
+        console.error('Usuário banido durante a sessão:', bannedCheck.reason);
+        alert(`Sua conta foi banida. Motivo: ${bannedCheck.reason}\n\nVocê será desconectado.`);
+        await signOut();
+        setUserProfile(null);
+      }
+    }, 30000); // 30 segundos
+
+    return () => clearInterval(checkBanInterval);
+  }, [currentUser]);
 
   // Wrapper para setUserProfile que também sincroniza com o sistema legado
   const handleSetUserProfile = (profile: UserProfile | null) => {

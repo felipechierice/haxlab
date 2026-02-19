@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "start": "npm run dev"
+    "start": "npm run dev",
+    "ban-user": "node scripts/ban-user.mjs",
+    "unban-user": "node scripts/unban-user.mjs",
+    "delete-user-rankings": "node scripts/delete-user-rankings.mjs",
+    "list-banned": "node scripts/list-banned.mjs"
   },
   "keywords": [
     "game",
@@ -27,6 +31,7 @@
   },
   "dependencies": {
     "firebase": "^12.9.0",
+    "firebase-admin": "^13.0.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.0"

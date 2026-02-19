@@ -10,11 +10,28 @@ import {
   User,
   updateProfile
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db, updateNicknameInRankings } from './firebase';
 
 // Inicializar Firebase Auth
 export const auth: Auth = getAuth();
+
+// Interface para banimentos
+export interface BannedUser {
+  uid: string;
+  email?: string;
+  nickname?: string;
+  reason: string;
+  bannedAt: number;
+  bannedBy: string;
+}
+
+export interface BannedIP {
+  ip: string;
+  reason: string;
+  bannedAt: number;
+  bannedBy: string;
+}
 
 // Provider do Google
 const googleProvider = new GoogleAuthProvider();
@@ -84,6 +101,13 @@ export async function signInWithEmail(email: string, password: string): Promise<
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
+    // Verificar se o usuário está banido
+    const bannedCheck = await isUserBanned(user.uid);
+    if (bannedCheck.banned) {
+      await firebaseSignOut(auth);
+      throw new Error(`Sua conta foi banida. Motivo: ${bannedCheck.reason}`);
+    }
+
     // Buscar perfil no Firestore
     const userDoc = await getDoc(doc(db, 'users', user.uid));
     
@@ -124,6 +148,13 @@ export async function signInWithGoogle(): Promise<{ user: UserProfile; needsNick
   try {
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
+
+    // Verificar se o usuário está banido
+    const bannedCheck = await isUserBanned(user.uid);
+    if (bannedCheck.banned) {
+      await firebaseSignOut(auth);
+      throw new Error(`Sua conta foi banida. Motivo: ${bannedCheck.reason}`);
+    }
 
     // Limpar sessão de convidado se existir
     clearGuestSession();
@@ -351,6 +382,82 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 }
 
 /**
+ * Verificar se um usuário está banido
+ */
+export async function isUserBanned(uid: string): Promise<{ banned: boolean; reason?: string }> {
+  try {
+    const bannedDoc = await getDoc(doc(db, 'banned_users', uid));
+    if (bannedDoc.exists()) {
+      const data = bannedDoc.data() as BannedUser;
+      return { banned: true, reason: data.reason };
+    }
+    return { banned: false };
+  } catch (error) {
+    console.error('Error checking if user is banned:', error);
+    return { banned: false };
+  }
+}
+
+/**
+ * Verificar se um IP está banido
+ */
+export async function isIPBanned(ip: string): Promise<{ banned: boolean; reason?: string }> {
+  try {
+    const bannedDoc = await getDoc(doc(db, 'banned_ips', ip.replace(/\./g, '_')));
+    if (bannedDoc.exists()) {
+      const data = bannedDoc.data() as BannedIP;
+      return { banned: true, reason: data.reason };
+    }
+    return { banned: false };
+  } catch (error) {
+    console.error('Error checking if IP is banned:', error);
+    return { banned: false };
+  }
+}
+
+/**
+ * Obter IP do cliente (melhor esforço)
+ * Nota: Em produção, isso deve ser feito pelo servidor
+ */
+async function getClientIP(): Promise<string | null> {
+  try {
+    // Tentar obter IP através de um serviço externo
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    return data.ip || null;
+  } catch (error) {
+    console.error('Error getting client IP:', error);
+    return null;
+  }
+}
+
+/**
+ * Verificar se o usuário atual está banido (por UID ou IP)
+ */
+export async function checkCurrentUserBanned(): Promise<{ banned: boolean; reason?: string }> {
+  const user = auth.currentUser;
+  
+  // Verificar banimento por UID
+  if (user) {
+    const userBanned = await isUserBanned(user.uid);
+    if (userBanned.banned) {
+      return userBanned;
+    }
+  }
+  
+  // Verificar banimento por IP
+  const ip = await getClientIP();
+  if (ip) {
+    const ipBanned = await isIPBanned(ip);
+    if (ipBanned.banned) {
+      return ipBanned;
+    }
+  }
+  
+  return { banned: false };
+}
+
+/**
  * Mensagens de erro traduzidas
  */
 function getAuthErrorMessage(errorCode?: string): string {
@@ -380,7 +487,8 @@ function getAuthErrorMessage(errorCode?: string): string {
     case 'permission-denied':
     case 'auth/permission-denied':
       return 'Permissão negada. Verifique as configurações do Firebase.';
-    default:
+    case 'user-banned':
+      return 'Sua conta foi banida.';
       return 'Erro de autenticação. Tente novamente.';
   }
 }

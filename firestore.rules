@@ -21,6 +21,18 @@ service cloud.firestore {
                     && request.auth.uid == userId;
     }
     
+    // Usuários banidos - apenas leitura pública, escrita apenas por admin
+    match /banned_users/{userId} {
+      allow read: if true;
+      allow write: if false; // Apenas via Firebase Admin SDK
+    }
+    
+    // IPs banidos - apenas leitura pública, escrita apenas por admin
+    match /banned_ips/{ipId} {
+      allow read: if true;
+      allow write: if false; // Apenas via Firebase Admin SDK
+    }
+    
     // Playlists da comunidade
     match /community_playlists/{playlistId} {
       // Permitir leitura para todos
