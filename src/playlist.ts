@@ -357,7 +357,8 @@ export class PlaylistMode {
     // Resetar contador de toques
     this.game.resetBallTouches();
     
-    this.game.start();
+    // Iniciar com countdown de 1 segundo
+    this.game.startWithCountdown(1.0);
     
     // Notificar que cenário iniciou
     this.onScenarioStart(index);

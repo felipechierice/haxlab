@@ -1,4 +1,4 @@
-import { GameState, GameMap, Circle, Segment, Goal, Vector2D, BallConfig, Player } from './types.js';
+import { GameState, GameMap, Circle, Segment, Goal, Vector2D, BallConfig, Player, GameConfig } from './types.js';
 import { ExtrapolatedPositions } from './extrapolation.js';
 
 /** Dados de interpolação para renderização suave entre frames de física */
@@ -427,5 +427,66 @@ export class Renderer {
   
   setControlIndicatorOpacity(opacity: number): void {
     this.controlIndicatorOpacity = Math.max(0, Math.min(1, opacity));
+  }
+  
+  /**
+   * Método wrapper que desenha o estado do jogo e overlay de countdown
+   */
+  render(
+    state: GameState, 
+    map: GameMap, 
+    config: GameConfig, 
+    interpolationData?: InterpolationData, 
+    extrapolatedPositions?: ExtrapolatedPositions,
+    countdown?: { active: boolean; progress: number },
+    controlledPlayerId?: string
+  ): void {
+    // Desenha o estado do jogo normalmente
+    this.drawState(
+      state,
+      map,
+      controlledPlayerId,
+      state.time,
+      config.ballConfig,
+      extrapolatedPositions,
+      interpolationData
+    );
+    
+    // Desenha barra de countdown se ativa
+    if (countdown?.active) {
+      this.drawCountdownBar(countdown.progress);
+    }
+  }
+  
+  /**
+   * Desenha barra de countdown que encolhe das extremidades para o centro
+   */
+  private drawCountdownBar(progress: number): void {
+    const ctx = this.ctx;
+    const barHeight = 6;
+    const centerY = this.halfHeight;
+    
+    // Progresso de 0 a 1: 0 = barra cheia, 1 = barra desaparecida
+    // Largura restante da barra (100% a 0%)
+    const remainingWidth = this.width * (1 - progress);
+    
+    // A barra encolhe das duas extremidades para o centro
+    const leftX = this.halfWidth - remainingWidth / 2;
+    const rightX = this.halfWidth + remainingWidth / 2;
+    
+    if (remainingWidth > 0) {
+      ctx.save();
+      
+      // Barra semi-transparente branca
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.fillRect(leftX, centerY - barHeight / 2, remainingWidth, barHeight);
+      
+      // Adiciona um brilho sutil
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.2)';
+      ctx.shadowBlur = 10;
+      ctx.fillRect(leftX, centerY - barHeight / 2, remainingWidth, barHeight);
+      
+      ctx.restore();
+    }
   }
 }

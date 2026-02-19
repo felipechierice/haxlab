@@ -68,6 +68,11 @@ export class Game {
   private prevBallPos: Vector2D = { x: 0, y: 0 };
   private prevPlayerPos: Map<string, Vector2D> = new Map();
   private ballCollided: boolean = false; // Flag para indicar colisão da bola (parede ou player)
+  
+  // Sistema de countdown antes de iniciar o cenário
+  private countdownActive: boolean = false;
+  private countdownDuration: number = 2.0; // duração em segundos
+  private countdownElapsed: number = 0;
 
   constructor(canvas: HTMLCanvasElement, map: GameMap, config: GameConfig) {
     this.renderer = new Renderer(canvas);
@@ -1117,6 +1122,32 @@ export class Game {
     
     this.animationId = requestAnimationFrame(this.gameLoop);
   }
+  
+  /**
+   * Inicia o jogo com um countdown visual antes de descongelar
+   */
+  startWithCountdown(duration: number = 1.0): void {
+    // Configura countdown
+    this.countdownActive = true;
+    this.countdownDuration = duration;
+    this.countdownElapsed = 0;
+    
+    // Inicia o loop mas mantém o jogo "congelado" durante o countdown
+    this.state.running = false; // física congelada
+    this.isPaused = false;
+    this.lastTime = 0;
+    this.simulationTime = 0;
+    this.timeAccumulator = 0;
+    
+    // Sincroniza posições
+    this.syncPrevPositions();
+    extrapolation.invalidatePrevPositions();
+    
+    // Pré-inicializa AudioContext
+    audioManager.warmUp();
+    
+    this.animationId = requestAnimationFrame(this.gameLoop);
+  }
 
   stop(): void {
     this.state.running = false;
@@ -1131,6 +1162,24 @@ export class Game {
   
   setControlIndicatorOpacity(opacity: number): void {
     this.renderer.setControlIndicatorOpacity(opacity);
+  }
+  
+  /**
+   * Método auxiliar para renderizar com informações de countdown
+   */
+  private render(interpolationData: any, extrapolatedPositions: any, showCountdown: boolean): void {
+    this.renderer.render(
+      this.state, 
+      this.map, 
+      this.config, 
+      interpolationData, 
+      extrapolatedPositions,
+      showCountdown ? {
+        active: true,
+        progress: Math.min(1, this.countdownElapsed / this.countdownDuration)
+      } : undefined,
+      this.controlledPlayerId
+    );
   }
   
   pause(): void {
@@ -1182,6 +1231,29 @@ export class Game {
     // Clamp frameTime para evitar saltos extremos (tab inativa, lag spike)
     if (frameTime > 0.1) frameTime = 0.1;
     if (frameTime <= 0) frameTime = this.FIXED_DT;
+    
+    // Processar countdown se ativo
+    if (this.countdownActive) {
+      this.countdownElapsed += frameTime;
+      
+      if (this.countdownElapsed >= this.countdownDuration) {
+        // Countdown terminou - descongela o jogo
+        this.countdownActive = false;
+        this.state.running = true;
+      }
+      
+      // Durante countdown, apenas renderiza (não processa física)
+      // Renderizar com countdown
+      this.render({
+        alpha: 0,
+        prevBallPos: this.prevBallPos,
+        prevPlayerPos: this.prevPlayerPos,
+        ballCollided: false
+      }, undefined, true); // true = mostrar countdown
+      
+      this.animationId = requestAnimationFrame(this.gameLoop);
+      return;
+    }
 
     // Acumular tempo para fixed timestep
     this.timeAccumulator += frameTime;
@@ -1254,15 +1326,12 @@ export class Game {
     // Respeita a configuração de interpolation (padrão: true)
     const interpolationEnabled = this.config.interpolation !== false;
     
-    this.renderer.drawState(
-      this.state, 
-      this.map, 
-      this.controlledPlayerId, 
-      this.state.time, 
-      this.config.ballConfig,
-      extrapolatedPositions,
+    // Usar método render que suporta countdown (sem countdown neste caso)
+    this.render(
       // Só usa interpolação se estiver habilitada E se não estiver usando extrapolação
-      (interpolationEnabled && !extrapolatedPositions) ? interpolationData : undefined
+      (interpolationEnabled && !extrapolatedPositions) ? interpolationData : undefined,
+      extrapolatedPositions,
+      false // sem countdown
     );
     
     // FPS tracking e display

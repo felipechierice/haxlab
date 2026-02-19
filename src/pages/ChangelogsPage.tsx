@@ -22,6 +22,20 @@ interface ChangelogEntry {
 
 const changelogs: ChangelogEntry[] = [
   {
+    version: '0.1.4-alpha',
+    date: '2026-02-19',
+    changes: [
+      {
+        type: 'feature',
+        text: {
+          en: 'Added visual countdown before starting training scenarios (1 second)',
+          pt: 'Adicionada contagem regressiva visual antes de iniciar cenários de treino (1 segundo)',
+          es: 'Agregada cuenta regresiva visual antes de iniciar escenarios de entrenamiento (1 segundo)'
+        }
+      }
+    ]
+  },
+  {
     version: '0.1.3-alpha',
     date: '2026-02-19',
     changes: [
