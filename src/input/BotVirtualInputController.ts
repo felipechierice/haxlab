@@ -187,6 +187,19 @@ export class BotVirtualInputController implements InputController {
         break;
     }
     
+    // Verifica kickOnContact - chuta se a bola encostar
+    if (config.kickOnContact && this.gameState) {
+      const ball = this.gameState.ball;
+      const distToBall = Physics.vectorLength(
+        Physics.vectorSub(ball.circle.pos, this.bot.circle.pos)
+      );
+      const touchDistance = this.bot.circle.radius + ball.circle.radius + 5;
+      
+      if (distToBall <= touchDistance) {
+        this.kickPressed = true;
+      }
+    }
+    
     // Avança para próximo comando se tempo expirou (move e wait usam duração)
     if (this.patrolState.elapsedMs >= command.durationMs) {
       this.advanceToNextCommand(config);

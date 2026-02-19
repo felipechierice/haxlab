@@ -325,19 +325,13 @@ export class Game {
       return;
     }
     
-    // Modo clássico: tenta kick imediato
+    // Modo clássico: ativa indicador e tenta kick imediato
     player.isChargingKick = true;
     player.kickCharge = 1;
     player.hasKickedThisPress = false;
     
-    // Tenta chutar imediatamente
+    // Tenta chutar imediatamente (reduz delay de até 16ms do fixed timestep)
     this.tryKick(player);
-    
-    // Se não conseguiu chutar (estava longe da bola), marca para tentar no próximo frame
-    // Isso elimina o delay de até 16ms do fixed timestep
-    if (!player.hasKickedThisPress) {
-      player.input.kick = true;
-    }
     
     // Notificar callback customizado
     if (this.customKickCallback) {
@@ -366,7 +360,6 @@ export class Game {
     player.isChargingKick = false;
     player.kickCharge = 0;
     player.hasKickedThisPress = false;
-    player.input.kick = false; // Cancela qualquer kick pendente ao soltar a tecla
   }
 
   private switchPlayer(): void {
@@ -410,8 +403,8 @@ export class Game {
       input.down = binds.down.some(key => this.keyState[key]);
       input.left = binds.left.some(key => this.keyState[key]);
       input.right = binds.right.some(key => this.keyState[key]);
-      // Não sobrescreve kick se já houver um pendente (setado pelo handleKickInput)
-      // Isso permite que o chute seja processado no próximo frame se falhou no keydown
+      // Kick para jogador humano é controlado por isChargingKick (via keydown/keyup handlers)
+      // input.kick é usado apenas para bots
       
       // Copia valores para o player
       player.input.up = input.up;
@@ -477,12 +470,19 @@ export class Game {
       player.circle.vel.y = normalized.y * maxSpeed;
     }
 
+    // Processamento de chute para bots (usam input.kick)
     if (player.input.kick) {
       this.tryKick(player, player.kickCharge);
       player.input.kick = false;
       player.kickCharge = 0;
       player.isChargingKick = false;
-      player.hasKickedThisPress = false; // Resetar para permitir próximo chute
+      player.hasKickedThisPress = false;
+    }
+    
+    // Modo clássico para jogador humano: tenta chutar a cada frame enquanto tecla pressionada
+    // Isso permite "segurar" o chute e chutar quando a bola encostar
+    if (!player.isBot && player.isChargingKick && !player.hasKickedThisPress && this.config.kickMode === 'classic') {
+      this.tryKick(player);
     }
 
     Physics.updateCircle(player.circle, dt);
@@ -631,13 +631,58 @@ export class Game {
       const dist = Math.sqrt(distSq);
       if (dist > 0) {
         const invDist = 1 / dist;
+        // Direção normalizada do jogador para a bola
+        const nx = dx * invDist;
+        const ny = dy * invDist;
+        
         // Aplica a força baseada no carregamento (mínimo 20% se carregável, 100% se clássico)
         const kickStrength = this.config.kickMode === 'chargeable' 
           ? this.config.kickStrength * Math.max(0.2, chargeAmount)
           : this.config.kickStrength;
         
-        ball.vel.x += dx * invDist * kickStrength;
-        ball.vel.y += dy * invDist * kickStrength;
+        // ========== IMPORTANTE: Calcular impulso de recuo ANTES de alterar velocidade da bola ==========
+        // Isso garante que o jogador seja empurrado pela força do impacto da bola
+        const ballVelBeforeKick = { x: ball.vel.x, y: ball.vel.y };
+        const relVelX = ball.vel.x - player.circle.vel.x;
+        const relVelY = ball.vel.y - player.circle.vel.y;
+        const velAlongNormal = relVelX * nx + relVelY * ny;
+        
+        // Se a bola está vindo em direção ao jogador (velAlongNormal < 0), aplicar recuo
+        if (velAlongNormal < 0) {
+          const restitution = this.config.ballConfig.playerRestitution ?? 0.35;
+          const impulse = -(1 + restitution) * velAlongNormal;
+          const impulseMagnitude = impulse / (player.circle.invMass + ball.invMass);
+          
+          // Aplica impulso de recuo no jogador (bola empurra o jogador)
+          player.circle.vel.x -= nx * impulseMagnitude * player.circle.invMass;
+          player.circle.vel.y -= ny * impulseMagnitude * player.circle.invMass;
+          
+          // Log para debug
+          if (player.isBot) {
+            console.log(`[KICK DEBUG] Impulso de recuo aplicado em "${player.name}":`, {
+              velAlongNormal: velAlongNormal.toFixed(1),
+              impulseMagnitude: impulseMagnitude.toFixed(1),
+              playerVelAfter: { 
+                x: player.circle.vel.x.toFixed(1), 
+                y: player.circle.vel.y.toFixed(1) 
+              }
+            });
+          }
+        }
+        
+        // ========== Agora aplica o chute na bola ==========
+        // IMPORTANTE: ADICIONA velocidade na direção do chute (não substitui!)
+        // Isso preserva a física original onde chutar uma bola que já está em movimento
+        // na mesma direção resulta em mais velocidade
+        ball.vel.x += nx * kickStrength;
+        ball.vel.y += ny * kickStrength;
+        
+        // Velocidade da bola DEPOIS do chute (para debug)
+        const ballSpeedBefore = Math.sqrt(ballVelBeforeKick.x * ballVelBeforeKick.x + ballVelBeforeKick.y * ballVelBeforeKick.y);
+        const ballSpeedAfter = Math.sqrt(ball.vel.x * ball.vel.x + ball.vel.y * ball.vel.y);
+        
+        // Marca que acabou de chutar neste frame (para evitar dupla colisão)
+        player.justKickedBall = true;
         
         // Marca que já chutou neste pressionamento
         player.hasKickedThisPress = true;
@@ -666,7 +711,7 @@ export class Game {
     }
   }
 
-  // Aplica chute na bola
+  // Aplica chute na bola (versão local para feedback visual)
   private tryKickLocal(player: Player, chargeAmount: number = 1): void {
     const ball = this.state.ball.circle;
     const dx = ball.pos.x - player.circle.pos.x;
@@ -681,14 +726,19 @@ export class Game {
       const dist = Math.sqrt(distSq);
       if (dist > 0) {
         const invDist = 1 / dist;
+        // Direção normalizada do jogador para a bola
+        const nx = dx * invDist;
+        const ny = dy * invDist;
+        
         // Aplica força do chute
         // Usamos força parcial para dar feedback visual sem exagerar
         const kickStrength = this.config.kickMode === 'chargeable' 
           ? this.config.kickStrength * Math.max(0.2, chargeAmount) * 0.7
           : this.config.kickStrength * 0.7;
         
-        ball.vel.x += dx * invDist * kickStrength;
-        ball.vel.y += dy * invDist * kickStrength;
+        // IMPORTANTE: ADICIONA velocidade na direção do chute (não substitui!)
+        ball.vel.x += nx * kickStrength;
+        ball.vel.y += ny * kickStrength;
       }
     }
   }
@@ -814,42 +864,87 @@ export class Game {
         // Marca que houve colisão da bola com player (para interpolação)
         this.ballCollided = true;
         
-        // Calcular velocidade relativa do impacto ANTES de resolver a colisão
         const ball = this.state.ball.circle;
         const dx = ball.pos.x - player.circle.pos.x;
         const dy = ball.pos.y - player.circle.pos.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+        const distSq = dx * dx + dy * dy;
+        const dist = Math.sqrt(distSq);
+        
         if (dist > 0) {
           const nx = dx / dist;
           const ny = dy / dist;
-          const relVelX = ball.vel.x - player.circle.vel.x;
-          const relVelY = ball.vel.y - player.circle.vel.y;
-          const impactSpeed = Math.abs(relVelX * nx + relVelY * ny);
           
-          // Som de impacto (threshold para ignorar arrasto/condução)
-          const now = this.simulationTime;
-          if (impactSpeed > 60 && now - this.lastBallHitTime > 0.1) {
-            // Intensidade: 0.3 em impact=60, 1.0 em impact=200+
-            const intensity = Math.min(1.5, 0.3 + (impactSpeed - 60) / 200);
-            audioManager.play('ballHit', intensity);
-            this.lastBallHitTime = now;
-          }
-        }
-        
-        Physics.resolveCircleCollision(player.circle, this.state.ball.circle, this.config.ballConfig.playerRestitution ?? 0.35);
-        
-        // Se o player está segurando a tecla de chute, executa o chute automaticamente
-        if (player.isChargingKick && player.id === this.controlledPlayerId) {
-          const chargeAmount = this.config.kickMode === 'chargeable' ? player.kickCharge : 1;
-          this.tryKick(player, chargeAmount);
-          
-          // Desativa o indicador e o estado de carregamento
-          player.isChargingKick = false;
-          player.kickCharge = 0;
-          
-          // Notificar callback customizado
-          if (this.customKickCallback) {
-            this.customKickCallback();
+          // Se o jogador acabou de chutar a bola neste frame:
+          // O impulso de recuo já foi aplicado no tryKick, então aqui só precisamos:
+          // - Separar os círculos
+          // - Tocar som de impacto
+          // - NÃO alterar velocidades (já foram definidas)
+          if (player.justKickedBall) {
+            // Separar os círculos (move a bola para fora do jogador)
+            const minDist = player.circle.radius + ball.radius;
+            if (dist < minDist) {
+              const overlap = minDist - dist;
+              // Move a bola para fora (mantém jogador parado para não interferir no recuo já aplicado)
+              ball.pos.x += nx * overlap;
+              ball.pos.y += ny * overlap;
+            }
+            
+            // Som de impacto - usar velocidade antes do chute que foi salva
+            // A flag justKickedBall indica que houve impacto significativo
+            const now = this.simulationTime;
+            if (now - this.lastBallHitTime > 0.1) {
+              audioManager.play('ballHit', 0.8);
+              this.lastBallHitTime = now;
+            }
+            
+            console.log(`[COLLISION DEBUG] Post-kick separation for "${player.name}"`);
+            
+            // Limpa a flag
+            player.justKickedBall = false;
+          } else {
+            // Colisão normal - aplica física completa
+            
+            // Calcular velocidade relativa do impacto ANTES de resolver a colisão
+            const relVelX = ball.vel.x - player.circle.vel.x;
+            const relVelY = ball.vel.y - player.circle.vel.y;
+            const impactSpeed = Math.abs(relVelX * nx + relVelY * ny);
+            
+            // Som de impacto (threshold para ignorar arrasto/condução)
+            const now = this.simulationTime;
+            if (impactSpeed > 60 && now - this.lastBallHitTime > 0.1) {
+              // Intensidade: 0.3 em impact=60, 1.0 em impact=200+
+              const intensity = Math.min(1.5, 0.3 + (impactSpeed - 60) / 200);
+              audioManager.play('ballHit', intensity);
+              this.lastBallHitTime = now;
+            }
+            
+            const ballSpeedBefore = Math.sqrt(ball.vel.x * ball.vel.x + ball.vel.y * ball.vel.y);
+            
+            Physics.resolveCircleCollision(player.circle, ball, this.config.ballConfig.playerRestitution ?? 0.35);
+            
+            const ballSpeedAfter = Math.sqrt(ball.vel.x * ball.vel.x + ball.vel.y * ball.vel.y);
+            if (player.isBot && Math.abs(ballSpeedAfter - ballSpeedBefore) > 50) {
+              console.log(`[COLLISION DEBUG] Normal collision "${player.name}":`, {
+                ballSpeedBefore: ballSpeedBefore.toFixed(1),
+                ballSpeedAfter: ballSpeedAfter.toFixed(1),
+                change: (ballSpeedAfter - ballSpeedBefore).toFixed(1)
+              });
+            }
+            
+            // Se o player está segurando a tecla de chute, executa o chute automaticamente
+            if (player.isChargingKick && player.id === this.controlledPlayerId) {
+              const chargeAmount = this.config.kickMode === 'chargeable' ? player.kickCharge : 1;
+              this.tryKick(player, chargeAmount);
+              
+              // Desativa o indicador e o estado de carregamento
+              player.isChargingKick = false;
+              player.kickCharge = 0;
+              
+              // Notificar callback customizado
+              if (this.customKickCallback) {
+                this.customKickCallback();
+              }
+            }
           }
         }
         
@@ -1013,6 +1108,10 @@ export class Game {
     this.simulationTime = 0;
     this.timeAccumulator = 0;
     
+    // Sincroniza posições para evitar saltos na interpolação/extrapolação no primeiro frame
+    this.syncPrevPositions();
+    extrapolation.invalidatePrevPositions();
+    
     // Pré-inicializa AudioContext para evitar stutter no primeiro som
     audioManager.warmUp();
     
@@ -1049,6 +1148,9 @@ export class Game {
     this.state.running = true;
     this.lastTime = 0;
     this.timeAccumulator = 0;
+    
+    // Invalida posições de extrapolação para evitar saltos após pausa
+    extrapolation.invalidatePrevPositions();
     
     this.animationId = requestAnimationFrame(this.gameLoop);
   }
@@ -1254,6 +1356,8 @@ export class Game {
    */
   syncInterpolation(): void {
     this.syncPrevPositions();
+    // Invalida posições extrapoladas anteriores (evita saltos na extrapolação)
+    extrapolation.invalidatePrevPositions();
   }
   
   setCustomRenderCallback(callback: ((ctx: CanvasRenderingContext2D) => void) | null): void {

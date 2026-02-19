@@ -40,6 +40,7 @@ const OFFICIAL_PLAYLISTS = [
   'Finalizações - Fácil',
   'Desafio 1',
   'Desafio 2',
+  'Desafio 3',
 //   'Treino de Goleiro'
 ];
 

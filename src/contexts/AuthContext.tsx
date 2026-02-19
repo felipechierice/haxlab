@@ -4,9 +4,9 @@ import {
   UserProfile, 
   onAuthChanged, 
   getUserProfile, 
-  getGuestSession,
-  createAutoGuestSession
+  getGuestSession
 } from '../auth';
+import { saveNickname } from '../player';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -35,7 +35,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
     // Observar mudanças de autenticação do Firebase
@@ -46,24 +45,39 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Usuário autenticado - buscar perfil
         const profile = await getUserProfile(user.uid);
         setUserProfile(profile);
-      } else {
-        // Não autenticado - verificar se há sessão guest
-        let guestProfile = getGuestSession();
         
-        // Se não há sessão guest e é o primeiro carregamento, criar automaticamente
-        if (!guestProfile && isInitialLoad) {
-          guestProfile = createAutoGuestSession();
+        // Sincronizar com sistema legado (player.ts)
+        if (profile?.nickname) {
+          saveNickname(profile.nickname);
         }
+      } else {
+        // Não autenticado - verificar se há sessão guest existente
+        // Não criar automaticamente - usuário deve escolher nickname manualmente
+        const guestProfile = getGuestSession();
         
         setUserProfile(guestProfile);
+        
+        // Sincronizar com sistema legado (player.ts) se tiver perfil
+        if (guestProfile?.nickname) {
+          saveNickname(guestProfile.nickname);
+        }
       }
 
       setLoading(false);
-      setIsInitialLoad(false);
     });
 
     return unsubscribe;
-  }, [isInitialLoad]);
+  }, []);
+
+  // Wrapper para setUserProfile que também sincroniza com o sistema legado
+  const handleSetUserProfile = (profile: UserProfile | null) => {
+    setUserProfile(profile);
+    
+    // Sincronizar com sistema legado (player.ts)
+    if (profile?.nickname) {
+      saveNickname(profile.nickname);
+    }
+  };
 
   const value: AuthContextType = {
     currentUser,
@@ -71,7 +85,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loading,
     isAuthenticated: currentUser !== null,
     isGuest: userProfile?.isGuest ?? false,
-    setUserProfile
+    setUserProfile: handleSetUserProfile
   };
 
   return (

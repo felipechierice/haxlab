@@ -5,6 +5,7 @@ import { Playlist } from '../types';
 import { RankingEntry } from '../firebase';
 import PlaylistResultModal from '../components/PlaylistResultModal';
 import ExitConfirmModal from '../components/ExitConfirmModal';
+import AuthModal from '../components/AuthModal';
 import { trackPageView, trackFreePlayEnd } from '../analytics';
 import { useAuth } from '../contexts/AuthContext';
 import { CommunityPlaylist, likePlaylist, getUserPlaylistLike, getCommunityPlaylist } from '../community-playlists';
@@ -54,7 +55,7 @@ function GamePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useI18n();
-  const { userProfile } = useAuth();
+  const { userProfile, loading } = useAuth();
   const state = location.state as LocationState;
 
   useEffect(() => {
@@ -66,10 +67,18 @@ function GamePage() {
   const [playlistResult, setPlaylistResult] = useState<PlaylistResult | null>(null);
   const [gameOver, setGameOver] = useState<GameOverInfo | null>(null);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [communityPlaylist, setCommunityPlaylist] = useState<CommunityPlaylist | null>(null);
   const [userLike, setUserLike] = useState<'like' | 'dislike' | undefined>(undefined);
   const [hadPreviousLike, setHadPreviousLike] = useState(false); // Rastreia se já tinha like/dislike no Firebase
   const [likeLoaded, setLikeLoaded] = useState(false); // Rastreia se o like já foi carregado do Firebase
+
+  // Verificar se usuário tem nickname - se não, mostrar modal de autenticação
+  useEffect(() => {
+    if (!loading && (!userProfile || !userProfile.nickname || userProfile.nickname.trim().length === 0)) {
+      setShowAuthModal(true);
+    }
+  }, [loading, userProfile]);
 
   // Carregar dados da playlist da comunidade se necessário
   useEffect(() => {
@@ -419,6 +428,14 @@ function GamePage() {
           onDislike={handleDislike}
           onRetry={handleRetryPlaylist}
           onClose={handleCloseResult}
+        />
+      )}
+
+      {/* Modal de autenticação */}
+      {showAuthModal && (
+        <AuthModal 
+          onClose={() => setShowAuthModal(false)} 
+          allowGuest={true}
         />
       )}
     </div>

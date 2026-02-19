@@ -23,6 +23,12 @@ import '../styles/PlaylistsPage.css';
 const AVAILABLE_PLAYLISTS: PlaylistInfo[] = [
   // Playlists serão adicionadas aqui
   {
+    file: 'desafio-3.json',
+    name: 'Desafio 3',
+    description: '8 cenários desafiadores: finalizações de tabela, passes mágicos, corredores de posse de bola contra múltiplos adversários e dribles em M — teste seus reflexos, precisão e controle de bola!',
+    icon: 'fa-fire'
+  },
+  {
     file: 'desafio-2.json',
     name: 'Desafio 2',
     description: '6 cenários de situações de 2x1, escanteios e condução de bola — teste seus reflexos e tome decisões rápidas!',
@@ -370,7 +376,7 @@ function PlaylistsPage() {
       {showAuthModal && (
         <AuthModal 
           onClose={() => setShowAuthModal(false)} 
-          allowGuest={false}
+          allowGuest={true}
         />
       )}
       

@@ -1,0 +1,1197 @@
+{
+  "name": "Desafio 3",
+  "description": "8 cenários desafiadores: finalizações de tabela, passes mágicos, corredores de posse de bola contra múltiplos adversários e dribles em M — teste seus reflexos, precisão e controle de bola!",
+  "scenarios": [
+    {
+      "name": "Finalização da Tabela - Lateral Esquerda",
+      "map": "default",
+      "timeLimit": 5,
+      "objectives": [
+        {
+          "type": "goal",
+          "team": "red"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-1771446772811",
+            "bot-1771446825734",
+            "bot-1771446878602"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771446764208",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 823,
+            "y": 94
+          },
+          "behavior": {
+            "preset": "none",
+            "config": {
+              "kickOnContact": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771446772811",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 852,
+            "y": 191
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771446825734",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 919,
+            "y": 383
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771446878602",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 920,
+            "y": 454
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771447008164",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 76,
+            "y": 306
+          },
+          "behavior": {
+            "preset": "none",
+            "config": {
+              "kickOnContact": false
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 844,
+        "y": 107
+      },
+      "playerSpawn": {
+        "x": 734,
+        "y": 300
+      },
+      "initialPlayerVelocity": {
+        "x": 120,
+        "y": 0
+      }
+    },
+    {
+      "name": "Finalização da Tabela - Lateral Direita",
+      "map": "default",
+      "timeLimit": 5,
+      "objectives": [
+        {
+          "type": "goal",
+          "team": "red"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-2771446772811",
+            "bot-2771446825734",
+            "bot-2771446878602"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-2771446764208",
+          "name": "Bot",
+          "team": "red",
+          "spawn": {
+            "x": 823,
+            "y": 506
+          },
+          "behavior": {
+            "preset": "none",
+            "config": {
+              "kickOnContact": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771446772811",
+          "name": "PV Alucinado",
+          "team": "blue",
+          "spawn": {
+            "x": 852,
+            "y": 409
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771446825734",
+          "name": "GK Lagado",
+          "team": "blue",
+          "spawn": {
+            "x": 919,
+            "y": 217
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771446878602",
+          "name": "Volante Perdido",
+          "team": "blue",
+          "spawn": {
+            "x": 920,
+            "y": 146
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771447008164",
+          "name": "GK Carregado",
+          "team": "red",
+          "spawn": {
+            "x": 76,
+            "y": 294
+          },
+          "behavior": {
+            "preset": "none",
+            "config": {
+              "kickOnContact": false
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 844,
+        "y": 493
+      },
+      "playerSpawn": {
+        "x": 734,
+        "y": 300
+      },
+      "initialPlayerVelocity": {
+        "x": 120,
+        "y": 0
+      }
+    },
+    {
+      "name": "Passe Mágico - Lateral Direita",
+      "map": "default",
+      "timeLimit": 5,
+      "objectives": [
+        {
+          "type": "goal",
+          "team": "red",
+          "scoredBy": "bot",
+          "scoredByBotId": "bot-1771447395375"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "kick_count",
+          "exact": 1
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-1771447345321",
+            "bot-1771447799809"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771447345321",
+          "name": "GK AFK",
+          "team": "blue",
+          "spawn": {
+            "x": 923,
+            "y": 303
+          },
+          "behavior": {
+            "preset": "none",
+            "config": {
+              "kickOnContact": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771447395375",
+          "name": "Bagre Aliado",
+          "team": "red",
+          "spawn": {
+            "x": 675,
+            "y": 255
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 300
+                },
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 100
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 300
+                },
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 100
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 100
+                },
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 100
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 300
+                },
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 100
+                }
+              ],
+              "loop": true,
+              "kickOnContact": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771447799809",
+          "name": "Zagueiro Perdido",
+          "team": "blue",
+          "spawn": {
+            "x": 652,
+            "y": 92
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 607,
+        "y": 415
+      },
+      "playerSpawn": {
+        "x": 608,
+        "y": 445
+      },
+      "initialBallVelocity": {
+        "x": 176,
+        "y": 3
+      },
+      "initialPlayerVelocity": {
+        "x": 173,
+        "y": 0
+      }
+    },
+    {
+      "name": "Passe Mágico - Lateral Direita (Espelhado)",
+      "map": "default",
+      "timeLimit": 5,
+      "objectives": [
+        {
+          "type": "goal",
+          "team": "red",
+          "scoredBy": "bot",
+          "scoredByBotId": "bot-2771447395375"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "kick_count",
+          "exact": 1
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-2771447345321",
+            "bot-2771447799809"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-2771447345321",
+          "name": "GK AFK",
+          "team": "blue",
+          "spawn": {
+            "x": 923,
+            "y": 297
+          },
+          "behavior": {
+            "preset": "none",
+            "config": {
+              "kickOnContact": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771447395375",
+          "name": "Bagre Aliado",
+          "team": "red",
+          "spawn": {
+            "x": 675,
+            "y": 345
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 300
+                },
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 100
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 300
+                },
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 100
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 100
+                },
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 100
+                },
+                {
+                  "action": "move",
+                  "direction": "RIGHT",
+                  "durationMs": 300
+                },
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 100
+                }
+              ],
+              "loop": true,
+              "kickOnContact": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771447799809",
+          "name": "Zagueiro Perdido",
+          "team": "blue",
+          "spawn": {
+            "x": 652,
+            "y": 508
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 607,
+        "y": 185
+      },
+      "playerSpawn": {
+        "x": 608,
+        "y": 155
+      },
+      "initialBallVelocity": {
+        "x": 176,
+        "y": -3
+      },
+      "initialPlayerVelocity": {
+        "x": 173,
+        "y": 0
+      }
+    },
+    {
+      "name": "Corredor",
+      "map": "default",
+      "timeLimit": 5,
+      "objectives": [
+        {
+          "type": "path",
+          "points": [
+            {
+              "x": 500,
+              "y": 300
+            },
+            {
+              "x": 950,
+              "y": 300
+            }
+          ],
+          "width": 120
+        },
+        {
+          "type": "goal",
+          "team": "red"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-1771448324008",
+            "bot-1771448333951",
+            "bot-1771448336557",
+            "bot-1771448479725",
+            "bot-1771448727667",
+            "bot-1771448744455"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771448324008",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 750,
+            "y": 385
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771448333951",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 668,
+            "y": 215
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771448336557",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 600,
+            "y": 385
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771448479725",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 830,
+            "y": 215
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771448727667",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 498,
+            "y": 550
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771448744455",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 499,
+            "y": 50
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "playerSpawn": {
+        "x": 350,
+        "y": 300
+      }
+    },
+    {
+      "name": "Corredor - Esquerda",
+      "map": "default",
+      "timeLimit": 5,
+      "objectives": [
+        {
+          "type": "path",
+          "points": [
+            {
+              "x": 500,
+              "y": 300
+            },
+            {
+              "x": 50,
+              "y": 300
+            }
+          ],
+          "width": 120
+        },
+        {
+          "type": "goal",
+          "team": "blue"
+        },
+        {
+          "type": "no_goal",
+          "team": "blue"
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-2771448324008",
+            "bot-2771448333951",
+            "bot-2771448336557",
+            "bot-2771448479725",
+            "bot-2771448727667",
+            "bot-2771448744455"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-2771448324008",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 250,
+            "y": 385
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771448333951",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 332,
+            "y": 215
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771448336557",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 400,
+            "y": 385
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771448479725",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 170,
+            "y": 215
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771448727667",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 502,
+            "y": 550
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771448744455",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 501,
+            "y": 50
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "playerSpawn": {
+        "x": 650,
+        "y": 300
+      }
+    },
+    {
+      "name": "M e Gol - Lateral Esquerda",
+      "map": "default",
+      "timeLimit": 8,
+      "objectives": [
+        {
+          "type": "path",
+          "points": [
+            {
+              "x": 600,
+              "y": 200
+            },
+            {
+              "x": 650,
+              "y": 50
+            },
+            {
+              "x": 700,
+              "y": 200
+            },
+            {
+              "x": 750,
+              "y": 50
+            },
+            {
+              "x": 800,
+              "y": 200
+            },
+            {
+              "x": 950,
+              "y": 300
+            }
+          ],
+          "width": 70
+        },
+        {
+          "type": "goal",
+          "team": "red",
+          "scoredBy": "player"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-1771449780695",
+            "bot-1771449879243"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771449780695",
+          "name": "Bot Perdido 1",
+          "team": "blue",
+          "spawn": {
+            "x": 786,
+            "y": 145
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "LEFT",
+                  "durationMs": 3000
+                }
+              ],
+              "loop": false,
+              "kickOnContact": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771449879243",
+          "name": "Bot Perdido 2",
+          "team": "blue",
+          "spawn": {
+            "x": 914,
+            "y": 148
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "LEFT",
+                  "durationMs": 3000
+                }
+              ],
+              "loop": false,
+              "kickOnContact": true
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 601,
+        "y": 201
+      },
+      "playerSpawn": {
+        "x": 550,
+        "y": 228
+      },
+      "initialPlayerVelocity": {
+        "x": 85,
+        "y": 0
+      }
+    },
+    {
+      "name": "M e Gol - Lateral Esquerda (Espelhado)",
+      "map": "default",
+      "timeLimit": 8,
+      "objectives": [
+        {
+          "type": "path",
+          "points": [
+            {
+              "x": 600,
+              "y": 400
+            },
+            {
+              "x": 650,
+              "y": 550
+            },
+            {
+              "x": 700,
+              "y": 400
+            },
+            {
+              "x": 750,
+              "y": 550
+            },
+            {
+              "x": 800,
+              "y": 400
+            },
+            {
+              "x": 950,
+              "y": 300
+            }
+          ],
+          "width": 70
+        },
+        {
+          "type": "goal",
+          "team": "red",
+          "scoredBy": "player"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-2771449780695",
+            "bot-2771449879243"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-2771449780695",
+          "name": "Bot Perdido 1",
+          "team": "blue",
+          "spawn": {
+            "x": 786,
+            "y": 455
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "LEFT",
+                  "durationMs": 3000
+                }
+              ],
+              "loop": false,
+              "kickOnContact": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-2771449879243",
+          "name": "Bot Perdido 2",
+          "team": "blue",
+          "spawn": {
+            "x": 914,
+            "y": 452
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "LEFT",
+                  "durationMs": 3000
+                }
+              ],
+              "loop": false,
+              "kickOnContact": true
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 601,
+        "y": 399
+      },
+      "playerSpawn": {
+        "x": 550,
+        "y": 372
+      },
+      "initialPlayerVelocity": {
+        "x": 85,
+        "y": 0
+      }
+    }
+  ],
+  "gameConfig": {
+    "kickStrength": 500,
+    "kickMode": "classic",
+    "playerRadius": 15,
+    "playerSpeed": 150,
+    "playerAcceleration": 7.5,
+    "kickSpeedMultiplier": 1,
+    "ballConfig": {
+      "radius": 8,
+      "mass": 5,
+      "damping": 0.99,
+      "bounce": 0.45,
+      "playerRestitution": 0.3,
+      "color": "#ffff00",
+      "borderColor": "#000000",
+      "borderWidth": 2
+    }
+  },
+  "randomizeOrder": false
+}

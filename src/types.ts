@@ -55,6 +55,7 @@ export interface Player {
   isChargingKick: boolean;
   hasKickedThisPress: boolean; // Se já chutou durante este pressionamento da tecla
   kickFeedbackTime: number; // Tempo restante para mostrar feedback visual do chute (em segundos)
+  justKickedBall?: boolean; // Flag temporária para evitar que colisão física cancele o chute no mesmo frame
   isBot?: boolean;
   botBehavior?: BotBehavior;
   maxSpeedMultiplier?: number; // Multiplicador de velocidade máxima (0 a 1, padrão 1)
@@ -111,6 +112,7 @@ export interface PatrolCommand {
 export interface PatrolBehaviorConfig {
   commands: PatrolCommand[];
   loop?: boolean; // Repetir comandos (padrão: true)
+  kickOnContact?: boolean; // Chutar automaticamente quando a bola encostar (padrão: false)
 }
 
 /**

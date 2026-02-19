@@ -1,3 +1,8 @@
+/* Hide background animation on game page for cleaner gameplay */
+body:has(.game-page)::before {
+  display: none;
+}
+
 .game-page {
   width: 100%;
   display: flex;

@@ -35,11 +35,6 @@ export const translations: Translations = {
     pt: 'Digite seu nickname',
     es: 'Ingresa tu apodo'
   },
-  'menu.nickname.random': {
-    en: 'Random nickname',
-    pt: 'Nome aleatório',
-    es: 'Apodo aleatorio'
-  },
   'menu.ranking': {
     en: 'Ranking',
     pt: 'Ranking',
@@ -942,11 +937,6 @@ export const translations: Translations = {
     en: 'Your Username',
     pt: 'Seu Nome de Usuário',
     es: 'Tu Nombre de Usuario'
-  },
-  'play.randomName': {
-    en: 'Generate random name',
-    pt: 'Gerar nome aleatório',
-    es: 'Generar nombre aleatorio'
   },
   'play.back': {
     en: 'Back',

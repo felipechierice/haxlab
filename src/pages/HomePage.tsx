@@ -17,11 +17,18 @@ function HomePage() {
   useEffect(() => { trackPageView('HomePage'); }, []);
   const navigate = useNavigate();
   const { t } = useI18n();
-  const { userProfile, isAuthenticated, setUserProfile } = useAuth();
+  const { userProfile, isAuthenticated, setUserProfile, loading } = useAuth();
   const [showRankingModal, setShowRankingModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showReplayViewer, setShowReplayViewer] = useState(false);
   const [selectedReplayEntry, setSelectedReplayEntry] = useState<RankingEntry | null>(null);
+  
+  // Mostrar modal de autenticação automaticamente se não tiver perfil
+  useEffect(() => {
+    if (!loading && !userProfile) {
+      setShowAuthModal(true);
+    }
+  }, [loading, userProfile]);
   
   const { containerRef } = useKeyboardNav({
     autoFocus: true,
@@ -65,6 +72,11 @@ function HomePage() {
   const handleChangelogs = () => {
     audioManager.play('menuSelect');
     navigate('/changelogs');
+  };
+
+  const handleDiscord = () => {
+    audioManager.play('menuSelect');
+    window.open('https://discord.gg/ztrQVj4g', '_blank');
   };
 
   const handleAuth = () => {
@@ -134,6 +146,10 @@ function HomePage() {
           <span className="footer-separator">•</span>
           <button className="btn-link" onClick={handleChangelogs}>
             <i className="fas fa-history"></i> {t('menu.changelogs')}
+          </button>
+          <span className="footer-separator">•</span>
+          <button className="btn-link btn-discord" onClick={handleDiscord}>
+            <i className="fab fa-discord"></i> Discord
           </button>
         </div>
 

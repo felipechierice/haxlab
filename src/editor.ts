@@ -1064,6 +1064,12 @@ export class PlaylistEditor {
             Loop (repetir comandos)
           </label>
         </div>
+        <div class="property">
+          <label>
+            <input type="checkbox" id="prop-patrol-kick" ${patrolConfig.kickOnContact ? 'checked' : ''} />
+            Chutar ao encostar na bola
+          </label>
+        </div>
       </div>
       
       <!-- Configurações para Autônomo -->
@@ -1309,6 +1315,15 @@ export class PlaylistEditor {
     }
     loopCheckbox?.addEventListener('change', () => {
       (bot.behavior.config as PatrolBehaviorConfig).loop = loopCheckbox.checked;
+    });
+    
+    // KickOnContact checkbox
+    const kickCheckbox = document.getElementById('prop-patrol-kick') as HTMLInputElement;
+    if (kickCheckbox) {
+      kickCheckbox.checked = config.kickOnContact ?? false;
+    }
+    kickCheckbox?.addEventListener('change', () => {
+      (bot.behavior.config as PatrolBehaviorConfig).kickOnContact = kickCheckbox.checked;
     });
     
     // Add command button

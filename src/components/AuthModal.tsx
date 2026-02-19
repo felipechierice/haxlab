@@ -280,9 +280,9 @@ export default function AuthModal({ onClose, allowGuest = true }: AuthModalProps
 
   const renderGuestMode = () => (
     <>
-      <h2><i className="fas fa-user"></i> Entrar como Convidado</h2>
+      <h2><i className="fas fa-user"></i> Escolha seu Nickname</h2>
       <p className="auth-description">
-        Jogue sem criar conta. Você não poderá publicar playlists da comunidade.
+        Digite um nickname para jogar. Você poderá criar uma conta depois para publicar playlists.
       </p>
       
       <div className="auth-form">

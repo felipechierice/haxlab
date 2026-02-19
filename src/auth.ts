@@ -19,6 +19,17 @@ export const auth: Auth = getAuth();
 // Provider do Google
 const googleProvider = new GoogleAuthProvider();
 
+// Chave do localStorage do sistema legado (player.ts)
+const LEGACY_NICKNAME_KEY = 'haxlab_player_nickname';
+
+/**
+ * Sincroniza o nickname com o sistema legado (player.ts)
+ * Isso garante que o código legado (legacy-init.ts) use o nickname correto
+ */
+function syncNicknameWithLegacy(nickname: string): void {
+  localStorage.setItem(LEGACY_NICKNAME_KEY, nickname);
+}
+
 export interface UserProfile {
   uid: string;
   email: string | null;
@@ -51,6 +62,9 @@ export async function signUpWithEmail(email: string, password: string, nickname:
 
     // Limpar sessão de convidado se existir
     clearGuestSession();
+    
+    // Sincronizar com sistema legado (player.ts)
+    syncNicknameWithLegacy(nickname);
 
     return userProfile;
   } catch (error: any) {
@@ -74,9 +88,12 @@ export async function signInWithEmail(email: string, password: string): Promise<
     const userDoc = await getDoc(doc(db, 'users', user.uid));
     
     if (userDoc.exists()) {
+      const profile = userDoc.data() as UserProfile;
       // Limpar sessão de convidado se existir
       clearGuestSession();
-      return userDoc.data() as UserProfile;
+      // Sincronizar com sistema legado (player.ts)
+      syncNicknameWithLegacy(profile.nickname);
+      return profile;
     } else {
       // Se não existe, criar perfil básico (migração de usuários antigos)
       const userProfile: UserProfile = {
@@ -89,6 +106,8 @@ export async function signInWithEmail(email: string, password: string): Promise<
       await setDoc(doc(db, 'users', user.uid), userProfile);
       // Limpar sessão de convidado se existir
       clearGuestSession();
+      // Sincronizar com sistema legado (player.ts)
+      syncNicknameWithLegacy(userProfile.nickname);
       return userProfile;
     }
   } catch (error: any) {
@@ -113,8 +132,11 @@ export async function signInWithGoogle(): Promise<{ user: UserProfile; needsNick
     const userDoc = await getDoc(doc(db, 'users', user.uid));
     
     if (userDoc.exists()) {
+      const profile = userDoc.data() as UserProfile;
+      // Sincronizar com sistema legado (player.ts)
+      syncNicknameWithLegacy(profile.nickname);
       return {
-        user: userDoc.data() as UserProfile,
+        user: profile,
         needsNickname: false
       };
     } else {
@@ -178,6 +200,9 @@ export async function updateUserNickname(uid: string, nickname: string): Promise
       await updateProfile(currentUser, { displayName: nickname });
     }
     
+    // Sincronizar com sistema legado (player.ts)
+    syncNicknameWithLegacy(nickname);
+    
     // Atualizar nickname em todos os rankings (se havia nickname antigo e mudou)
     if (oldNickname && oldNickname !== nickname) {
       try {
@@ -220,16 +245,21 @@ export function createGuestSession(nickname: string): UserProfile {
     throw new Error('Nickname não pode estar vazio');
   }
   
+  const trimmedNickname = nickname.trim();
+  
   const guestProfile: UserProfile = {
     uid: `guest_${Date.now()}`,
     email: null,
-    nickname: nickname.trim(),
+    nickname: trimmedNickname,
     isGuest: true,
     createdAt: Date.now()
   };
 
   // Salvar no localStorage
   localStorage.setItem('guestProfile', JSON.stringify(guestProfile));
+  
+  // Sincronizar com sistema legado (player.ts)
+  syncNicknameWithLegacy(trimmedNickname);
 
   return guestProfile;
 }
@@ -258,6 +288,9 @@ export async function updateGuestNickname(oldNickname: string, newNickname: stri
   // Salvar no localStorage
   localStorage.setItem('guestProfile', JSON.stringify(guestProfile));
   
+  // Sincronizar com sistema legado (player.ts)
+  syncNicknameWithLegacy(trimmedNewNickname);
+  
   // Atualizar nickname em todos os rankings (se nickname mudou)
   if (oldNickname && oldNickname !== trimmedNewNickname) {
     try {
@@ -270,20 +303,6 @@ export async function updateGuestNickname(oldNickname: string, newNickname: stri
   }
 
   return guestProfile;
-}
-
-/**
- * Criar sessão de convidado automática com nickname aleatório
- */
-export function createAutoGuestSession(): UserProfile {
-  // Gerar nickname aleatório
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let nickname = '';
-  for (let i = 0; i < 8; i++) {
-    nickname += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  
-  return createGuestSession(nickname);
 }
 
 /**

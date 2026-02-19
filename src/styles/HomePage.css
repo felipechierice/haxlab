@@ -234,6 +234,16 @@
   background: rgba(99, 102, 241, 0.1);
 }
 
+.btn-link.btn-discord {
+  color: #7289da;
+}
+
+.btn-link.btn-discord:hover,
+.btn-link.btn-discord:focus {
+  color: #5865f2;
+  background: rgba(88, 101, 242, 0.15);
+}
+
 .footer-separator {
   color: #475569;
   font-weight: 600;
