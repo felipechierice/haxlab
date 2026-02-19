@@ -102,6 +102,16 @@ export const translations: Translations = {
     pt: 'Ajusta a transparência do círculo pontilhado ao redor do seu jogador.',
     es: 'Ajusta la transparencia del círculo punteado alrededor de tu jugador.'
   },
+  'appSettings.scenarioCountdown': {
+    en: 'Scenario Countdown',
+    pt: 'Contagem Regressiva de Cenários',
+    es: 'Cuenta Regresiva de Escenarios'
+  },
+  'appSettings.scenarioCountdownHint': {
+    en: 'Time before scenarios start (0 = instant start).',
+    pt: 'Tempo antes dos cenários começarem (0 = início instantâneo).',
+    es: 'Tiempo antes de que comiencen los escenarios (0 = inicio instantáneo).'
+  },
   'appSettings.enabled': {
     en: 'Enabled',
     pt: 'Ativado',

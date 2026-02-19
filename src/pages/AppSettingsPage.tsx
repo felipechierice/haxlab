@@ -31,6 +31,11 @@ function AppSettingsPage() {
     const saved = localStorage.getItem('controlIndicatorOpacity');
     return saved ? parseFloat(saved) : 0.3;
   });
+  
+  const [scenarioCountdownDuration, setScenarioCountdownDuration] = useState<number>(() => {
+    const saved = localStorage.getItem('scenarioCountdownDuration');
+    return saved ? parseFloat(saved) : 1.0;
+  });
 
   const [keybinds, setKeybinds] = useState<KeyBindings>(keyBindings.getBindings());
   const [configuringKey, setConfiguringKey] = useState<keyof KeyBindings | null>(null);
@@ -112,6 +117,12 @@ function AppSettingsPage() {
     const opacity = parseFloat(e.target.value);
     setControlIndicatorOpacity(opacity);
     localStorage.setItem('controlIndicatorOpacity', opacity.toString());
+  };
+  
+  const handleCountdownDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const duration = parseFloat(e.target.value);
+    setScenarioCountdownDuration(duration);
+    localStorage.setItem('scenarioCountdownDuration', duration.toString());
   };
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -218,6 +229,26 @@ function AppSettingsPage() {
               <span className="volume-value">{Math.round(controlIndicatorOpacity * 100)}%</span>
             </div>
             <p className="setting-hint">{t('appSettings.controlIndicatorOpacityHint')}</p>
+          </div>
+          
+          {/* Scenario Countdown Duration */}
+          <div className="setting-section">
+            <label className="setting-label">
+              <i className="fas fa-hourglass-start"></i> {t('appSettings.scenarioCountdown')}
+            </label>
+            <div className="volume-control">
+              <input
+                type="range"
+                className="volume-slider"
+                min="0"
+                max="10"
+                step="0.1"
+                value={scenarioCountdownDuration}
+                onChange={handleCountdownDurationChange}
+              />
+              <span className="volume-value">{scenarioCountdownDuration.toFixed(1)}s</span>
+            </div>
+            <p className="setting-hint">{t('appSettings.scenarioCountdownHint')}</p>
           </div>
 
           {/* Controls / Keybindings */}

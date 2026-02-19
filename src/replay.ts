@@ -18,13 +18,18 @@ import { db } from './firebase.js';
 import { collection, addDoc, query, where, getDocs, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { APP_VERSION } from './version.js';
 
+import { keyBindings } from './keybindings.js';
+
 /**
  * Classe responsável por gravar inputs durante a execução de uma playlist
+ * 
+ * IMPORTANTE: Usa tempo de simulação (em ms) para garantir sincronização
+ * perfeita durante a reprodução do replay.
  */
 export class ReplayRecorder {
   private events: ReplayInputEvent[] = [];
   private scenarios: ReplayScenarioInfo[] = [];
-  private playlistStartTime: number = 0;
+  private currentSimulationTime: number = 0; // Tempo de simulação em ms
   private currentScenarioIndex: number = 0;
   private isRecording: boolean = false;
   private playlistName: string = '';
@@ -42,7 +47,7 @@ export class ReplayRecorder {
    */
   start(): void {
     this.isRecording = true;
-    this.playlistStartTime = Date.now();
+    this.currentSimulationTime = 0;
     this.events = [];
     this.scenarios = [];
     this.currentScenarioIndex = 0;
@@ -62,9 +67,17 @@ export class ReplayRecorder {
   restart(): void {
     this.events = [];
     this.scenarios = [];
-    this.playlistStartTime = Date.now();
+    this.currentSimulationTime = 0;
     this.currentScenarioIndex = 0;
     this.isRecording = true;
+  }
+  
+  /**
+   * Atualiza o tempo de simulação atual
+   * Deve ser chamado a cada frame com o tempo de simulação do jogo
+   */
+  updateSimulationTime(timeInSeconds: number): void {
+    this.currentSimulationTime = timeInSeconds * 1000; // Converter para ms
   }
   
   /**
@@ -74,27 +87,36 @@ export class ReplayRecorder {
     if (!this.isRecording) return;
     
     this.currentScenarioIndex = scenarioIndex;
-    this.scenarios.push({
+    const scenarioInfo = {
       scenarioIndex,
-      startTime: Date.now() - this.playlistStartTime,
+      startTime: this.currentSimulationTime,
       wasReset
-    });
+    };
+    this.scenarios.push(scenarioInfo);
+    console.log('[ReplayRecorder] Recorded scenario event:', scenarioInfo);
   }
   
   /**
    * Registra um evento de input (pressionar ou soltar tecla)
+   * @param type Tipo do evento (keydown ou keyup)
+   * @param action Ação associada (up, down, left, right, kick)
    */
   recordInputEvent(type: ReplayInputEventType, action: ReplayAction): void {
     if (!this.isRecording) return;
     
-    const timestamp = Date.now() - this.playlistStartTime;
-    
     this.events.push({
-      timestamp,
+      timestamp: this.currentSimulationTime,
       type,
       action,
       scenarioIndex: this.currentScenarioIndex
     });
+  }
+  
+  /**
+   * Retorna o tempo de simulação atual em ms
+   */
+  getCurrentSimulationTime(): number {
+    return this.currentSimulationTime;
   }
   
   /**
@@ -265,26 +287,15 @@ export async function getReplayForRankingEntry(
 }
 
 /**
- * Mapeia teclas para ações de replay
+ * Mapeia teclas para ações de replay usando o sistema de keybindings
  */
 export function keyToReplayAction(key: string): ReplayAction | null {
-  switch (key.toLowerCase()) {
-    case 'w':
-    case 'arrowup':
-      return 'up';
-    case 's':
-    case 'arrowdown':
-      return 'down';
-    case 'a':
-    case 'arrowleft':
-      return 'left';
-    case 'd':
-    case 'arrowright':
-      return 'right';
-    case ' ':
-    case 'enter':
-      return 'kick';
-    default:
-      return null;
-  }
+  // Verificar cada ação usando o sistema de keybindings
+  if (keyBindings.isKeyBound(key, 'up')) return 'up';
+  if (keyBindings.isKeyBound(key, 'down')) return 'down';
+  if (keyBindings.isKeyBound(key, 'left')) return 'left';
+  if (keyBindings.isKeyBound(key, 'right')) return 'right';
+  if (keyBindings.isKeyBound(key, 'kick')) return 'kick';
+  
+  return null;
 }

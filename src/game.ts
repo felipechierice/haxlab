@@ -645,36 +645,6 @@ export class Game {
           ? this.config.kickStrength * Math.max(0.2, chargeAmount)
           : this.config.kickStrength;
         
-        // ========== IMPORTANTE: Calcular impulso de recuo ANTES de alterar velocidade da bola ==========
-        // Isso garante que o jogador seja empurrado pela força do impacto da bola
-        const ballVelBeforeKick = { x: ball.vel.x, y: ball.vel.y };
-        const relVelX = ball.vel.x - player.circle.vel.x;
-        const relVelY = ball.vel.y - player.circle.vel.y;
-        const velAlongNormal = relVelX * nx + relVelY * ny;
-        
-        // Se a bola está vindo em direção ao jogador (velAlongNormal < 0), aplicar recuo
-        if (velAlongNormal < 0) {
-          const restitution = this.config.ballConfig.playerRestitution ?? 0.35;
-          const impulse = -(1 + restitution) * velAlongNormal;
-          const impulseMagnitude = impulse / (player.circle.invMass + ball.invMass);
-          
-          // Aplica impulso de recuo no jogador (bola empurra o jogador)
-          player.circle.vel.x -= nx * impulseMagnitude * player.circle.invMass;
-          player.circle.vel.y -= ny * impulseMagnitude * player.circle.invMass;
-          
-          // Log para debug
-          if (player.isBot) {
-            console.log(`[KICK DEBUG] Impulso de recuo aplicado em "${player.name}":`, {
-              velAlongNormal: velAlongNormal.toFixed(1),
-              impulseMagnitude: impulseMagnitude.toFixed(1),
-              playerVelAfter: { 
-                x: player.circle.vel.x.toFixed(1), 
-                y: player.circle.vel.y.toFixed(1) 
-              }
-            });
-          }
-        }
-        
         // ========== Agora aplica o chute na bola ==========
         // IMPORTANTE: ADICIONA velocidade na direção do chute (não substitui!)
         // Isso preserva a física original onde chutar uma bola que já está em movimento
@@ -682,11 +652,8 @@ export class Game {
         ball.vel.x += nx * kickStrength;
         ball.vel.y += ny * kickStrength;
         
-        // Velocidade da bola DEPOIS do chute (para debug)
-        const ballSpeedBefore = Math.sqrt(ballVelBeforeKick.x * ballVelBeforeKick.x + ballVelBeforeKick.y * ballVelBeforeKick.y);
-        const ballSpeedAfter = Math.sqrt(ball.vel.x * ball.vel.x + ball.vel.y * ball.vel.y);
-        
         // Marca que acabou de chutar neste frame (para evitar dupla colisão)
+        player.justKickedBall = true;
         player.justKickedBall = true;
         
         // Marca que já chutou neste pressionamento

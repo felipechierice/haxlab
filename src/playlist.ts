@@ -22,6 +22,7 @@ import { Physics } from './physics.js';
 import { DEFAULT_MAP, CLASSIC_MAP } from './maps.js';
 import { audioManager } from './audio.js';
 import { ReplayRecorder } from './replay.js';
+import { KeyboardInputController, ReplayInputController } from './input/index.js';
 
 /**
  * Converte comportamento de bot do formato antigo para o novo formato
@@ -217,6 +218,14 @@ export class PlaylistMode {
   private replayRecorder: ReplayRecorder | null = null;
   private playerNickname: string = '';
   private communityPlaylistId: string | undefined;
+  private keyboardInputController: KeyboardInputController | null = null;
+  
+  // Replay playback
+  private replayInputController: ReplayInputController | null = null;
+  private isReplayMode: boolean = false;
+  private isTransitioningScenario: boolean = false; // Flag para ignorar callbacks durante transição
+  private scenarioGeneration: number = 0; // Contador para identificar cenário atual
+  private scenarioWarmupUntil: number = 0; // Timestamp até quando ignorar gols (warmup)
   
   constructor(
     canvas: HTMLCanvasElement,
@@ -335,9 +344,15 @@ export class PlaylistMode {
     this.scenarioCompleted = false;
     
     // Gravar início do cenário no replay
+    // IMPORTANTE: Atualizar o tempo de simulação ANTES de gravar o cenário
     if (this.replayRecorder) {
+      this.replayRecorder.updateSimulationTime(this.getPlaylistTime());
       this.replayRecorder.recordScenarioStart(index, false);
     }
+    
+    // Incrementar generation para invalidar callbacks de cenários anteriores
+    this.scenarioGeneration++;
+    const currentGeneration = this.scenarioGeneration;
     
     // Registrar callback customizado para renderização
     this.game.setCustomRenderCallback((ctx) => this.renderObjectives(ctx));
@@ -351,14 +366,21 @@ export class PlaylistMode {
     // Registrar callback para toques na bola
     this.game.setCustomBallTouchCallback((playerId) => this.onBallTouch(playerId));
     
-    // Registrar callback para gols
-    this.game.setCustomGoalCallback((team, scoredBy) => this.onGoal(team, scoredBy));
+    // Registrar callback para gols com verificação de generation
+    this.game.setCustomGoalCallback((team, scoredBy) => {
+      if (currentGeneration !== this.scenarioGeneration) {
+        console.log('[onGoal] Ignorando callback de cenário anterior');
+        return;
+      }
+      this.onGoal(team, scoredBy);
+    });
     
     // Resetar contador de toques
     this.game.resetBallTouches();
     
-    // Iniciar com countdown de 1 segundo
-    this.game.startWithCountdown(1.0);
+    // Iniciar com countdown configurado pelo usuário (padrão: 1 segundo)
+    const countdownDuration = parseFloat(localStorage.getItem('scenarioCountdownDuration') || '1.0');
+    this.game.startWithCountdown(countdownDuration);
     
     // Notificar que cenário iniciou
     this.onScenarioStart(index);
@@ -400,6 +422,28 @@ export class PlaylistMode {
   
   private updateObjectives(): void {
     if (!this.game) return;
+    
+    const playlistTime = this.getPlaylistTime();
+    
+    // Atualizar tempo de simulação no replay recorder (gravação)
+    if (this.replayRecorder) {
+      this.replayRecorder.updateSimulationTime(playlistTime);
+    }
+    
+    // Atualizar tempo no replay input controller (reprodução)
+    if (this.replayInputController) {
+      this.replayInputController.setPlaylistTime(playlistTime);
+      
+      // Verificar se o replay terminou
+      if (this.replayInputController.isFinished() && !this.scenarioCompleted) {
+        // Marcar todos cenários como completos e finalizar
+        this.progress.completedScenarios.fill(true);
+        this.scenarioCompleted = true;
+        this.onPlaylistComplete();
+        return;
+      }
+    }
+    
     if (this.scenarioFailed || this.scenarioCompleted) return; // Não validar se já falhou ou completou
     
     const scenario = this.getCurrentScenario();
@@ -637,6 +681,18 @@ export class PlaylistMode {
     console.log('team (gol onde bola entrou):', team);
     console.log('scoredBy:', scoredBy);
     
+    // Ignorar gols durante período de warmup (evita detecção falsa após iniciar cenário)
+    if (Date.now() < this.scenarioWarmupUntil) {
+      console.log('Warmup ativo, ignorando gol');
+      return;
+    }
+    
+    // Ignorar callbacks durante transição entre cenários
+    if (this.isTransitioningScenario) {
+      console.log('Transição em andamento, ignorando gol');
+      return;
+    }
+    
     if (this.scenarioFailed || this.scenarioCompleted) {
       console.log('Cenário já falhou ou completou, ignorando');
       return;
@@ -764,11 +820,8 @@ export class PlaylistMode {
     if (this.scenarioCompleted) return; // Evitar múltiplas chamadas
     this.scenarioCompleted = true;
     
-    // Acumular tempo do cenário
-    if (this.game) {
-      const scenarioTime = this.game.getState().time - this.progress.scenarioStartTime;
-      this.totalPlaylistTime += scenarioTime;
-    }
+    // NÃO acumular tempo aqui - será acumulado quando o próximo cenário começar
+    // Isso permite que o tempo de delay (animação de gol, etc.) seja incluído
     
     this.progress.completedScenarios[this.progress.currentScenarioIndex] = true;
     
@@ -777,8 +830,27 @@ export class PlaylistMode {
     
     this.onScenarioComplete(this.progress.currentScenarioIndex);
     
-    // Se auto progress está desabilitado, não faz nada automaticamente
-    if (this.disableAutoProgress) return;
+    console.log('[CompleteScenario] disableAutoProgress:', this.disableAutoProgress, 'isReplayMode:', this.isReplayMode);
+    console.log('[CompleteScenario] currentScenarioIndex:', this.progress.currentScenarioIndex, 'totalScenarios:', this.playlist.scenarios.length);
+    
+    // Se auto progress está desabilitado (modo replay), verificar se é o último cenário
+    if (this.disableAutoProgress) {
+      // Em modo replay, verificar se é o último cenário e se não há mais eventos de cenário
+      if (this.isReplayMode && this.replayInputController) {
+        const isLastScenario = this.progress.currentScenarioIndex === this.playlist.scenarios.length - 1;
+        console.log('[CompleteScenario] isLastScenario:', isLastScenario);
+        if (isLastScenario) {
+          console.log('[CompleteScenario] Scheduling playlist complete in 2s');
+          // Aguardar um pouco para o delay visual e então finalizar
+          setTimeout(() => {
+            console.log('[CompleteScenario] Calling onPlaylistComplete');
+            this.progress.completedScenarios.fill(true);
+            this.onPlaylistComplete();
+          }, 2000);
+        }
+      }
+      return;
+    }
     
     // Verificar se completou toda a playlist
     if (this.progress.completedScenarios.every(completed => completed)) {
@@ -796,11 +868,8 @@ export class PlaylistMode {
     if (this.scenarioFailed) return; // Evitar múltiplas chamadas
     this.scenarioFailed = true;
     
-    // Acumular tempo do cenário mesmo ao falhar
-    if (this.game) {
-      const scenarioTime = this.game.getState().time - this.progress.scenarioStartTime;
-      this.totalPlaylistTime += scenarioTime;
-    }
+    // NÃO acumular tempo aqui - será acumulado quando o cenário for resetado/próximo
+    // Isso permite que o tempo de delay seja incluído
     
     // Som de falha
     audioManager.play('fail');
@@ -924,15 +993,17 @@ export class PlaylistMode {
       this.resetTimeoutId = null;
     }
     
-    // Acumular tempo do cenário atual antes de resetar (se não foi já acumulado por fail/complete)
-    if (this.game && !this.scenarioCompleted && !this.scenarioFailed) {
-      const scenarioTime = this.game.getState().time - this.progress.scenarioStartTime;
-      this.totalPlaylistTime += scenarioTime;
+    // Gravar reset no replay ANTES de acumular tempo
+    // IMPORTANTE: Gravar com o tempo atual antes de modificar totalPlaylistTime
+    if (this.replayRecorder) {
+      this.replayRecorder.updateSimulationTime(this.getPlaylistTime());
+      this.replayRecorder.recordScenarioStart(this.progress.currentScenarioIndex, true);
     }
     
-    // Gravar reset no replay (antes de reiniciar o cenário)
-    if (this.replayRecorder) {
-      this.replayRecorder.recordScenarioStart(this.progress.currentScenarioIndex, true);
+    // Acumular tempo do cenário atual antes de resetar (incluindo tempo de delay)
+    if (this.game) {
+      const scenarioTime = this.game.getState().time - this.progress.scenarioStartTime;
+      this.totalPlaylistTime += scenarioTime;
     }
     
     this.startScenario(this.progress.currentScenarioIndex);
@@ -949,8 +1020,8 @@ export class PlaylistMode {
       this.nextScenarioTimeoutId = null;
     }
     
-    // Acumular tempo do cenário atual se não foi já acumulado por fail/complete
-    if (this.game && !this.scenarioCompleted && !this.scenarioFailed) {
+    // Acumular tempo do cenário atual (incluindo tempo de delay após complete)
+    if (this.game) {
       const scenarioTime = this.game.getState().time - this.progress.scenarioStartTime;
       this.totalPlaylistTime += scenarioTime;
     }
@@ -985,6 +1056,13 @@ export class PlaylistMode {
       this.nextScenarioTimeoutId = null;
     }
     
+    // Limpar KeyboardInputController
+    if (this.keyboardInputController) {
+      this.keyboardInputController.setReplayRecorder(null);
+      this.keyboardInputController.destroy();
+      this.keyboardInputController = null;
+    }
+    
     // Parar o jogo
     if (this.game) {
       this.game.stop();
@@ -1010,8 +1088,9 @@ export class PlaylistMode {
   
   getPlaylistTime(): number {
     // Retornar tempo acumulado dos cenários
-    // Se está jogando, somar o tempo do cenário atual
-    if (this.game && !this.scenarioCompleted && !this.scenarioFailed) {
+    // Se há um jogo ativo, somar o tempo decorrido do cenário atual
+    // IMPORTANTE: Continuar contando mesmo após complete/fail para incluir o tempo de delay
+    if (this.game) {
       const currentScenarioTime = this.game.getState().time - this.progress.scenarioStartTime;
       return this.totalPlaylistTime + currentScenarioTime;
     }
@@ -1036,6 +1115,11 @@ export class PlaylistMode {
       communityPlaylistId
     );
     this.replayRecorder.start();
+    
+    // Criar KeyboardInputController em modo passivo para gravar inputs
+    // Modo passivo: apenas grava eventos, não interfere no sistema de input do jogo
+    this.keyboardInputController = new KeyboardInputController({ passiveMode: true });
+    this.keyboardInputController.setReplayRecorder(this.replayRecorder);
   }
   
   /**
@@ -1045,6 +1129,12 @@ export class PlaylistMode {
     if (this.replayRecorder) {
       this.replayRecorder.stop();
     }
+    // Limpar referência do KeyboardInputController
+    if (this.keyboardInputController) {
+      this.keyboardInputController.setReplayRecorder(null);
+      this.keyboardInputController.destroy();
+      this.keyboardInputController = null;
+    }
     return this.replayRecorder;
   }
   
@@ -1053,6 +1143,191 @@ export class PlaylistMode {
    */
   getReplayRecorder(): ReplayRecorder | null {
     return this.replayRecorder;
+  }
+  
+  /**
+   * Define o replay input controller para reprodução de replays
+   * O PlaylistMode vai sincronizar o tempo da playlist com este controller
+   */
+  setReplayInputController(controller: ReplayInputController | null): void {
+    // Limpar callback do controller anterior
+    if (this.replayInputController) {
+      this.replayInputController.setScenarioEventCallback(null);
+    }
+    
+    this.replayInputController = controller;
+    this.isReplayMode = controller !== null;
+    
+    // Configurar callback para eventos de cenário
+    if (controller) {
+      controller.setScenarioEventCallback((scenarioInfo) => {
+        this.handleReplayScenarioEvent(scenarioInfo);
+      });
+    }
+  }
+  
+  /**
+   * Processa evento de cenário durante reprodução de replay
+   */
+  private handleReplayScenarioEvent(scenarioInfo: { scenarioIndex: number; startTime: number; wasReset: boolean }): void {
+    console.log('[Replay] handleReplayScenarioEvent called:', scenarioInfo);
+    console.log('[Replay] Current totalPlaylistTime before:', this.totalPlaylistTime);
+    
+    // Marcar que estamos em transição para ignorar callbacks do jogo antigo
+    this.isTransitioningScenario = true;
+    
+    // Atualizar o totalPlaylistTime para corresponder ao tempo de início deste cenário
+    // O startTime está em milissegundos, converter para segundos
+    this.totalPlaylistTime = scenarioInfo.startTime / 1000;
+    
+    console.log('[Replay] New totalPlaylistTime:', this.totalPlaylistTime);
+    
+    // Parar jogo atual
+    if (this.game) {
+      this.game.stop();
+    }
+    
+    // Resetar flags
+    this.scenarioFailed = false;
+    this.scenarioCompleted = false;
+    
+    // Iniciar o cenário para replay
+    console.log('[Replay] Starting scenario for replay:', scenarioInfo.scenarioIndex);
+    this.startScenarioForReplay(scenarioInfo.scenarioIndex);
+    
+    // Fim da transição
+    this.isTransitioningScenario = false;
+  }
+  
+  /**
+   * Inicia um cenário durante reprodução de replay
+   * Diferente de startScenario, não acumula tempo nem grava no replay
+   */
+  private startScenarioForReplay(index: number): void {
+    if (index < 0 || index >= this.playlist.scenarios.length) {
+      console.error('Invalid scenario index for replay');
+      return;
+    }
+    
+    // IMPORTANTE: Resetar flags IMEDIATAMENTE antes de qualquer coisa
+    // para evitar que callbacks pendentes do jogo anterior sejam ignorados
+    this.scenarioFailed = false;
+    this.scenarioCompleted = false;
+    
+    this.progress.currentScenarioIndex = index;
+    const scenario = this.playlist.scenarios[index];
+    
+    // Parar jogo anterior se existir
+    if (this.game) {
+      this.game.stop();
+    }
+    
+    // Carregar mapa
+    const map = this.getMapForScenario(scenario);
+    
+    // Criar configuração para o jogo
+    const gameConfig = { ...this.baseConfig, disableGoalReset: true, disableGameOver: true };
+    
+    // Criar jogo
+    this.game = new Game(this.canvas, map, gameConfig);
+    this.game.initPlayers();
+    
+    // Aplicar opacidade do indicador de controle
+    const controlIndicatorOpacity = parseFloat(localStorage.getItem('controlIndicatorOpacity') || '0.3');
+    this.game.setControlIndicatorOpacity(controlIndicatorOpacity);
+    
+    // Criar bots
+    if (scenario.bots) {
+      for (const botDef of scenario.bots) {
+        const migratedBehavior = migrateBotBehavior(botDef.behavior);
+        this.game.addBot(
+          botDef.id,
+          botDef.name,
+          botDef.team,
+          botDef.spawn,
+          migratedBehavior,
+          botDef.initialVelocity,
+          botDef.radius
+        );
+      }
+    }
+    
+    // Aplicar spawns customizados
+    if (scenario.playerSpawn) {
+      const player = this.game.getPlayers()[0];
+      if (player) {
+        player.circle.pos.x = scenario.playerSpawn.x;
+        player.circle.pos.y = scenario.playerSpawn.y;
+      }
+    }
+    
+    if (scenario.ballSpawn) {
+      const ball = this.game.getBall();
+      ball.circle.pos.x = scenario.ballSpawn.x;
+      ball.circle.pos.y = scenario.ballSpawn.y;
+    }
+    
+    // Aplicar velocidades iniciais
+    if (scenario.initialPlayerVelocity) {
+      const player = this.game.getPlayers()[0];
+      if (player) {
+        player.circle.vel.x = scenario.initialPlayerVelocity.x;
+        player.circle.vel.y = scenario.initialPlayerVelocity.y;
+      }
+    }
+    
+    if (scenario.initialBallVelocity) {
+      const ball = this.game.getBall();
+      ball.circle.vel.x = scenario.initialBallVelocity.x;
+      ball.circle.vel.y = scenario.initialBallVelocity.y;
+    }
+    
+    // Sincronizar interpolação
+    this.game.syncInterpolation();
+    
+    // Preparar objetivos
+    this.prepareObjectives(scenario);
+    
+    // Iniciar timer
+    this.progress.scenarioStartTime = this.game.getState().time;
+    this.scenarioFailed = false;
+    this.scenarioCompleted = false;
+    
+    // Incrementar generation para invalidar callbacks de cenários anteriores
+    this.scenarioGeneration++;
+    const currentGeneration = this.scenarioGeneration;
+    
+    // Registrar callbacks com verificação de generation
+    this.game.setCustomRenderCallback((ctx) => this.renderObjectives(ctx));
+    this.game.setCustomUpdateCallback(() => this.updateObjectives());
+    this.game.setCustomKickCallback(() => this.onPlayerKick());
+    this.game.setCustomBallTouchCallback((playerId) => this.onBallTouch(playerId));
+    this.game.setCustomGoalCallback((team, scoredBy) => {
+      // Ignorar callbacks de cenários anteriores
+      if (currentGeneration !== this.scenarioGeneration) {
+        console.log('[onGoal] Ignorando callback de cenário anterior (generation mismatch)');
+        return;
+      }
+      this.onGoal(team, scoredBy);
+    });
+    this.game.resetBallTouches();
+    
+    // Conectar o replay controller ao jogo
+    if (this.replayInputController) {
+      const players = this.game.getPlayers();
+      if (players.length > 0) {
+        this.game.setInputController(players[0].id, this.replayInputController);
+      }
+    }
+    
+    // Iniciar SEM countdown para replay (para manter sincronização)
+    this.game.start();
+    
+    // Definir warmup de 100ms para ignorar gols "fantasmas" logo após iniciar
+    this.scenarioWarmupUntil = Date.now() + 100;
+    
+    // Notificar que cenário iniciou
+    this.onScenarioStart(index);
   }
   
   restartPlaylist(): void {

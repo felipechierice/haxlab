@@ -11,7 +11,7 @@ import {
   InputState,
   inputFlagsToDirection 
 } from './InputController.js';
-import { ReplayData, ReplayInputEvent, ReplayAction } from '../types.js';
+import { ReplayData, ReplayInputEvent, ReplayAction, ReplayScenarioInfo } from '../types.js';
 
 /**
  * Estado dos inputs no momento atual do replay
@@ -24,13 +24,20 @@ interface ReplayInputFlags {
   kick: boolean;
 }
 
+/**
+ * Callback para quando um evento de cenário deve ser processado
+ */
+type ScenarioEventCallback = (scenarioInfo: ReplayScenarioInfo) => void;
+
 export class ReplayInputController implements InputController {
   private replayData: ReplayData;
   private currentTime: number = 0; // Tempo atual em ms desde o início
-  private eventIndex: number = 0; // Índice do próximo evento a processar
+  private eventIndex: number = 0; // Índice do próximo evento de input a processar
+  private scenarioIndex: number = 0; // Índice do próximo evento de cenário a processar
   private inputFlags: ReplayInputFlags;
   private currentDirection: Direction = null;
   private isPlaying: boolean = false;
+  private onScenarioEvent: ScenarioEventCallback | null = null;
   
   constructor(replayData: ReplayData) {
     this.replayData = replayData;
@@ -44,12 +51,20 @@ export class ReplayInputController implements InputController {
   }
   
   /**
+   * Define callback para eventos de cenário
+   */
+  setScenarioEventCallback(callback: ScenarioEventCallback | null): void {
+    this.onScenarioEvent = callback;
+  }
+  
+  /**
    * Inicia a reprodução do replay
    */
   start(): void {
     this.isPlaying = true;
     this.currentTime = 0;
     this.eventIndex = 0;
+    this.scenarioIndex = 0;
     this.resetInputs();
   }
   
@@ -77,16 +92,38 @@ export class ReplayInputController implements InputController {
    * Processa eventos do replay baseado no tempo atual
    */
   private processEvents(): void {
-    if (!this.isPlaying || !this.replayData.events) return;
+    if (!this.isPlaying) return;
     
-    // Processar todos os eventos que deveriam ter ocorrido até o tempo atual
-    while (
-      this.eventIndex < this.replayData.events.length &&
-      this.replayData.events[this.eventIndex].timestamp <= this.currentTime
-    ) {
-      const event = this.replayData.events[this.eventIndex];
-      this.applyEvent(event);
-      this.eventIndex++;
+    // Processar eventos de cenário (reset, mudança de cenário)
+    // IMPORTANTE: Processar cenários ANTES dos inputs para garantir ordem correta
+    if (this.replayData.scenarios) {
+      while (
+        this.scenarioIndex < this.replayData.scenarios.length &&
+        this.replayData.scenarios[this.scenarioIndex].startTime <= this.currentTime
+      ) {
+        const scenarioInfo = this.replayData.scenarios[this.scenarioIndex];
+        console.log(`[ReplayInput] Processing scenario event at time ${this.currentTime}ms:`, scenarioInfo);
+        // Notificar sobre evento de cenário (exceto o primeiro que já é iniciado automaticamente)
+        if (this.scenarioIndex > 0 && this.onScenarioEvent) {
+          console.log('[ReplayInput] Calling scenario callback');
+          // Resetar inputs antes de notificar - o novo cenário começa sem teclas pressionadas
+          this.resetInputs();
+          this.onScenarioEvent(scenarioInfo);
+        }
+        this.scenarioIndex++;
+      }
+    }
+    
+    // Processar eventos de input
+    if (this.replayData.events) {
+      while (
+        this.eventIndex < this.replayData.events.length &&
+        this.replayData.events[this.eventIndex].timestamp <= this.currentTime
+      ) {
+        const event = this.replayData.events[this.eventIndex];
+        this.applyEvent(event);
+        this.eventIndex++;
+      }
     }
     
     this.updateDirection();
@@ -125,16 +162,30 @@ export class ReplayInputController implements InputController {
   }
   
   /**
-   * Atualiza o controlador (chamado a cada frame)
+   * Define o tempo atual da playlist (em segundos)
+   * Usado pelo PlaylistMode para sincronizar com o tempo total da playlist
    */
-  update(dt: number, _simulationTime: number): void {
+  setPlaylistTime(timeInSeconds: number): void {
     if (!this.isPlaying) return;
     
-    // Incrementar tempo em milissegundos
-    this.currentTime += dt * 1000;
+    const newTime = timeInSeconds * 1000;
     
-    // Processar eventos até o tempo atual
+    // Se voltamos no tempo (ex: reset de cenário), não precisamos fazer nada especial
+    // porque os eventos de input posteriores ainda não foram processados
+    // e os eventos de cenário já foram atualizados
+    
+    this.currentTime = newTime;
     this.processEvents();
+  }
+  
+  /**
+   * Atualiza o controlador (chamado a cada frame)
+   * @param dt Delta time do frame (não usado diretamente)
+   * @param simulationTime Tempo de simulação do jogo (não usado - usamos setPlaylistTime)
+   */
+  update(_dt: number, _simulationTime: number): void {
+    // O tempo é atualizado via setPlaylistTime() pelo PlaylistMode
+    // Este método existe para compatibilidade com a interface InputController
   }
   
   getMovementDirection(): Direction {
@@ -155,6 +206,7 @@ export class ReplayInputController implements InputController {
   reset(): void {
     this.currentTime = 0;
     this.eventIndex = 0;
+    this.scenarioIndex = 0;
     this.resetInputs();
   }
   
@@ -175,6 +227,7 @@ export class ReplayInputController implements InputController {
     if (newTime < this.currentTime) {
       this.currentTime = 0;
       this.eventIndex = 0;
+      this.scenarioIndex = 0;
       this.resetInputs();
     }
     

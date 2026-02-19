@@ -11,7 +11,7 @@ import { PlaylistEditor } from './editor.js';
 import { getNickname } from './player.js';
 import { submitScore, getPlayerHighscore, calculateScore, isOfficialPlaylist, RankingEntry } from './firebase.js';
 import { saveReplay, getReplayById } from './replay.js';
-import { KeyboardInputController, ReplayInputController } from './input/index.js';
+import { ReplayInputController } from './input/index.js';
 import {
   trackFreePlayStart,
   trackFreePlayEnd,
@@ -411,20 +411,9 @@ window.addEventListener('game-play-again', handlePlayAgain);
   const nickname = getNickname();
   currentPlaylist.startReplayRecording(nickname, communityPlaylistId);
   
-  // Conectar o replay recorder ao input controller do player
-  const game = currentPlaylist.getGame();
-  if (game) {
-    const players = game.getPlayers();
-    if (players.length > 0) {
-      const playerInputController = game.getInputController(players[0].id);
-      if (playerInputController instanceof KeyboardInputController) {
-        const recorder = currentPlaylist.getReplayRecorder();
-        playerInputController.setReplayRecorder(recorder);
-      }
-    }
-  }
-  
+  // Iniciar primeiro cenário
   currentPlaylist.startScenario(0);
+  
   startPlaylistHUDLoop();
   
   trackPlaylistStart(playlist.name, playlist.scenarios.length);
@@ -573,6 +562,7 @@ window.addEventListener('game-play-again', handlePlayAgain);
     currentReplayController = new ReplayInputController(replayData);
 
     // Criar playlist em modo replay (sem gravação)
+    // IMPORTANTE: disableAutoProgress=true para que a transição seja controlada pelo replay
     currentPlaylist = new PlaylistMode(canvas, playlist, playlistConfig, {
       onScenarioComplete: (_index) => {
         showFeedback('<i class="fas fa-check"></i> Cenário Completo!', '#00ff00');
@@ -605,14 +595,16 @@ window.addEventListener('game-play-again', handlePlayAgain);
             game.setInputController(players[0].id, currentReplayController);
           }
         }
-      }
+      },
+      disableAutoProgress: true // Transição controlada pelo replay
     });
 
     updatePlaylistHUD();
     currentPlaylist.resetPlaylistStats();
     
-    // Iniciar replay controller
+    // Iniciar replay controller e conectar ao PlaylistMode para sincronização de tempo
     currentReplayController.start();
+    currentPlaylist.setReplayInputController(currentReplayController);
     
     currentPlaylist.startScenario(0);
     startPlaylistHUDLoop();
@@ -630,6 +622,9 @@ window.addEventListener('game-play-again', handlePlayAgain);
  * Para a reprodução do replay atual
  */
 (window as any).stopReplay = () => {
+  if (currentPlaylist) {
+    currentPlaylist.setReplayInputController(null);
+  }
   if (currentReplayController) {
     currentReplayController.stop();
     currentReplayController = null;

@@ -35,7 +35,11 @@ export class KeyboardInputController implements InputController {
   // Replay recorder (opcional)
   private replayRecorder: ReplayRecorder | null = null;
   
-  constructor() {
+  // Modo passivo: apenas grava inputs sem interferir no jogo
+  private passiveMode: boolean = false;
+  
+  constructor(options?: { passiveMode?: boolean }) {
+    this.passiveMode = options?.passiveMode ?? false;
     this.setupEventListeners();
   }
   
@@ -59,13 +63,16 @@ export class KeyboardInputController implements InputController {
       // Evita key repeat
       if (e.repeat) return;
       
-      this.keyState.set(e.key, true);
-      
       // Gravar evento no replay se estiver gravando
       const action = keyToReplayAction(e.key);
       if (action && this.replayRecorder) {
         this.replayRecorder.recordInputEvent('keydown', action);
       }
+      
+      // Em modo passivo, apenas grava - não interfere no jogo
+      if (this.passiveMode) return;
+      
+      this.keyState.set(e.key, true);
       
       // Chute
       if (keyBindings.isKeyBound(e.key, 'kick')) {
@@ -83,13 +90,16 @@ export class KeyboardInputController implements InputController {
         return;
       }
       
-      this.keyState.set(e.key, false);
-      
       // Gravar evento no replay se estiver gravando
       const action = keyToReplayAction(e.key);
       if (action && this.replayRecorder) {
         this.replayRecorder.recordInputEvent('keyup', action);
       }
+      
+      // Em modo passivo, apenas grava - não interfere no jogo
+      if (this.passiveMode) return;
+      
+      this.keyState.set(e.key, false);
       
       // Soltar tecla de chute
       if (keyBindings.isKeyBound(e.key, 'kick')) {
