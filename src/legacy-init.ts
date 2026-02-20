@@ -328,10 +328,11 @@ window.addEventListener('game-play-again', handlePlayAgain);
       
       // Parar gravação do replay e salvar
       let savedReplayId: string | undefined;
+      let replayData: any = null;
       try {
         const replayRecorder = currentPlaylist!.stopReplayRecording();
         if (replayRecorder) {
-          const replayData = replayRecorder.getReplayData(time);
+          replayData = replayRecorder.getReplayData(time);
           if (replayData && replayData.events.length > 0) {
             savedReplayId = await saveReplay(replayData);
             console.log('Replay saved with ID:', savedReplayId);

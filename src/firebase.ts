@@ -95,6 +95,8 @@ export async function submitScore(
   playlistId?: string,
   replayId?: string
 ): Promise<void> {
+  const score = calculateScore(timeInSeconds);
+  
   // Verificar se é uma playlist oficial ou da comunidade
   const collectionName = playlistId ? 'community_rankings' : 'rankings';
   
@@ -103,10 +105,23 @@ export async function submitScore(
     return;
   }
   
-  const score = calculateScore(timeInSeconds);
+  // VALIDAÇÃO 1: Verificar se tempo é válido
+  if (timeInSeconds <= 0 || !isFinite(timeInSeconds) || isNaN(timeInSeconds)) {
+    console.error('Tempo inválido detectado:', timeInSeconds);
+    throw new Error('Tempo inválido. Por favor, jogue normalmente.');
+  }
+  
+  // VALIDAÇÃO 2: Verificar se usuário está banido
+  const currentUser = auth.currentUser;
+  if (currentUser) {
+    const { isUserBanned } = await import('./auth.js');
+    const bannedCheck = await isUserBanned(currentUser.uid);
+    if (bannedCheck.banned) {
+      throw new Error('Você está banido e não pode submeter scores.');
+    }
+  }
   
   // Obter informações adicionais do usuário
-  const currentUser = auth.currentUser;
   const uid = currentUser?.uid;
   
   // Tentar obter IP (se a função foi configurada)

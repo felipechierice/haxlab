@@ -114,20 +114,25 @@ service cloud.firestore {
     match /rankings/{rankingId} {
       allow read: if true;
       
-      // Criar novo registro
+      // Criar novo registro - Validação básica apenas
+      // Validações anti-cheat avançadas são feitas no client-side via replay validator
       allow create: if request.resource.data.keys().hasAll(['nickname', 'playlistName', 'time', 'score', 'timestamp'])
                     && request.resource.data.nickname is string
                     && request.resource.data.nickname.size() >= 3
                     && request.resource.data.nickname.size() <= 16
                     && request.resource.data.time is number
-                    && request.resource.data.time >= 0
+                    && request.resource.data.time > 0  // Tempo deve ser positivo
+                    && request.resource.data.time <= 7200  // Tempo máximo: 2 horas
                     && request.resource.data.score is number
+                    && request.resource.data.score > 0
                     && request.resource.data.timestamp is number;
       
       // Atualizar registro existente (para atualizar highscore)
       allow update: if request.resource.data.time is number
-                    && request.resource.data.time >= 0
+                    && request.resource.data.time > 0
+                    && request.resource.data.time <= 7200
                     && request.resource.data.score is number
+                    && request.resource.data.score > 0
                     && request.resource.data.timestamp is number;
       
       // Deletar registros duplicados
@@ -138,21 +143,24 @@ service cloud.firestore {
     match /community_rankings/{rankingId} {
       allow read: if true;
       
-      // Criar novo registro
+      // Criar novo registro - Validação básica apenas
       allow create: if request.resource.data.keys().hasAll(['nickname', 'playlistName', 'playlistId', 'time', 'score', 'timestamp'])
                     && request.resource.data.nickname is string
                     && request.resource.data.nickname.size() >= 3
                     && request.resource.data.nickname.size() <= 16
                     && request.resource.data.playlistId is string
                     && request.resource.data.time is number
-                    && request.resource.data.time >= 0
+                    && request.resource.data.time > 0  // Tempo deve ser positivo
+                    && request.resource.data.time <= 7200  // Tempo máximo: 2 horas
                     && request.resource.data.score is number
+                    && request.resource.data.score > 0
                     && request.resource.data.timestamp is number;
       
       // Atualizar registro existente (para atualizar highscore)
       allow update: if request.resource.data.time is number
-                    && request.resource.data.time >= 0
+                    && request.resource.data.time > 0
                     && request.resource.data.score is number
+                    && request.resource.data.score > 0
                     && request.resource.data.timestamp is number;
       
       // Deletar registros duplicados
