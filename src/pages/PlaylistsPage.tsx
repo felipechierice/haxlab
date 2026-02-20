@@ -24,6 +24,12 @@ import '../styles/PlaylistsPage.css';
 const AVAILABLE_PLAYLISTS: PlaylistInfo[] = [
   // Playlists serão adicionadas aqui
   {
+    file: 'desafio-4.json',
+    name: 'Desafio 4',
+    description: 'Dessa vez, 6 cenários focados em testar suas habilidades em domínio, dribles e embaixadinhas.',
+    icon: 'fa-fire'
+  },
+  {
     file: 'desafio-3.json',
     name: 'Desafio 3',
     description: '8 cenários desafiadores: finalizações de tabela, passes mágicos, corredores de posse de bola contra múltiplos adversários e dribles em M — teste seus reflexos, precisão e controle de bola!',

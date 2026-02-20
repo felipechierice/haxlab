@@ -2826,9 +2826,9 @@ export class PlaylistEditor {
     ctx.save();
     ctx.beginPath();
     ctx.arc(checkpoint.position.x, checkpoint.position.y, checkpoint.radius, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0, 255, 0, 0.2)';
+    ctx.fillStyle = 'rgba(0, 255, 0, 0.1)';
     ctx.fill();
-    ctx.strokeStyle = isSelected ? '#ffff00' : '#00ff00';
+    ctx.strokeStyle = isSelected ? '#ffff00' : 'rgba(0, 255, 0, 0.5)';
     ctx.lineWidth = isSelected ? 3 : 2;
     ctx.stroke();
     

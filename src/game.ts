@@ -336,10 +336,10 @@ export class Game {
     player.hasKickedThisPress = false;
     
     // Tenta chutar imediatamente (reduz delay de até 16ms do fixed timestep)
-    this.tryKick(player);
+    const kickExecuted = this.tryKick(player);
     
-    // Notificar callback customizado
-    if (this.customKickCallback) {
+    // Notificar callback customizado APENAS se o chute foi executado
+    if (kickExecuted && this.customKickCallback) {
       this.customKickCallback();
     }
   }
@@ -353,10 +353,10 @@ export class Game {
     // Modo carregável: executa kick com força carregada
     if (this.config.kickMode === 'chargeable' && player.isChargingKick) {
       const chargeAmount = player.kickCharge;
-      this.tryKick(player, chargeAmount);
+      const kickExecuted = this.tryKick(player, chargeAmount);
       
-      // Notificar callback customizado
-      if (this.customKickCallback) {
+      // Notificar callback customizado APENAS se o chute foi executado
+      if (kickExecuted && this.customKickCallback) {
         this.customKickCallback();
       }
     }
@@ -619,9 +619,9 @@ export class Game {
     }
   }
 
-  private tryKick(player: Player, chargeAmount: number = 1): void {
+  private tryKick(player: Player, chargeAmount: number = 1): boolean {
     // Se já chutou neste pressionamento, não chuta de novo
-    if (player.hasKickedThisPress) return;
+    if (player.hasKickedThisPress) return false;
     
     const ball = this.state.ball.circle;
     const dx = ball.pos.x - player.circle.pos.x;
@@ -679,8 +679,12 @@ export class Game {
         if (this.customBallTouchCallback && player.team !== 'spectator') {
           this.customBallTouchCallback(player.id);
         }
+        
+        return true; // Chute executado com sucesso
       }
     }
+    
+    return false; // Chute não executado (bola fora do alcance)
   }
 
   // Aplica chute na bola (versão local para feedback visual)
@@ -906,14 +910,14 @@ export class Game {
             // Se o player está segurando a tecla de chute, executa o chute automaticamente
             if (player.isChargingKick && player.id === this.controlledPlayerId) {
               const chargeAmount = this.config.kickMode === 'chargeable' ? player.kickCharge : 1;
-              this.tryKick(player, chargeAmount);
+              const kickExecuted = this.tryKick(player, chargeAmount);
               
               // Desativa o indicador e o estado de carregamento
               player.isChargingKick = false;
               player.kickCharge = 0;
               
-              // Notificar callback customizado
-              if (this.customKickCallback) {
+              // Notificar callback customizado APENAS se o chute foi executado
+              if (kickExecuted && this.customKickCallback) {
                 this.customKickCallback();
               }
             }

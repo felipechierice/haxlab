@@ -283,17 +283,6 @@ window.addEventListener('game-play-again', handlePlayAgain);
   document.getElementById('playlist-hud-bottom')?.classList.remove('hidden');
   document.getElementById('game-info')?.classList.add('hidden');
   
-  // Se randomizeOrder estiver ativado, embaralhar os cenários
-  if (playlist.randomizeOrder) {
-    // Fisher-Yates shuffle
-    const scenarios = [...playlist.scenarios];
-    for (let i = scenarios.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [scenarios[i], scenarios[j]] = [scenarios[j], scenarios[i]];
-    }
-    playlist = { ...playlist, scenarios };
-  }
-  
   // Playlists sempre usam configurações padrão (exceto keybinds)
   // IMPORTANTE: Usar config padrão fixo para garantir determinismo entre editor e modo de jogo
   const baseConfig = getDefaultConfig();

@@ -1,0 +1,705 @@
+{
+  "name": "Desafio 4",
+  "description": "Dessa vez, 6 cenários focados em testar suas habilidades em domínio, dribles e embaixadinhas.",
+  "scenarios": [
+    {
+      "name": "Ageitada e Gol - Lateral Superior Direita",
+      "map": "default",
+      "timeLimit": 5,
+      "objectives": [
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 873.2727355957031,
+            "y": 51.409095764160156
+          },
+          "radius": 25,
+          "timeLimit": 10
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 950.2727355957031,
+            "y": 134.40909576416016
+          },
+          "radius": 25,
+          "timeLimit": 10
+        },
+        {
+          "type": "goal",
+          "team": "red",
+          "scoredBy": "player"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-1771624262319"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771624262319",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 873,
+            "y": 523.4090957641602
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 873,
+        "y": 133
+      },
+      "playerSpawn": {
+        "x": 873,
+        "y": 183
+      }
+    },
+    {
+      "name": "Ageitada e Gol - Lateral Inferior Direita",
+      "map": "default",
+      "timeLimit": 5,
+      "objectives": [
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 873,
+            "y": 549
+          },
+          "radius": 25,
+          "timeLimit": 10
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 950,
+            "y": 466
+          },
+          "radius": 25,
+          "timeLimit": 10
+        },
+        {
+          "type": "goal",
+          "team": "red",
+          "scoredBy": "player"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-1771624344840-v5l0hhltt"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771624344840-v5l0hhltt",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 873,
+            "y": 77
+          },
+          "behavior": {
+            "preset": "autonomous",
+            "config": {
+              "strategy": "chase_ball",
+              "kickDistance": 35,
+              "reactionDelayMs": 0
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 873,
+        "y": 467
+      },
+      "playerSpawn": {
+        "x": 873,
+        "y": 417
+      }
+    },
+    {
+      "name": "Tabelas e Gol - Lateral Superior",
+      "map": "default",
+      "timeLimit": 10,
+      "objectives": [
+        {
+          "type": "path",
+          "points": [
+            {
+              "x": 120,
+              "y": 160
+            },
+            {
+              "x": 300,
+              "y": 160
+            },
+            {
+              "x": 350,
+              "y": 50
+            },
+            {
+              "x": 400,
+              "y": 160
+            },
+            {
+              "x": 600,
+              "y": 160
+            },
+            {
+              "x": 650,
+              "y": 50
+            },
+            {
+              "x": 700,
+              "y": 160
+            },
+            {
+              "x": 939.2727355957031,
+              "y": 299.40909576416016
+            }
+          ],
+          "width": 100
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 350.2727355957031,
+            "y": 51.409095764160156
+          },
+          "radius": 40,
+          "timeLimit": 3
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 650.2727355957031,
+            "y": 50.409095764160156
+          },
+          "radius": 40,
+          "timeLimit": 5
+        },
+        {
+          "type": "goal",
+          "team": "red"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-1771624764176",
+            "bot-1771624858693",
+            "bot-1771624945670"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771624764176",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 437,
+            "y": 120
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 1250
+                },
+                {
+                  "action": "move",
+                  "direction": "LEFT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false,
+              "kickOnContact": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771624858693",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 740,
+            "y": 120
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 3500
+                },
+                {
+                  "action": "move",
+                  "direction": "LEFT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false,
+              "kickOnContact": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771624945670",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 950,
+            "y": 385
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true,
+              "kickOnContact": true
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 150,
+        "y": 160
+      },
+      "playerSpawn": {
+        "x": 100,
+        "y": 160
+      }
+    },
+    {
+      "name": "Tabelas e Gol - Lateral Inferior",
+      "map": "default",
+      "timeLimit": 10,
+      "objectives": [
+        {
+          "type": "path",
+          "points": [
+            {
+              "x": 120,
+              "y": 440
+            },
+            {
+              "x": 300,
+              "y": 440
+            },
+            {
+              "x": 350,
+              "y": 550
+            },
+            {
+              "x": 400,
+              "y": 440
+            },
+            {
+              "x": 600,
+              "y": 440
+            },
+            {
+              "x": 650,
+              "y": 550
+            },
+            {
+              "x": 700,
+              "y": 440
+            },
+            {
+              "x": 939,
+              "y": 301
+            }
+          ],
+          "width": 100
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 350,
+            "y": 549
+          },
+          "radius": 40,
+          "timeLimit": 3
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 650,
+            "y": 550
+          },
+          "radius": 40,
+          "timeLimit": 5
+        },
+        {
+          "type": "goal",
+          "team": "red"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "prevent_touch",
+          "preventBotIds": [
+            "bot-1771625079685-endumdgta",
+            "bot-1771625079685-icsfleu3o",
+            "bot-1771625079685-m48lg7igz"
+          ]
+        }
+      ],
+      "bots": [
+        {
+          "id": "bot-1771625079685-endumdgta",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 437,
+            "y": 480
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 1250
+                },
+                {
+                  "action": "move",
+                  "direction": "LEFT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false,
+              "kickOnContact": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771625079685-icsfleu3o",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 740,
+            "y": 480
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "wait",
+                  "direction": "RIGHT",
+                  "durationMs": 3500
+                },
+                {
+                  "action": "move",
+                  "direction": "LEFT",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": false,
+              "kickOnContact": true
+            }
+          },
+          "radius": 15
+        },
+        {
+          "id": "bot-1771625079685-m48lg7igz",
+          "name": "Bot",
+          "team": "blue",
+          "spawn": {
+            "x": 950,
+            "y": 215
+          },
+          "behavior": {
+            "preset": "patrol",
+            "config": {
+              "commands": [
+                {
+                  "action": "move",
+                  "direction": "DOWN",
+                  "durationMs": 1000
+                },
+                {
+                  "action": "move",
+                  "direction": "UP",
+                  "durationMs": 1000
+                }
+              ],
+              "loop": true,
+              "kickOnContact": true
+            }
+          },
+          "radius": 15
+        }
+      ],
+      "ballSpawn": {
+        "x": 150,
+        "y": 440
+      },
+      "playerSpawn": {
+        "x": 100,
+        "y": 440
+      }
+    },
+    {
+      "name": "Embaixadinhas e Gol - Lateral Superior",
+      "map": "default",
+      "timeLimit": 10,
+      "objectives": [
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 499.2727355957031,
+            "y": 52.409095764160156
+          },
+          "radius": 30,
+          "timeLimit": 3
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 498.2727355957031,
+            "y": 150.40909576416016
+          },
+          "radius": 30,
+          "timeLimit": 1
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 499.2727355957031,
+            "y": 52.409095764160156
+          },
+          "radius": 30,
+          "timeLimit": 1
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 498.2727355957031,
+            "y": 150.40909576416016
+          },
+          "radius": 30,
+          "timeLimit": 1
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 499.2727355957031,
+            "y": 51.409095764160156
+          },
+          "radius": 30,
+          "timeLimit": 1
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 498.2727355957031,
+            "y": 151.40909576416016
+          },
+          "radius": 30,
+          "timeLimit": 1
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 949.2727355957031,
+            "y": 300.40909576416016
+          },
+          "radius": 80,
+          "timeLimit": 3
+        },
+        {
+          "type": "goal",
+          "team": "red",
+          "scoredBy": "player"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "kick_count",
+          "max": 4
+        }
+      ],
+      "bots": [],
+      "ballSpawn": {
+        "x": 499,
+        "y": 130
+      },
+      "playerSpawn": {
+        "x": 539,
+        "y": 181
+      },
+      "initialPlayerVelocity": {
+        "x": -84.72726440429688,
+        "y": -44.590904235839844
+      }
+    },
+    {
+      "name": "Embaixadinhas e Gol - Lateral Inferior",
+      "map": "default",
+      "timeLimit": 10,
+      "objectives": [
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 499,
+            "y": 548
+          },
+          "radius": 30,
+          "timeLimit": 3
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 498,
+            "y": 450
+          },
+          "radius": 30,
+          "timeLimit": 1
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 499,
+            "y": 548
+          },
+          "radius": 30,
+          "timeLimit": 1
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 498,
+            "y": 450
+          },
+          "radius": 30,
+          "timeLimit": 1
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 499,
+            "y": 549
+          },
+          "radius": 30,
+          "timeLimit": 1
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 498,
+            "y": 449
+          },
+          "radius": 30,
+          "timeLimit": 1
+        },
+        {
+          "type": "checkpoint",
+          "position": {
+            "x": 949,
+            "y": 300
+          },
+          "radius": 80,
+          "timeLimit": 3
+        },
+        {
+          "type": "goal",
+          "team": "red",
+          "scoredBy": "player"
+        },
+        {
+          "type": "no_goal",
+          "team": "red"
+        },
+        {
+          "type": "kick_count",
+          "max": 4
+        }
+      ],
+      "bots": [],
+      "ballSpawn": {
+        "x": 499,
+        "y": 470
+      },
+      "playerSpawn": {
+        "x": 539,
+        "y": 419
+      },
+      "initialPlayerVelocity": {
+        "x": -85,
+        "y": 45
+      }
+    }
+  ],
+  "gameConfig": {
+    "kickStrength": 500,
+    "kickMode": "classic",
+    "playerRadius": 15,
+    "playerSpeed": 150,
+    "playerAcceleration": 7.5,
+    "kickSpeedMultiplier": 1,
+    "ballConfig": {
+      "radius": 8,
+      "mass": 5,
+      "damping": 0.99,
+      "bounce": 0.45,
+      "playerRestitution": 0.3,
+      "color": "#ffff00",
+      "borderColor": "#000000",
+      "borderWidth": 2
+    }
+  },
+  "randomizeOrder": false
+}

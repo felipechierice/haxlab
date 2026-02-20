@@ -182,6 +182,8 @@ function migrateBotBehavior(oldBehavior: any): BotBehavior {
 
 export class PlaylistMode {
   private playlist: Playlist;
+  private originalPlaylist: Playlist; // Playlist original antes da randomização
+  private randomizeOrder: boolean; // Flag para saber se deve randomizar
   private progress: PlaylistProgress;
   private game: Game | null = null;
   private canvas: HTMLCanvasElement;
@@ -240,7 +242,22 @@ export class PlaylistMode {
     }
   ) {
     this.canvas = canvas;
-    this.playlist = playlist;
+    // Armazenar playlist original e flag de randomização
+    this.originalPlaylist = playlist;
+    this.randomizeOrder = playlist.randomizeOrder || false;
+    
+    // Randomizar cenários na inicialização se randomizeOrder estiver ativo
+    if (this.randomizeOrder) {
+      const scenarios = [...playlist.scenarios];
+      for (let i = scenarios.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [scenarios[i], scenarios[j]] = [scenarios[j], scenarios[i]];
+      }
+      this.playlist = { ...playlist, scenarios };
+    } else {
+      this.playlist = playlist;
+    }
+    
     this.baseConfig = baseConfig;
     this.onScenarioComplete = callbacks.onScenarioComplete;
     this.onPlaylistComplete = callbacks.onPlaylistComplete;
@@ -936,11 +953,11 @@ export class PlaylistMode {
     // Círculo externo (checkpoint)
     ctx.beginPath();
     ctx.arc(checkpoint.position.x, checkpoint.position.y, checkpoint.radius, 0, Math.PI * 2);
-    ctx.strokeStyle = '#00ff00';
+    ctx.strokeStyle = 'rgba(0, 255, 0, 0.5)';
     ctx.lineWidth = 3;
     ctx.stroke();
     
-    ctx.fillStyle = 'rgba(0, 255, 0, 0.1)';
+    ctx.fillStyle = 'rgba(0, 255, 0, 0.05)';
     ctx.fill();
     
     // Círculo interno (timer) se houver time limit
@@ -1101,6 +1118,19 @@ export class PlaylistMode {
     this.totalKicks = 0;
     this.totalPlaylistTime = 0;
     this.playlistStartTime = Date.now();
+  }
+  
+  /**
+   * Randomiza a ordem dos cenários da playlist
+   * Usa Fisher-Yates shuffle
+   */
+  private randomizeScenarios(): void {
+    const scenarios = [...this.originalPlaylist.scenarios];
+    for (let i = scenarios.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [scenarios[i], scenarios[j]] = [scenarios[j], scenarios[i]];
+    }
+    this.playlist = { ...this.originalPlaylist, scenarios };
   }
   
   /**
@@ -1339,6 +1369,11 @@ export class PlaylistMode {
     if (this.nextScenarioTimeoutId !== null) {
       clearTimeout(this.nextScenarioTimeoutId);
       this.nextScenarioTimeoutId = null;
+    }
+    
+    // Re-randomizar cenários se randomizeOrder estiver ativo
+    if (this.randomizeOrder) {
+      this.randomizeScenarios();
     }
     
     // Resetar progresso
