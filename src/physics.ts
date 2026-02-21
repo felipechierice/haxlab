@@ -1,4 +1,4 @@
-import { Vector2D, Circle, Segment } from './types.js';
+import { Vector2D, Circle, Segment, Goalpost } from './types.js';
 
 // Vetores reutilizáveis para evitar alocações no loop de física
 const _tempVec1: Vector2D = { x: 0, y: 0 };
@@ -78,9 +78,16 @@ export class Physics {
    * @param circle - Círculo a ser atualizado
    * @param dt - Delta time
    * @param segments - Segmentos para verificar colisão (paredes)
+   * @param goalposts - Goalposts (traves) para verificar colisão
    * @param maxVelocity - Velocidade máxima antes de aplicar sub-steps (padrão: MAX_SAFE_VELOCITY)
    */
-  static updateCircleWithSubsteps(circle: Circle, dt: number, segments: Segment[], maxVelocity: number = Physics.MAX_SAFE_VELOCITY): number {
+  static updateCircleWithSubsteps(
+    circle: Circle, 
+    dt: number, 
+    segments: Segment[], 
+    goalposts: Goalpost[] = [],
+    maxVelocity: number = Physics.MAX_SAFE_VELOCITY
+  ): number {
     const speed = Math.sqrt(circle.vel.x * circle.vel.x + circle.vel.y * circle.vel.y);
     let maxImpactNormal = 0; // Maior componente de velocidade perpendicular à parede no impacto
     
@@ -96,6 +103,15 @@ export class Physics {
           const impactNormal = Physics.getWallImpactSpeed(circle, segment);
           if (impactNormal > maxImpactNormal) maxImpactNormal = impactNormal;
           Physics.resolveSegmentCollision(circle, segment);
+        }
+      }
+      
+      // Verifica colisões com goalposts
+      for (const goalpost of goalposts) {
+        if (Physics.checkAndResolveStaticCircleCollision(circle, goalpost.pos, goalpost.radius, goalpost.bounce)) {
+          // Estima velocidade de impacto baseado na velocidade atual
+          const impactSpeed = Math.sqrt(circle.vel.x * circle.vel.x + circle.vel.y * circle.vel.y);
+          if (impactSpeed > maxImpactNormal) maxImpactNormal = impactSpeed;
         }
       }
     } else {
@@ -114,6 +130,14 @@ export class Physics {
             const impactNormal = Physics.getWallImpactSpeed(circle, segment);
             if (impactNormal > maxImpactNormal) maxImpactNormal = impactNormal;
             Physics.resolveSegmentCollision(circle, segment);
+          }
+        }
+        
+        // Verifica colisões com goalposts
+        for (const goalpost of goalposts) {
+          if (Physics.checkAndResolveStaticCircleCollision(circle, goalpost.pos, goalpost.radius, goalpost.bounce)) {
+            const impactSpeed = Math.sqrt(circle.vel.x * circle.vel.x + circle.vel.y * circle.vel.y);
+            if (impactSpeed > maxImpactNormal) maxImpactNormal = impactSpeed;
           }
         }
       }
@@ -213,6 +237,49 @@ export class Physics {
     c1.vel.y -= ny * impulseMagnitude * c1.invMass;
     c2.vel.x += nx * impulseMagnitude * c2.invMass;
     c2.vel.y += ny * impulseMagnitude * c2.invMass;
+  }
+
+  /**
+   * Verifica e resolve colisão com um círculo estático (como um goalpost).
+   * Retorna true se houve colisão.
+   */
+  static checkAndResolveStaticCircleCollision(
+    circle: Circle, 
+    staticPos: Vector2D, 
+    staticRadius: number, 
+    bounce: number = 0.8
+  ): boolean {
+    const dx = circle.pos.x - staticPos.x;
+    const dy = circle.pos.y - staticPos.y;
+    const distSq = dx * dx + dy * dy;
+    const minDist = circle.radius + staticRadius;
+    const minDistSq = minDist * minDist;
+    
+    if (distSq >= minDistSq) return false;
+    
+    const dist = Math.sqrt(distSq);
+    if (dist === 0) return false;
+    
+    const invDist = 1 / dist;
+    const nx = dx * invDist;
+    const ny = dy * invDist;
+    const overlap = minDist - dist;
+    
+    // Desloca o círculo para fora do goalpost
+    circle.pos.x += nx * overlap;
+    circle.pos.y += ny * overlap;
+    
+    // Calcula velocidade ao longo da normal
+    const velAlongNormal = circle.vel.x * nx + circle.vel.y * ny;
+    
+    // Se está se afastando, não aplica impulso
+    if (velAlongNormal > 0) return true;
+    
+    // Aplica bounce (reflexão com coeficiente de restituição)
+    circle.vel.x -= nx * velAlongNormal * (1 + bounce);
+    circle.vel.y -= ny * velAlongNormal * (1 + bounce);
+    
+    return true;
   }
 
   static checkSegmentCollision(circle: Circle, segment: Segment): boolean {

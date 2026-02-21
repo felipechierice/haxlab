@@ -81,6 +81,14 @@ export const DEFAULT_MAP: GameMap = {
       team: 'blue'
     }
   ],
+  goalposts: [
+    // Gol vermelho (esquerdo)
+    { pos: { x: 50, y: 225 }, radius: 8, bounce: 0.8, team: 'red' },
+    { pos: { x: 50, y: 375 }, radius: 8, bounce: 0.8, team: 'red' },
+    // Gol azul (direito)
+    { pos: { x: 950, y: 225 }, radius: 8, bounce: 0.8, team: 'blue' },
+    { pos: { x: 950, y: 375 }, radius: 8, bounce: 0.8, team: 'blue' }
+  ],
   spawnPoints: {
     red: [
       { x: 200, y: 300 },
@@ -176,6 +184,14 @@ export const CLASSIC_MAP: GameMap = {
       p2: { x: 900, y: 360 },
       team: 'blue'
     }
+  ],
+  goalposts: [
+    // Gol vermelho (esquerdo)
+    { pos: { x: 100, y: 240 }, radius: 8, bounce: 0.8, team: 'red' },
+    { pos: { x: 100, y: 360 }, radius: 8, bounce: 0.8, team: 'red' },
+    // Gol azul (direito)
+    { pos: { x: 900, y: 240 }, radius: 8, bounce: 0.8, team: 'blue' },
+    { pos: { x: 900, y: 360 }, radius: 8, bounce: 0.8, team: 'blue' }
   ],
   spawnPoints: {
     red: [

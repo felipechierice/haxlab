@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../hooks/useI18n';
 import { useKeyboardNav } from '../hooks/useKeyboardNav';
-import { keyBindings, KeyBindings } from '../keybindings';
+import { keyBindings, KeyBindings, DEFAULT_KEYBINDINGS } from '../keybindings';
 import { audioManager } from '../audio';
 import { trackPageView } from '../analytics';
 import { extrapolation } from '../extrapolation';
@@ -66,7 +66,8 @@ function AppSettingsPage() {
         return;
       }
 
-      keyBindings.setBinding(configuringKey, [e.key]);
+      // Adiciona a nova tecla ao invés de substituir
+      keyBindings.addKey(configuringKey, e.key);
       setKeybinds(keyBindings.getBindings());
       setConfiguringKey(null);
     };
@@ -75,12 +76,27 @@ function AppSettingsPage() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [configuringKey]);
 
-  const formatKeyDisplay = (keys: string[]): string => {
-    return keys.map(key => {
-      if (key === ' ' || key === 'Space') return 'SPACE';
-      if (key.startsWith('Arrow')) return key.replace('Arrow', '').toUpperCase();
-      return key.toUpperCase();
-    }).join(' / ');
+  const formatKeyDisplay = (key: string): string => {
+    if (key === ' ') return 'SPACE';
+    if (key === 'Control') return 'CTRL';
+    if (key === 'Shift') return 'SHIFT';
+    if (key.startsWith('Arrow')) return key.replace('Arrow', '').toUpperCase();
+    return key.toUpperCase();
+  };
+  
+  const handleRemoveKey = (action: keyof KeyBindings, key: string) => {
+    keyBindings.removeKey(action, key);
+    setKeybinds(keyBindings.getBindings());
+  };
+  
+  const handleResetAction = (action: keyof KeyBindings) => {
+    keyBindings.resetActionToDefault(action);
+    setKeybinds(keyBindings.getBindings());
+  };
+  
+  const handleClearAction = (action: keyof KeyBindings) => {
+    keyBindings.clearAction(action);
+    setKeybinds(keyBindings.getBindings());
   };
 
   useEffect(() => {
@@ -257,88 +273,297 @@ function AppSettingsPage() {
               <i className="fas fa-keyboard"></i> {t('settings.controls')}
             </label>
             <div className="keybinds-grid">
+              {/* Move Up */}
               <div className="keybind-row">
                 <span className="keybind-label">{t('settings.moveUp')}</span>
-                <div className="keybind-control">
-                  <input
-                    type="text"
-                    value={configuringKey === 'up' ? t('settings.pressKey') : formatKeyDisplay(keybinds.up)}
-                    readOnly
-                    className={`keybind-input${configuringKey === 'up' ? ' configuring' : ''}`}
-                  />
-                  <button className="keybind-btn" onClick={() => setConfiguringKey('up')}>
-                    {t('settings.change')}
-                  </button>
+                <div className="keybind-control-multi">
+                  <div className="keybind-keys">
+                    {keybinds.up.map((key, idx) => (
+                      <div key={idx} className="keybind-key-chip">
+                        <span>{formatKeyDisplay(key)}</span>
+                        <button 
+                          className="keybind-key-remove"
+                          onClick={() => handleRemoveKey('up', key)}
+                          title="Remove key"
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      </div>
+                    ))}
+                    {configuringKey === 'up' && (
+                      <div className="keybind-key-chip configuring">
+                        <span>{t('settings.pressKey')}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="keybind-actions">
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => setConfiguringKey('up')}
+                      title="Add key"
+                    >
+                      <i className="fas fa-plus"></i>
+                    </button>
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => handleResetAction('up')}
+                      title="Reset to default"
+                    >
+                      <i className="fas fa-undo"></i>
+                    </button>
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => handleClearAction('up')}
+                      title="Clear all"
+                    >
+                      <i className="fas fa-trash"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
+              
+              {/* Move Down */}
               <div className="keybind-row">
                 <span className="keybind-label">{t('settings.moveDown')}</span>
-                <div className="keybind-control">
-                  <input
-                    type="text"
-                    value={configuringKey === 'down' ? t('settings.pressKey') : formatKeyDisplay(keybinds.down)}
-                    readOnly
-                    className={`keybind-input${configuringKey === 'down' ? ' configuring' : ''}`}
-                  />
-                  <button className="keybind-btn" onClick={() => setConfiguringKey('down')}>
-                    {t('settings.change')}
-                  </button>
+                <div className="keybind-control-multi">
+                  <div className="keybind-keys">
+                    {keybinds.down.map((key, idx) => (
+                      <div key={idx} className="keybind-key-chip">
+                        <span>{formatKeyDisplay(key)}</span>
+                        <button 
+                          className="keybind-key-remove"
+                          onClick={() => handleRemoveKey('down', key)}
+                          title="Remove key"
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      </div>
+                    ))}
+                    {configuringKey === 'down' && (
+                      <div className="keybind-key-chip configuring">
+                        <span>{t('settings.pressKey')}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="keybind-actions">
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => setConfiguringKey('down')}
+                      title="Add key"
+                    >
+                      <i className="fas fa-plus"></i>
+                    </button>
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => handleResetAction('down')}
+                      title="Reset to default"
+                    >
+                      <i className="fas fa-undo"></i>
+                    </button>
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => handleClearAction('down')}
+                      title="Clear all"
+                    >
+                      <i className="fas fa-trash"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
+              
+              {/* Move Left */}
               <div className="keybind-row">
                 <span className="keybind-label">{t('settings.moveLeft')}</span>
-                <div className="keybind-control">
-                  <input
-                    type="text"
-                    value={configuringKey === 'left' ? t('settings.pressKey') : formatKeyDisplay(keybinds.left)}
-                    readOnly
-                    className={`keybind-input${configuringKey === 'left' ? ' configuring' : ''}`}
-                  />
-                  <button className="keybind-btn" onClick={() => setConfiguringKey('left')}>
-                    {t('settings.change')}
-                  </button>
+                <div className="keybind-control-multi">
+                  <div className="keybind-keys">
+                    {keybinds.left.map((key, idx) => (
+                      <div key={idx} className="keybind-key-chip">
+                        <span>{formatKeyDisplay(key)}</span>
+                        <button 
+                          className="keybind-key-remove"
+                          onClick={() => handleRemoveKey('left', key)}
+                          title="Remove key"
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      </div>
+                    ))}
+                    {configuringKey === 'left' && (
+                      <div className="keybind-key-chip configuring">
+                        <span>{t('settings.pressKey')}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="keybind-actions">
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => setConfiguringKey('left')}
+                      title="Add key"
+                    >
+                      <i className="fas fa-plus"></i>
+                    </button>
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => handleResetAction('left')}
+                      title="Reset to default"
+                    >
+                      <i className="fas fa-undo"></i>
+                    </button>
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => handleClearAction('left')}
+                      title="Clear all"
+                    >
+                      <i className="fas fa-trash"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
+              
+              {/* Move Right */}
               <div className="keybind-row">
                 <span className="keybind-label">{t('settings.moveRight')}</span>
-                <div className="keybind-control">
-                  <input
-                    type="text"
-                    value={configuringKey === 'right' ? t('settings.pressKey') : formatKeyDisplay(keybinds.right)}
-                    readOnly
-                    className={`keybind-input${configuringKey === 'right' ? ' configuring' : ''}`}
-                  />
-                  <button className="keybind-btn" onClick={() => setConfiguringKey('right')}>
-                    {t('settings.change')}
-                  </button>
+                <div className="keybind-control-multi">
+                  <div className="keybind-keys">
+                    {keybinds.right.map((key, idx) => (
+                      <div key={idx} className="keybind-key-chip">
+                        <span>{formatKeyDisplay(key)}</span>
+                        <button 
+                          className="keybind-key-remove"
+                          onClick={() => handleRemoveKey('right', key)}
+                          title="Remove key"
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      </div>
+                    ))}
+                    {configuringKey === 'right' && (
+                      <div className="keybind-key-chip configuring">
+                        <span>{t('settings.pressKey')}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="keybind-actions">
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => setConfiguringKey('right')}
+                      title="Add key"
+                    >
+                      <i className="fas fa-plus"></i>
+                    </button>
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => handleResetAction('right')}
+                      title="Reset to default"
+                    >
+                      <i className="fas fa-undo"></i>
+                    </button>
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => handleClearAction('right')}
+                      title="Clear all"
+                    >
+                      <i className="fas fa-trash"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
+              
+              {/* Kick */}
               <div className="keybind-row">
                 <span className="keybind-label">{t('settings.kick')}</span>
-                <div className="keybind-control">
-                  <input
-                    type="text"
-                    value={configuringKey === 'kick' ? t('settings.pressKey') : formatKeyDisplay(keybinds.kick)}
-                    readOnly
-                    className={`keybind-input${configuringKey === 'kick' ? ' configuring' : ''}`}
-                  />
-                  <button className="keybind-btn" onClick={() => setConfiguringKey('kick')}>
-                    {t('settings.change')}
-                  </button>
+                <div className="keybind-control-multi">
+                  <div className="keybind-keys">
+                    {keybinds.kick.map((key, idx) => (
+                      <div key={idx} className="keybind-key-chip">
+                        <span>{formatKeyDisplay(key)}</span>
+                        <button 
+                          className="keybind-key-remove"
+                          onClick={() => handleRemoveKey('kick', key)}
+                          title="Remove key"
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      </div>
+                    ))}
+                    {configuringKey === 'kick' && (
+                      <div className="keybind-key-chip configuring">
+                        <span>{t('settings.pressKey')}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="keybind-actions">
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => setConfiguringKey('kick')}
+                      title="Add key"
+                    >
+                      <i className="fas fa-plus"></i>
+                    </button>
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => handleResetAction('kick')}
+                      title="Reset to default"
+                    >
+                      <i className="fas fa-undo"></i>
+                    </button>
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => handleClearAction('kick')}
+                      title="Clear all"
+                    >
+                      <i className="fas fa-trash"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
+              
+              {/* Switch Player */}
               <div className="keybind-row">
                 <span className="keybind-label">{t('settings.switchPlayer')}</span>
-                <div className="keybind-control">
-                  <input
-                    type="text"
-                    value={configuringKey === 'switchPlayer' ? t('settings.pressKey') : formatKeyDisplay(keybinds.switchPlayer)}
-                    readOnly
-                    className={`keybind-input${configuringKey === 'switchPlayer' ? ' configuring' : ''}`}
-                  />
-                  <button className="keybind-btn" onClick={() => setConfiguringKey('switchPlayer')}>
-                    {t('settings.change')}
-                  </button>
+                <div className="keybind-control-multi">
+                  <div className="keybind-keys">
+                    {keybinds.switchPlayer.map((key, idx) => (
+                      <div key={idx} className="keybind-key-chip">
+                        <span>{formatKeyDisplay(key)}</span>
+                        <button 
+                          className="keybind-key-remove"
+                          onClick={() => handleRemoveKey('switchPlayer', key)}
+                          title="Remove key"
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      </div>
+                    ))}
+                    {configuringKey === 'switchPlayer' && (
+                      <div className="keybind-key-chip configuring">
+                        <span>{t('settings.pressKey')}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="keybind-actions">
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => setConfiguringKey('switchPlayer')}
+                      title="Add key"
+                    >
+                      <i className="fas fa-plus"></i>
+                    </button>
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => handleResetAction('switchPlayer')}
+                      title="Reset to default"
+                    >
+                      <i className="fas fa-undo"></i>
+                    </button>
+                    <button 
+                      className="keybind-btn-icon" 
+                      onClick={() => handleClearAction('switchPlayer')}
+                      title="Clear all"
+                    >
+                      <i className="fas fa-trash"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

@@ -7,12 +7,12 @@ export interface KeyBindings {
   switchPlayer: string[];
 }
 
-const DEFAULT_KEYBINDINGS: KeyBindings = {
-  up: ['ArrowUp', 'w', 'W'],
-  down: ['ArrowDown', 's', 'S'],
-  left: ['ArrowLeft', 'a', 'A'],
-  right: ['ArrowRight', 'd', 'D'],
-  kick: [' ', 'Space'],
+export const DEFAULT_KEYBINDINGS: KeyBindings = {
+  up: ['w', 'ArrowUp'],
+  down: ['s', 'ArrowDown'],
+  left: ['a', 'ArrowLeft'],
+  right: ['d', 'ArrowRight'],
+  kick: [' ', 'x', 'Shift', 'Control'],
   switchPlayer: ['Tab']
 };
 
@@ -30,6 +30,28 @@ export class KeyBindingsManager {
 
   setBinding(action: keyof KeyBindings, keys: string[]): void {
     this.bindings[action] = keys;
+    this.saveToStorage();
+  }
+  
+  addKey(action: keyof KeyBindings, key: string): void {
+    if (!this.bindings[action].includes(key)) {
+      this.bindings[action].push(key);
+      this.saveToStorage();
+    }
+  }
+  
+  removeKey(action: keyof KeyBindings, key: string): void {
+    this.bindings[action] = this.bindings[action].filter(k => k !== key);
+    this.saveToStorage();
+  }
+  
+  clearAction(action: keyof KeyBindings): void {
+    this.bindings[action] = [];
+    this.saveToStorage();
+  }
+  
+  resetActionToDefault(action: keyof KeyBindings): void {
+    this.bindings[action] = [...DEFAULT_KEYBINDINGS[action]];
     this.saveToStorage();
   }
 

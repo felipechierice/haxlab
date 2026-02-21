@@ -439,8 +439,12 @@ export async function isUserBanned(uid: string): Promise<{ banned: boolean; reas
       return { banned: true, reason: data.reason };
     }
     return { banned: false };
-  } catch (error) {
-    console.error('Error checking if user is banned:', error);
+  } catch (error: any) {
+    // Silenciar erro de permissão - pode ocorrer durante race condition na autenticação
+    // Melhor permitir acesso temporário do que bloquear erroneamente
+    if (error?.code !== 'permission-denied') {
+      console.error('Error checking if user is banned:', error);
+    }
     return { banned: false };
   }
 }
@@ -456,8 +460,11 @@ export async function isIPBanned(ip: string): Promise<{ banned: boolean; reason?
       return { banned: true, reason: data.reason };
     }
     return { banned: false };
-  } catch (error) {
-    console.error('Error checking if IP is banned:', error);
+  } catch (error: any) {
+    // Silenciar erro de permissão - pode ocorrer durante race condition na autenticação
+    if (error?.code !== 'permission-denied') {
+      console.error('Error checking if IP is banned:', error);
+    }
     return { banned: false };
   }
 }

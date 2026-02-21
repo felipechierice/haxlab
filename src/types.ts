@@ -27,11 +27,19 @@ export interface Goal {
   team: 'red' | 'blue';
 }
 
+export interface Goalpost {
+  pos: Vector2D;
+  radius: number;
+  bounce: number; // Coeficiente de restituição (0-1)
+  team: 'red' | 'blue'; // Para cor da renderização
+}
+
 export interface GameMap {
   width: number;
   height: number;
   segments: Segment[];
   goals: Goal[];
+  goalposts?: Goalpost[]; // Traves opcionais (círculos nas extremidades dos gols)
   spawnPoints: {
     red: Vector2D[];
     blue: Vector2D[];

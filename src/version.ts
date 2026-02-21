@@ -6,7 +6,7 @@
  * 
  * Formato recomendado: "MAJOR.MINOR.PATCH" ou "YYYY.MM.DD"
  */
-export const GAME_VERSION = '0.1.4-alpha';
+export const GAME_VERSION = '0.1.6-alpha';
 
 /**
  * Versão da aplicação (usado para compatibilidade de replays)

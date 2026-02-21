@@ -22,6 +22,34 @@ interface ChangelogEntry {
 
 const changelogs: ChangelogEntry[] = [
   {
+    version: '0.1.6-alpha',
+    date: '2026-02-20',
+    changes: [
+      {
+        type: 'improvement',
+        text: {
+          en: 'Enhanced keybindings configuration: support for multiple keys per action with visual chips, individual remove buttons, and actions to add/reset/clear',
+          pt: 'Melhoradas configurações de controles: suporte para múltiplas teclas por ação com chips visuais, botões individuais de remoção, e ações para adicionar/resetar/limpar',
+          es: 'Mejoradas configuraciones de controles: soporte para múltiples teclas por acción con chips visuales, botones individuales de eliminación, y acciones para añadir/resetear/limpiar'
+        }
+      }
+    ]
+  },
+  {
+    version: '0.1.5-alpha',
+    date: '2026-02-20',
+    changes: [
+      {
+        type: 'feature',
+        text: {
+          en: 'Added goalposts (goal posts) - circular hitboxes at goal corners for realistic ball bounces',
+          pt: 'Adicionadas traves aos gols - círculos nas extremidades dos gols para quiques realistas da bola',
+          es: 'Agregados postes de gol - círculos en las esquinas de las porterías para rebotes realistas del balón'
+        }
+      }
+    ]
+  },
+  {
     version: '0.1.4-alpha',
     date: '2026-02-19',
     changes: [

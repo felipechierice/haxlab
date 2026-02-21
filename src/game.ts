@@ -73,8 +73,18 @@ export class Game {
   private countdownActive: boolean = false;
   private countdownDuration: number = 2.0; // duração em segundos
   private countdownElapsed: number = 0;
+  
+  // Sistema de reposicionamento da bola (modo treino livre)
+  private lastClickedPosition: Vector2D | null = null;
+  private canvasClickHandler: ((e: MouseEvent) => void) | null = null;
+  private canvasMouseDownHandler: ((e: MouseEvent) => void) | null = null;
+  private canvasMouseMoveHandler: ((e: MouseEvent) => void) | null = null;
+  private canvasMouseUpHandler: ((e: MouseEvent) => void) | null = null;
+  private canvas: HTMLCanvasElement | null = null;
+  private isDraggingBall: boolean = false;
 
   constructor(canvas: HTMLCanvasElement, map: GameMap, config: GameConfig) {
+    this.canvas = canvas;
     this.renderer = new Renderer(canvas);
     this.map = map;
     this.config = config;
@@ -117,6 +127,7 @@ export class Game {
     this.setupControls();
     this.setupConsole();
     this.setupVisibilityHandler();
+    this.setupCanvasClick();
   }
 
   addPlayer(id: string, name: string, team: 'red' | 'blue'): void {
@@ -237,6 +248,12 @@ export class Game {
         this.handleKickInput();
       }
       
+      // Reposicionar bola (tecla B) - apenas em modo treino livre
+      if ((e.key === 'b' || e.key === 'B') && !this.isInPlaylistOrEditorMode()) {
+        e.preventDefault();
+        this.repositionBall();
+      }
+      
       // Trocar jogador
       if (keyBindings.isKeyBound(e.key, 'switchPlayer')) {
         e.preventDefault();
@@ -275,6 +292,25 @@ export class Game {
       document.removeEventListener('visibilitychange', this.visibilityHandler);
       this.visibilityHandler = null;
     }
+    if (this.canvas) {
+      if (this.canvasClickHandler) {
+        this.canvas.removeEventListener('click', this.canvasClickHandler);
+        this.canvasClickHandler = null;
+      }
+      if (this.canvasMouseDownHandler) {
+        this.canvas.removeEventListener('mousedown', this.canvasMouseDownHandler);
+        this.canvasMouseDownHandler = null;
+      }
+      if (this.canvasMouseMoveHandler) {
+        this.canvas.removeEventListener('mousemove', this.canvasMouseMoveHandler);
+        this.canvasMouseMoveHandler = null;
+      }
+      if (this.canvasMouseUpHandler) {
+        this.canvas.removeEventListener('mouseup', this.canvasMouseUpHandler);
+        window.removeEventListener('mouseup', this.canvasMouseUpHandler);
+        this.canvasMouseUpHandler = null;
+      }
+    }
   }
   
   /**
@@ -307,6 +343,108 @@ export class Game {
       const playerName = this.getPlayerName(this.controlledPlayerId);
       this.console.addChatMessage(playerName, message);
     });
+  }
+  
+  /**
+   * Configura listener de clique no canvas para reposicionar bola (modo treino livre)
+   */
+  private setupCanvasClick(): void {
+    if (!this.canvas) return;
+    
+    // MouseDown - inicia o arrasto
+    this.canvasMouseDownHandler = (e: MouseEvent) => {
+      // Apenas funciona em modo treino livre (não playlist ou editor)
+      if (this.isInPlaylistOrEditorMode()) return;
+      if (!this.state.running || this.state.finished) return;
+      
+      this.isDraggingBall = true;
+      
+      const rect = this.canvas!.getBoundingClientRect();
+      const scaleX = this.canvas!.width / rect.width;
+      const scaleY = this.canvas!.height / rect.height;
+      
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+      
+      // Armazena a posição clicada
+      this.lastClickedPosition = { x, y };
+      
+      // Reposiciona a bola imediatamente
+      this.repositionBall();
+    };
+    
+    // MouseMove - atualiza posição da bola enquanto arrasta
+    this.canvasMouseMoveHandler = (e: MouseEvent) => {
+      if (!this.isDraggingBall) return;
+      if (this.isInPlaylistOrEditorMode()) return;
+      if (!this.state.running || this.state.finished) return;
+      
+      const rect = this.canvas!.getBoundingClientRect();
+      const scaleX = this.canvas!.width / rect.width;
+      const scaleY = this.canvas!.height / rect.height;
+      
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+      
+      // Atualiza posição da bola continuamente
+      this.lastClickedPosition = { x, y };
+      this.state.ball.circle.pos.x = x;
+      this.state.ball.circle.pos.y = y;
+      this.state.ball.circle.vel.x = 0;
+      this.state.ball.circle.vel.y = 0;
+      this.prevBallPos.x = x;
+      this.prevBallPos.y = y;
+    };
+    
+    // MouseUp - para o arrasto
+    this.canvasMouseUpHandler = (e: MouseEvent) => {
+      if (this.isDraggingBall) {
+        this.isDraggingBall = false;
+        // Feedback sonoro ao soltar
+        audioManager.play('bounce', 0.2);
+      }
+    };
+    
+    this.canvas.addEventListener('mousedown', this.canvasMouseDownHandler);
+    this.canvas.addEventListener('mousemove', this.canvasMouseMoveHandler);
+    this.canvas.addEventListener('mouseup', this.canvasMouseUpHandler);
+    // Também trata mouseup fora do canvas
+    window.addEventListener('mouseup', this.canvasMouseUpHandler);
+  }
+  
+  /**
+   * Reposiciona a bola na última posição clicada (ou centro se não clicou)
+   */
+  private repositionBall(): void {
+    if (!this.state.running || this.state.finished) return;
+    
+    const targetPos = this.lastClickedPosition || this.map.spawnPoints.ball;
+    
+    // Reposiciona a bola
+    this.state.ball.circle.pos.x = targetPos.x;
+    this.state.ball.circle.pos.y = targetPos.y;
+    
+    // Zera velocidade da bola
+    this.state.ball.circle.vel.x = 0;
+    this.state.ball.circle.vel.y = 0;
+    
+    // Atualiza posições anteriores para interpolação
+    this.prevBallPos.x = targetPos.x;
+    this.prevBallPos.y = targetPos.y;
+    
+    // Feedback sonoro apenas se não estiver arrastando ou se for tecla B
+    if (!this.isDraggingBall) {
+      audioManager.play('bounce', 0.3);
+    }
+  }
+  
+  /**
+   * Verifica se está em modo playlist ou editor (usa funções globais do window)
+   */
+  private isInPlaylistOrEditorMode(): boolean {
+    const getIsPlaylistMode = (window as any).getIsPlaylistMode;
+    const getIsEditorMode = (window as any).getIsEditorMode;
+    return (getIsPlaylistMode && getIsPlaylistMode()) || (getIsEditorMode && getIsEditorMode());
   }
   
   private getPlayerName(playerId: string): string {
@@ -538,6 +676,14 @@ export class Game {
       }
     }
     
+    // Colisão com goalposts (traves)
+    if (this.map.goalposts) {
+      for (const goalpost of this.map.goalposts) {
+        const playerBounce = goalpost.bounce;
+        Physics.checkAndResolveStaticCircleCollision(player.circle, goalpost.pos, goalpost.radius, playerBounce);
+      }
+    }
+    
     // Colisão local com a bola (para feedback visual imediato)
     // Resolve a separação dos círculos
     const ball = this.state.ball.circle;
@@ -615,6 +761,13 @@ export class Game {
     for (const segment of this.map.segments) {
       if (Physics.checkSegmentCollision(ball, segment)) {
         Physics.resolveSegmentCollision(ball, segment);
+      }
+    }
+    
+    // Colisão com goalposts (traves)
+    if (this.map.goalposts) {
+      for (const goalpost of this.map.goalposts) {
+        Physics.checkAndResolveStaticCircleCollision(ball, goalpost.pos, goalpost.radius, goalpost.bounce);
       }
     }
   }
@@ -809,7 +962,12 @@ export class Game {
     }
 
     // Atualiza bola com sub-stepping para evitar tunneling através das paredes
-    const hitSpeed = Physics.updateCircleWithSubsteps(this.state.ball.circle, dt, this.map.segments);
+    const hitSpeed = Physics.updateCircleWithSubsteps(
+      this.state.ball.circle, 
+      dt, 
+      this.map.segments,
+      this.map.goalposts || []
+    );
     
     // Detecta colisão com parede para interpolação
     if (hitSpeed > 0) {
@@ -955,6 +1113,16 @@ export class Game {
         }
       }
       // Colisão da bola com paredes agora é tratada em updateCircleWithSubsteps
+    }
+    
+    // Colisão dos jogadores com goalposts (traves)
+    if (this.map.goalposts) {
+      for (const goalpost of this.map.goalposts) {
+        for (const player of this.state.players) {
+          const playerBounce = goalpost.bounce;
+          Physics.checkAndResolveStaticCircleCollision(player.circle, goalpost.pos, goalpost.radius, playerBounce);
+        }
+      }
     }
 
     // Callback customizado de atualização
@@ -1282,6 +1450,7 @@ export class Game {
       extrapolatedPositions = extrapolation.extrapolate(
         this.state,
         this.map.segments,
+        this.map.goalposts || [],
         this.controlledPlayerId,
         currentInput,
         this.config,

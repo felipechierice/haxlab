@@ -82,6 +82,24 @@ export class Renderer {
       ctx.stroke();
     }
 
+    // Desenha goalposts (traves)
+    if (map.goalposts) {
+      for (const goalpost of map.goalposts) {
+        const color = goalpost.team === 'red' ? this.colors.red : this.colors.blue;
+        
+        // Desenha o círculo preenchido
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(goalpost.pos.x, goalpost.pos.y, goalpost.radius, 0, this.PI2);
+        ctx.fill();
+        
+        // Desenha borda branca
+        ctx.strokeStyle = this.colors.white;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+
     // Linha central
     ctx.strokeStyle = this.colors.line;
     ctx.setLineDash(this.lineDashPattern);

@@ -20,7 +20,7 @@
  * baseada em direções discretas (InputController).
  */
 
-import { GameState, Player, Circle, Segment, Vector2D, GameConfig, Ball } from './types.js';
+import { GameState, Player, Circle, Segment, Vector2D, GameConfig, Ball, Goalpost } from './types.js';
 import { Physics } from './physics.js';
 import type { InputController } from './input/index.js';
 import { directionToInputFlags } from './input/index.js';
@@ -133,6 +133,7 @@ export class Extrapolation {
    * 
    * @param state Estado atual do jogo
    * @param segments Segmentos do mapa (paredes)
+   * @param goalposts Goalposts (traves) do mapa (opcional)
    * @param controlledPlayerId ID do jogador controlado (legacy, para compatibilidade)
    * @param playerInput Input atual do jogador controlado (legacy)
    * @param config Configurações do jogo
@@ -144,6 +145,7 @@ export class Extrapolation {
   extrapolate(
     state: GameState,
     segments: Segment[],
+    goalposts: Goalpost[] = [],
     controlledPlayerId: string,
     playerInput: { up: boolean; down: boolean; left: boolean; right: boolean },
     config: GameConfig,
@@ -191,6 +193,7 @@ export class Extrapolation {
       this.simulateStep(
         state,
         segments,
+        goalposts,
         controlledPlayerId,
         playerInput,
         config,
@@ -279,6 +282,7 @@ export class Extrapolation {
   private simulateStep(
     state: GameState,
     segments: Segment[],
+    goalposts: Goalpost[],
     controlledPlayerId: string,
     playerInput: { up: boolean; down: boolean; left: boolean; right: boolean },
     config: GameConfig,
@@ -343,6 +347,18 @@ export class Extrapolation {
           }
         }
       }
+      
+      // Colisão com goalposts (traves)
+      if (goalposts.length > 0) {
+        for (const goalpost of goalposts) {
+          if (Physics.checkAndResolveStaticCircleCollision(this.tempPlayerCircle, goalpost.pos, goalpost.radius, goalpost.bounce)) {
+            pos.x = this.tempPlayerCircle.pos.x;
+            pos.y = this.tempPlayerCircle.pos.y;
+            vel.x = this.tempPlayerCircle.vel.x;
+            vel.y = this.tempPlayerCircle.vel.y;
+          }
+        }
+      }
     }
 
     // 2. Atualiza bola
@@ -372,6 +388,18 @@ export class Extrapolation {
         ballPos.y = this.tempBallCircle.pos.y;
         ballVel.x = this.tempBallCircle.vel.x;
         ballVel.y = this.tempBallCircle.vel.y;
+      }
+    }
+    
+    // Colisão da bola com goalposts (traves)
+    if (goalposts.length > 0) {
+      for (const goalpost of goalposts) {
+        if (Physics.checkAndResolveStaticCircleCollision(this.tempBallCircle, goalpost.pos, goalpost.radius, goalpost.bounce)) {
+          ballPos.x = this.tempBallCircle.pos.x;
+          ballPos.y = this.tempBallCircle.pos.y;
+          ballVel.x = this.tempBallCircle.vel.x;
+          ballVel.y = this.tempBallCircle.vel.y;
+        }
       }
     }
 
